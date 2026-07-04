@@ -40,7 +40,7 @@ work, so a re-run skips whatever is already done.
 ## Setup
 
 ```bash
-uv venv && VIRTUAL_ENV=.venv uv pip install -r requirements.txt
+uv sync   # creates .venv and installs pinned deps from uv.lock
 # Claude Code must be logged in (the subagents and orchestrator run on it).
 ```
 
