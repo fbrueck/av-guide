@@ -50,9 +50,12 @@ const EMPTY_FEATURE_COLLECTION: FeatureCollection = {
 // UI components never touch maplibre-gl directly. Later tickets grow this
 // interface (highlightPois, fitTo, setTerrain, …).
 export interface RouteMap {
-	/** Render the guide's POIs as typed markers on the basemap. Idempotent —
-	 *  calling again replaces the rendered set. */
-	showPois(pois: Poi[]): void;
+	/** Render the guide's POIs as typed markers on the basemap, and supply the
+	 *  poi_id -> referencing-Routes index the popup cross-links read (#25). The
+	 *  index arrives with the data (both come from the loaded GuideData), so it is
+	 *  passed here rather than at construction. Idempotent — calling again
+	 *  replaces the rendered set and the index. */
+	showPois(pois: Poi[], routesByPoiId: Map<string, Route[]>): void;
 	/** Emphasize a selected Route's linked POI set (#24): highlight the Anchor
 	 *  distinctly from the Mentions on top of the base markers, then fit the
 	 *  camera to the set. Passing `null` clears the highlight. Honest by design:
@@ -87,26 +90,100 @@ function escapeHtml(value: string): string {
 }
 
 // Popup body = POI identity + a link to verify the match on openstreetmap.org
-// (#21 AC). Isolated so #25 can extend it with the Routes referencing this POI
-// (see routesByPoiId) and make them clickable via an onSelectRoute callback —
-// the seam is here: this function is the only place popup HTML is built.
-function poiPopupHtml(props: PoiFeatureProps): string {
-	const name = escapeHtml(props.name || "(unnamed POI)");
-	const type = escapeHtml(props.type || "—");
+// (#21 AC) + the Routes referencing this POI as clickable cross-links (#25 AC).
+// Built as a real DOM element (returned to setDOMContent, not setHTML) so each
+// Route entry can carry a live click handler that calls back into React via
+// onSelectRoute — a string popup could not carry safe handlers. This is the one
+// place popup content is built.
+function buildPoiPopupElement(
+	props: PoiFeatureProps,
+	routes: Route[],
+	onSelectRoute: (route: Route) => void,
+	onNavigate: () => void,
+): HTMLElement {
+	const root = document.createElement("div");
+	root.className = "poi-popup";
+
+	const name = props.name || "(unnamed POI)";
+	const type = props.type || "—";
 	const ele = props.ele != null ? `${Math.round(props.ele)} m` : "keine Angabe";
-	const osmUrl = escapeHtml(props.osmUrl);
-	return `
-		<div class="poi-popup">
-			<strong class="poi-popup__name">${name}</strong>
-			<dl class="poi-popup__meta">
-				<div><dt>Typ</dt><dd>${type}</dd></div>
-				<div><dt>Höhe</dt><dd>${ele}</dd></div>
-			</dl>
-			<a class="poi-popup__osm" href="${osmUrl}" target="_blank" rel="noopener noreferrer">
-				Auf OpenStreetMap prüfen ↗
-			</a>
-		</div>
+
+	// Identity block + OSM verify link is static, so an escaped HTML string stays
+	// the readable option here; the interactive Route list below is real DOM.
+	root.innerHTML = `
+		<strong class="poi-popup__name">${escapeHtml(name)}</strong>
+		<dl class="poi-popup__meta">
+			<div><dt>Typ</dt><dd>${escapeHtml(type)}</dd></div>
+			<div><dt>Höhe</dt><dd>${escapeHtml(ele)}</dd></div>
+		</dl>
+		<a class="poi-popup__osm" href="${escapeHtml(props.osmUrl)}" target="_blank" rel="noopener noreferrer">
+			Auf OpenStreetMap prüfen ↗
+		</a>
 	`;
+
+	root.appendChild(buildRouteCrossLinks(routes, onSelectRoute, onNavigate));
+	return root;
+}
+
+// The #25 cross-link section: the Routes that reference this POI (Anchor or
+// Mention, via routesByPoiId). Each is a button whose click selects the Route
+// through the SAME handler a sidebar click uses, so the #24 highlight + fit +
+// RouteDetail all fire for free. A POI no Route names (possible for gazetteer
+// POIs) shows an honest empty line, never a blank section.
+function buildRouteCrossLinks(
+	routes: Route[],
+	onSelectRoute: (route: Route) => void,
+	onNavigate: () => void,
+): HTMLElement {
+	const section = document.createElement("div");
+	section.className = "poi-popup__routes";
+
+	if (routes.length === 0) {
+		const empty = document.createElement("p");
+		empty.className = "poi-popup__routes-empty";
+		empty.textContent = "Keine Routen nennen diesen POI.";
+		section.appendChild(empty);
+		return section;
+	}
+
+	const title = document.createElement("p");
+	title.className = "poi-popup__routes-title";
+	title.textContent = `Routen, die diesen POI nennen (${routes.length})`;
+	section.appendChild(title);
+
+	const list = document.createElement("ul");
+	list.className = "poi-popup__routes-list";
+	for (const route of routes) {
+		const item = document.createElement("li");
+		const button = document.createElement("button");
+		button.type = "button";
+		button.className = "poi-popup__route";
+
+		const routeName = document.createElement("span");
+		routeName.className = "poi-popup__route-name";
+		// textContent escapes for free — no manual escaping needed on DOM nodes.
+		routeName.textContent = route.name;
+		button.appendChild(routeName);
+
+		const meta = document.createElement("span");
+		meta.className = "poi-popup__route-meta";
+		const peak = document.createElement("span");
+		peak.textContent = route.peak ?? "—";
+		const grade = document.createElement("span");
+		grade.className = "poi-popup__route-grade";
+		grade.textContent = route.grade ?? "—";
+		meta.append(peak, grade);
+		button.appendChild(meta);
+
+		button.addEventListener("click", () => {
+			onSelectRoute(route);
+			onNavigate();
+		});
+		item.appendChild(button);
+		list.appendChild(item);
+	}
+	section.appendChild(list);
+	return section;
 }
 
 function toFeatureCollection(pois: Poi[]): FeatureCollection {
@@ -154,7 +231,18 @@ function toHighlightFeatureCollection(route: Route): FeatureCollection {
 	return { type: "FeatureCollection", features };
 }
 
-export function createRouteMap(container: HTMLElement): RouteMap {
+// Options passed at construction (before the guide data loads). onSelectRoute is
+// App's single selection entry point (a stable useCallback), so a Route clicked
+// in a POI popup selects it identically to a sidebar click — the map never owns
+// selection, it just calls back (route-map/CLAUDE.md rule 4).
+export interface CreateRouteMapOptions {
+	onSelectRoute: (route: Route) => void;
+}
+
+export function createRouteMap(
+	container: HTMLElement,
+	{ onSelectRoute }: CreateRouteMapOptions,
+): RouteMap {
 	const map = new MapLibreMap({
 		container,
 		style: topoBasemapStyle,
@@ -171,6 +259,10 @@ export function createRouteMap(container: HTMLElement): RouteMap {
 	map.addControl(new ScaleControl(), "bottom-left");
 
 	let popup: Popup | null = null;
+	// The poi_id -> referencing-Routes index the popup reads, supplied with the
+	// POIs via showPois (both come from the loaded GuideData). Empty until then;
+	// a click before data loads simply finds no cross-links.
+	let routesByPoiId: Map<string, Route[]> = new Map();
 	// showPois may run before the style has loaded (data fetch races map init);
 	// buffer the latest set and flush it once the style is ready.
 	let pendingPois: Poi[] | null = null;
@@ -310,9 +402,14 @@ export function createRouteMap(container: HTMLElement): RouteMap {
 			}
 			const [lon, lat] = geometry.coordinates as [number, number];
 			popup?.remove();
+			const referencingRoutes = routesByPoiId.get(props.id) ?? [];
 			popup = new Popup({ offset: 10, closeButton: true })
 				.setLngLat([lon, lat])
-				.setHTML(poiPopupHtml(props))
+				.setDOMContent(
+					buildPoiPopupElement(props, referencingRoutes, onSelectRoute, () =>
+						popup?.remove(),
+					),
+				)
 				.addTo(map);
 		});
 		map.on("mouseenter", POI_LAYER_ID, () => {
@@ -324,7 +421,8 @@ export function createRouteMap(container: HTMLElement): RouteMap {
 	}
 
 	return {
-		showPois(pois: Poi[]): void {
+		showPois(pois: Poi[], index: Map<string, Route[]>): void {
+			routesByPoiId = index;
 			if (map.isStyleLoaded()) {
 				renderPois(pois);
 			} else {
