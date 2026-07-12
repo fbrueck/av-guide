@@ -98,6 +98,14 @@ Load-bearing. Breaking one needs a deliberate, called-out reason.
    deliberately softens the pipeline's strict "no default `--guide`" rule — a
    personal QA tool should start with one command.)
 
+   **URL scheme (stable — the `src/data` adapter fetches these):** `/guide-data/`
+   maps onto `guides/<id>/data/`, mirroring the on-disk layout minus the guide
+   prefix. Only the two consumed stage dirs are exposed:
+   `/guide-data/parse-routes/03_structured/routes.json`,
+   `/guide-data/fetch-pois/04_final/pois.geojson`,
+   `/guide-data/fetch-pois/04_final/route_pois.jsonl`. Served by a small
+   `configureServer` middleware in `vite.config.ts` (path-traversal guarded).
+
 7. **Domain vocabulary in code and UI.** Use the root `CONTEXT.md` terms —
    Route, POI, Anchor, Mention, Gazetteer — in identifiers, comments, and
    user-facing copy.

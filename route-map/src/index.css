@@ -1,0 +1,12 @@
+html,
+body,
+#root {
+	height: 100%;
+	margin: 0;
+}
+
+/* The map owns the full viewport; UI (sidebar, panels) lands in later tickets. */
+.map-root {
+	position: absolute;
+	inset: 0;
+}
