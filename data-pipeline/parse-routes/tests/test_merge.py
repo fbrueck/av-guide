@@ -45,6 +45,12 @@ def test_merge_explodes_parts_into_routes_and_index(cfg):
     a = json.loads((cfg.routes_dir / "p0051_01.json").read_text(encoding="utf-8"))
     assert a["name"] == "Route A"
 
+    # merge also emits the route-map contract (routes.json) in sync: a JSON
+    # array of the same routes, without internal fields like source_page.
+    contract = json.loads(cfg.routes_json.read_text(encoding="utf-8"))
+    assert [r["route_id"] for r in contract] == ["p0051_01", "p0051_02", "p0052_01"]
+    assert "source_page" not in contract[0]
+
 
 def test_merge_rebuilds_from_scratch(cfg):
     write_part(cfg, "page_0051", [route("Route A")])

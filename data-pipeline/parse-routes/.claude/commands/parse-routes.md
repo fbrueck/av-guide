@@ -53,12 +53,17 @@ If `guides/<id>/data/parse-routes/01_raw/manifest.jsonl` does not exist, run:
    ```
    .venv/bin/python -m pipeline.merge --guide <id>
    ```
+   `merge` also writes the route-map contract `routes.json`. To regenerate it
+   alone (without a full re-merge), run:
+   ```
+   .venv/bin/python -m pipeline.export --guide <id>
+   ```
 
 ## Finish
 
-Report: pages extracted, pages cleaned, routes found, and the path to
-`guides/<id>/data/parse-routes/03_structured/routes.jsonl`. Note anything that
-failed and how to resume.
+Report: pages extracted, pages cleaned, routes found, and the paths to
+`guides/<id>/data/parse-routes/03_structured/routes.jsonl` (index) and
+`routes.json` (route-map contract). Note anything that failed and how to resume.
 
 If the user passes extra scope (e.g. a page range or "stage 2 only") alongside
 the guide id, scope the run accordingly instead of doing the whole thing.
