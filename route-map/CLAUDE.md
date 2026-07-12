@@ -129,20 +129,38 @@ route records).
 
 ## Testing
 
-The webapp's UI and map behavior are **verified by eye** — there are **no
-component/DOM tests, no jsdom, no React Testing Library.** Do not add them.
+There are **no component/DOM tests, no jsdom, no React Testing Library.** Do
+not add them: jsdom has no WebGL, so it cannot render the map that is this
+app's core — it would only test glue over the already-tested join, at the cost
+of a mocked-away map. If UI regressions ever justify automation, reach for
+**Playwright** (real browser, real WebGL, can drive and screenshot the map),
+never RTL.
 
-The one exception is the `src/data` adapter: its load/join logic is **pure,
-deterministic, and non-UI**, so it gets Vitest unit tests (node environment)
-covering the raw→domain join — Anchor vs Mention resolution, empty/Anchor-only
-route sets, unresolvable links. This honors #17's intent (UI verified by eye)
-while giving the deterministic join the same coverage the pipeline mandates for
-deterministic logic. **Keep Vitest confined to pure functions** — the moment a
-test needs a DOM, it does not belong here.
+**UI and map behavior are verified in the browser with Chrome DevTools.**
+Against the acceptance criteria of the ticket being built, run `npm run dev`,
+open the app in Chrome, and confirm with DevTools:
+
+- the **Console** is clean — no errors and no adapter `console.warn` drift
+  beyond what the current pipeline data honestly implies;
+- the **Network** tab shows the artifacts and tiles loading (correct
+  attribution present);
+- the rendered map and DOM match the criteria — markers, highlighted POI set
+  (Anchor distinct from Mentions), detail panel, terrain toggle — inspected via
+  the Elements panel and screenshots.
+
+State plainly in the PR what was checked this way and the result; "verified by
+eye" is not a pass unless it was actually done in DevTools.
+
+The one automated-test exception is the `src/data` adapter: its load/join logic
+is **pure, deterministic, and non-UI**, so it gets Vitest unit tests (node
+environment) covering the raw→domain join — Anchor vs Mention resolution,
+empty/Anchor-only route sets, unresolvable links. This gives the deterministic
+join the same coverage the pipeline mandates for deterministic logic. **Keep
+Vitest confined to pure functions** — the moment a test needs a DOM, it does
+not belong here.
 
 Colocate tests with the code (`src/data/join.test.ts`). Everything else is
-covered by strict types + the green-bar + a manual pass against the acceptance
-criteria of the ticket being built.
+covered by strict types + the green-bar + the DevTools pass above.
 
 ## Adding to route-map
 
