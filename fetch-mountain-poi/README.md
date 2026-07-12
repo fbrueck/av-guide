@@ -13,8 +13,15 @@ Spec and tickets: see the repo issue tracker (spec is issue #1).
 | Stage | Command | Output |
 |---|---|---|
 | 1. Gazetteer | `uv run python -m pipeline.gazetteer [--refresh]` | `data/01_gazetteer/gazetteer.jsonl` (raw Overpass response cached alongside) |
-| 2. Mention extraction (LLM) | *later ticket* | `data/02_mentions/` |
+| 2. Mention extraction (LLM) | `uv run python -m pipeline.plan extract [--batch 10]` plans; `mention-extractor` subagents execute | `data/02_mentions/parts/<route_id>.json` (one part per route — the resumability unit) |
 | 3. Matching | `uv run python -m pipeline.match` | `data/04_final/{pois.jsonl,route_pois.jsonl,pois.geojson}`, open cases in `data/03_matched/anchor_open.jsonl` |
+
+The whole pipeline is driven by the `/fetch-poi` slash command (see
+`.claude/commands/fetch-poi.md`): it runs the deterministic stages and fans the
+planner's batches out to `mention-extractor` subagents until nothing remains.
+The planner batches the route list sorted by route_id, so batch numbers and
+membership are stable across runs, and an interrupted run resumes without
+redoing completed routes.
 
 Currently the matcher resolves route anchors (the `peak` field) by exact
 matching on normalized names. Fuzzy matching, tie review, and LLM adjudication

@@ -22,7 +22,8 @@ GAZETTEER_DIR = DATA / "01_gazetteer"
 OVERPASS_RAW = GAZETTEER_DIR / "overpass_raw.json"  # cached raw response — reruns are offline
 GAZETTEER = GAZETTEER_DIR / "gazetteer.jsonl"
 
-MENTIONS_DIR = DATA / "02_mentions"   # LLM-extracted mentions (later stage)
+MENTIONS_DIR = DATA / "02_mentions"   # LLM-extracted mentions
+MENTION_PARTS = MENTIONS_DIR / "parts"  # one part file per route — the resumability unit
 MATCH_DIR = DATA / "03_matched"       # matcher bookkeeping (open cases, reports)
 FINAL_DIR = DATA / "04_final"         # webapp-facing artifacts
 
