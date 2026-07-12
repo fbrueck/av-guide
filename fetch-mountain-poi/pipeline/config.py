@@ -31,7 +31,9 @@ POIS_JSONL = FINAL_DIR / "pois.jsonl"
 ROUTE_POIS_JSONL = FINAL_DIR / "route_pois.jsonl"
 POIS_GEOJSON = FINAL_DIR / "pois.geojson"
 
-ANCHOR_OPEN = MATCH_DIR / "anchor_open.jsonl"  # anchors the exact matcher could not resolve
+REVIEW = MATCH_DIR / "review.jsonl"        # open tie cases awaiting a decision
+UNMATCHED = MATCH_DIR / "unmatched.jsonl"  # mentions with no surviving candidate
+FUNNEL = MATCH_DIR / "funnel.json"         # per-type cascade counts for `plan funnel`
 
 OVERPASS_URL = os.environ.get("AV_POI_OVERPASS_URL", "https://overpass-api.de/api/interpreter")
 
