@@ -9,7 +9,14 @@ import {
 	ScaleControl,
 } from "maplibre-gl";
 import type { Poi } from "../domain";
-import { BASEMAP_MAX_ZOOM, topoBasemapStyle } from "./basemap";
+import {
+	BASEMAP_MAX_ZOOM,
+	TERRAIN_EXAGGERATION,
+	TERRAIN_PITCH,
+	TERRAIN_SOURCE_ID,
+	terrainSource,
+	topoBasemapStyle,
+} from "./basemap";
 import { poiColorExpression } from "./poiStyle";
 import { WETTERSTEIN_BOUNDS } from "./view";
 
@@ -24,6 +31,11 @@ export interface RouteMap {
 	/** Render the guide's POIs as typed markers on the basemap. Idempotent —
 	 *  calling again replaces the rendered set. */
 	showPois(pois: Poi[]): void;
+	/** Flip the map between the flat 2D basemap and 3D terrain (#23). On enable
+	 *  the Mapterhorn raster-dem source is draped under the basemap and the
+	 *  camera pitches up; on disable the terrain is cleared and the camera
+	 *  returns to flat. Idempotent and safe to call before the style loads. */
+	setTerrain(enabled: boolean): void;
 	destroy(): void;
 }
 
@@ -109,6 +121,25 @@ export function createRouteMap(container: HTMLElement): RouteMap {
 	// showPois may run before the style has loaded (data fetch races map init);
 	// buffer the latest set and flush it once the style is ready.
 	let pendingPois: Poi[] | null = null;
+	// setTerrain has the same race; buffer the latest desired state and apply it
+	// on load. Track the applied state so re-adding the source stays idempotent.
+	let terrainEnabled = false;
+
+	function applyTerrain(enabled: boolean): void {
+		if (enabled) {
+			if (!map.getSource(TERRAIN_SOURCE_ID)) {
+				map.addSource(TERRAIN_SOURCE_ID, terrainSource);
+			}
+			map.setTerrain({
+				source: TERRAIN_SOURCE_ID,
+				exaggeration: TERRAIN_EXAGGERATION,
+			});
+			map.easeTo({ pitch: TERRAIN_PITCH });
+		} else {
+			map.setTerrain(null);
+			map.easeTo({ pitch: 0 });
+		}
+	}
 
 	function renderPois(pois: Poi[]): void {
 		const data = toFeatureCollection(pois);
@@ -170,6 +201,16 @@ export function createRouteMap(container: HTMLElement): RouteMap {
 						renderPois(pendingPois);
 						pendingPois = null;
 					}
+				});
+			}
+		},
+		setTerrain(enabled: boolean): void {
+			terrainEnabled = enabled;
+			if (map.isStyleLoaded()) {
+				applyTerrain(enabled);
+			} else {
+				map.once("load", () => {
+					applyTerrain(terrainEnabled);
 				});
 			}
 		},
