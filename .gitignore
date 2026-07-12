@@ -1,6 +1,9 @@
 .venv/
 __pycache__/
 *.pyc
-data/
+# Per-guide pipeline artifacts (guides/<id>/data/<pipeline>/…) are gitignored;
+# scoped to the guides tree so it never clobbers source dirs named `data`
+# (e.g. route-map/src/data, the webapp's data-adapter boundary).
+guides/*/data/
 *.pdf
 .claude/worktrees
