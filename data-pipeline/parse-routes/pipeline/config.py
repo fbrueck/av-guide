@@ -69,6 +69,10 @@ class GuideConfig:
         return self.struct_dir / "routes.jsonl"
 
     @property
+    def routes_json(self) -> Path:  # route-map data contract (plain JSON array)
+        return self.struct_dir / "routes.json"
+
+    @property
     def manifest(self) -> Path:  # one JSON record per page (metadata)
         return self.raw_dir / "manifest.jsonl"
 

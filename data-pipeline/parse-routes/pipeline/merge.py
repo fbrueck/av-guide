@@ -23,6 +23,7 @@ import shutil
 import sys
 
 from .config import GuideConfig, load_guide
+from .export import write_routes_json
 
 
 def merge(cfg: GuideConfig) -> None:
@@ -58,9 +59,14 @@ def merge(cfg: GuideConfig) -> None:
         for route in all_routes:
             f.write(json.dumps(route, ensure_ascii=False) + "\n")
 
+    # Regenerate the route-map contract (routes.json) from the same list, so it
+    # never drifts from the index (#17).
+    write_routes_json(cfg, all_routes)
+
     n_pages = len(list(cfg.struct_parts.glob("page_*.json")))
     print(f"Wrote {len(all_routes)} route files -> {cfg.routes_dir}")
     print(f"Combined index -> {cfg.routes_jsonl}  ({n_pages} pages, {bad} unreadable)")
+    print(f"route-map contract -> {cfg.routes_json}")
 
 
 def main() -> None:
