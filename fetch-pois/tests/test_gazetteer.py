@@ -16,8 +16,12 @@ def test_gazetteer_from_cached_response(cfg, capsys):
 
     zugspitze = entries["node/1001"]
     assert zugspitze == {
-        "name": "Zugspitze", "type": "peak",
-        "lat": 47.4211, "lon": 10.9863, "ele": 2962.0, "osm": "node/1001",
+        "name": "Zugspitze",
+        "type": "peak",
+        "lat": 47.4211,
+        "lon": 10.9863,
+        "ele": 2962.0,
+        "osm": "node/1001",
     }
 
     # Way gets its `center` as representative point; tag map classifies the hut.
@@ -31,8 +35,8 @@ def test_gazetteer_from_cached_response(cfg, capsys):
     assert entries["node/1006"]["type"] == "settlement"
 
     # Named paths and water features (#11 classes).
-    assert entries["way/2004"]["type"] == "water"          # Blaue Gumpe (lake)
-    assert entries["way/2006"]["type"] == "station"        # Kreuzeckbahn Bergstation
+    assert entries["way/2004"]["type"] == "water"  # Blaue Gumpe (lake)
+    assert entries["way/2006"]["type"] == "station"  # Kreuzeckbahn Bergstation
 
     # Linear features are deduped to one entry per name: the two Stangensteig
     # path segments collapse (lowest way id wins) …

@@ -8,6 +8,7 @@ step takes as an argument — there is no module-level global config.
 The fixed on-disk stage layout is NOT in the YAML: it lives here as path
 helpers deriving from `cfg.data_root` (= `guides/<id>/data/parse-routes`).
 """
+
 from __future__ import annotations
 
 import sys
@@ -54,7 +55,9 @@ class GuideConfig:
         return self.clean_dir / "pages"
 
     @property
-    def struct_parts(self) -> Path:  # one <stem>.json per structured page (resumability unit)
+    def struct_parts(
+        self,
+    ) -> Path:  # one <stem>.json per structured page (resumability unit)
         return self.struct_dir / "parts"
 
     @property

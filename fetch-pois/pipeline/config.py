@@ -8,6 +8,7 @@ step takes as an argument — there is no module-level global config.
 The fixed on-disk stage layout is NOT in the YAML: it lives here as path
 helpers deriving from `cfg.data_root` (= `guides/<id>/data/fetch-pois`).
 """
+
 from __future__ import annotations
 
 import sys
@@ -120,10 +121,17 @@ def load_guide(guide_id: str) -> GuideConfig:
         bbox=tuple(raw["bbox"]),
         data_root=guide_dir / "data" / "fetch-pois",
         # Upstream routes index by convention — no hardcoded cross-project hop.
-        routes_jsonl=guide_dir / "data" / "parse-routes" / "03_structured" / "routes.jsonl",
-        tag_map={t: _pairs(pairs) for t, pairs in (section.get("tag_map") or {}).items()},
+        routes_jsonl=guide_dir
+        / "data"
+        / "parse-routes"
+        / "03_structured"
+        / "routes.jsonl",
+        tag_map={
+            t: _pairs(pairs) for t, pairs in (section.get("tag_map") or {}).items()
+        },
         guarded_tag_map={
-            t: _pairs(pairs) for t, pairs in (section.get("guarded_tag_map") or {}).items()
+            t: _pairs(pairs)
+            for t, pairs in (section.get("guarded_tag_map") or {}).items()
         },
         deduped_types=frozenset(section.get("deduped_types") or []),
         settlement_exclusion_km=float(section.get("settlement_exclusion_km", 1.0)),

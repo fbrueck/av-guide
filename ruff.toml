@@ -1,0 +1,4 @@
+# Shared ruff config for the whole repo. Both packages have no [tool.ruff] of
+# their own, so ruff walks up and uses this. Kept at defaults on purpose.
+target-version = "py313"
+line-length = 88

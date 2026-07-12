@@ -48,6 +48,7 @@ bookkeeping in 03_matched/: review.jsonl, unmatched.jsonl,
 adjudication_queue.jsonl, funnel.json (rendered by
 `python -m pipeline.plan funnel`).
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -59,7 +60,7 @@ from rapidfuzz import fuzz, process
 
 from .config import GuideConfig, load_guide
 
-FUZZY_CUTOFF = 90.0   # minimum RapidFuzz ratio for a fuzzy candidate
+FUZZY_CUTOFF = 90.0  # minimum RapidFuzz ratio for a fuzzy candidate
 ELE_TOLERANCE = 50.0  # max |book - OSM| elevation difference in meters
 
 # Shortlist tuning for the LLM adjudicator (#6): the top candidates by
@@ -68,8 +69,8 @@ ELE_TOLERANCE = 50.0  # max |book - OSM| elevation difference in meters
 # elevation and judges drift the deterministic guards can't). Mentions whose
 # best candidate scores below the floor have nothing worth judging and stay
 # plain unmatched. Algorithm tuning, not per-guide config.
-ADJUDICATION_SHORTLIST = 10   # max candidates per case
-ADJUDICATION_CUTOFF = 60.0    # minimum RapidFuzz ratio to enter the shortlist
+ADJUDICATION_SHORTLIST = 10  # max candidates per case
+ADJUDICATION_CUTOFF = 60.0  # minimum RapidFuzz ratio to enter the shortlist
 
 # Trailing elevation as the book writes it: "Höllentorkopf, 2150 m".
 _ELEV_SUFFIX = re.compile(r",?\s*\(?(\d{3,4})\s*m\)?\.?\s*$")
@@ -94,7 +95,16 @@ _NEAR_GROUPS = ({"peak", "pass", "ridge"}, {"hut", "settlement"})
 # A human review decision always wins best-method selection; an LLM verdict
 # ranks below the deterministic cascade.
 _METHOD_RANK = {"review": 4, "exact": 3, "fuzzy": 2, "llm": 1}
-_FUNNEL_COLS = ("mentions", "exact", "fuzzy", "llm", "review", "tie", "skipped", "unmatched")
+_FUNNEL_COLS = (
+    "mentions",
+    "exact",
+    "fuzzy",
+    "llm",
+    "review",
+    "tie",
+    "skipped",
+    "unmatched",
+)
 
 
 def strip_elevation(surface: str) -> str:
@@ -125,7 +135,9 @@ def norm_key(name: str) -> str:
     return re.sub(r"[^a-z0-9]", "", s)
 
 
-def out_of_scope_reason(name: str, out_of_scope: tuple[tuple[str, str], ...]) -> str | None:
+def out_of_scope_reason(
+    name: str, out_of_scope: tuple[tuple[str, str], ...]
+) -> str | None:
     """Reason string if the name belongs to a class deliberately outside the
     gazetteer's scope (cfg.out_of_scope), else None."""
     stripped = strip_elevation(name)
@@ -191,11 +203,15 @@ def passes_guards(mention: dict, entry: dict) -> bool:
         or any(t in g and entry["type"] in g for g in _NEAR_GROUPS)
     )
     ele = mention["elevation_m"]
-    ele_ok = ele is None or entry["ele"] is None or abs(ele - entry["ele"]) <= ELE_TOLERANCE
+    ele_ok = (
+        ele is None or entry["ele"] is None or abs(ele - entry["ele"]) <= ELE_TOLERANCE
+    )
     return type_ok and ele_ok
 
 
-def resolve(mention: dict, index: dict[str, list[dict]], keys: list[str]) -> tuple[str, list]:
+def resolve(
+    mention: dict, index: dict[str, list[dict]], keys: list[str]
+) -> tuple[str, list]:
     """Run the cascade for one mention. Returns (method, [(entry, score), ...])
     where method is 'exact'/'fuzzy' (single survivor), 'tie' (several at equal
     footing) or 'unmatched' (none)."""
@@ -204,7 +220,9 @@ def resolve(mention: dict, index: dict[str, list[dict]], keys: list[str]) -> tup
     if exact:
         return ("exact" if len(exact) == 1 else "tie"), exact
 
-    hits = process.extract(key, keys, scorer=fuzz.ratio, score_cutoff=FUZZY_CUTOFF, limit=None)
+    hits = process.extract(
+        key, keys, scorer=fuzz.ratio, score_cutoff=FUZZY_CUTOFF, limit=None
+    )
     survivors = [
         (e, round(score, 1))
         for hit_key, score, _ in hits
@@ -218,7 +236,9 @@ def resolve(mention: dict, index: dict[str, list[dict]], keys: list[str]) -> tup
     return ("fuzzy" if len(top) == 1 else "tie"), top
 
 
-def shortlist(mention: dict, index: dict[str, list[dict]], keys: list[str]) -> list[tuple[dict, float]]:
+def shortlist(
+    mention: dict, index: dict[str, list[dict]], keys: list[str]
+) -> list[tuple[dict, float]]:
     """Candidate shortlist for the LLM adjudicator: the top
     ADJUDICATION_SHORTLIST gazetteer entries by fuzzy ratio >=
     ADJUDICATION_CUTOFF, deliberately unguarded — the adjudicator sees each
@@ -261,7 +281,9 @@ def load_verdicts(cfg: GuideConfig) -> dict[str, dict]:
         try:
             verdict = json.loads(path.read_text(encoding="utf-8"))
         except json.JSONDecodeError as err:
-            sys.exit(f"{path}: not valid JSON ({err}) — delete the file and re-adjudicate.")
+            sys.exit(
+                f"{path}: not valid JSON ({err}) — delete the file and re-adjudicate."
+            )
         if verdict.get("case_id", path.stem) != path.stem:
             sys.exit(
                 f"{path}: verdict case_id {verdict['case_id']!r} does not match the "
@@ -269,8 +291,10 @@ def load_verdicts(cfg: GuideConfig) -> dict[str, dict]:
                 "fix the name and rerun."
             )
         pick, reason = verdict.get("pick"), verdict.get("reason")
-        if "pick" not in verdict or not (pick is None or isinstance(pick, str)) or not (
-            isinstance(reason, str) and reason.strip()
+        if (
+            "pick" not in verdict
+            or not (pick is None or isinstance(pick, str))
+            or not (isinstance(reason, str) and reason.strip())
         ):
             sys.exit(
                 f"{path}: a verdict needs a `pick` (candidate OSM ref or null) and a "
@@ -280,8 +304,14 @@ def load_verdicts(cfg: GuideConfig) -> dict[str, dict]:
     return verdicts
 
 
-def register(pois: dict, mention: dict, entry: dict, method: str, score: float,
-             reason: str | None = None) -> str:
+def register(
+    pois: dict,
+    mention: dict,
+    entry: dict,
+    method: str,
+    score: float,
+    reason: str | None = None,
+) -> str:
     """Upsert the POI: aliases collect differing surface forms, provenance
     keeps the best method (review > exact > fuzzy > llm, then highest
     score). LLM provenance carries the adjudicator's reason."""
@@ -294,7 +324,10 @@ def register(pois: dict, mention: dict, entry: dict, method: str, score: float,
         prov["score"] = score
         prov["reason"] = reason
     cur = poi["match"]
-    if cur is None or (_METHOD_RANK[method], score) > (_METHOD_RANK[cur["method"]], cur.get("score", 100.0)):
+    if cur is None or (_METHOD_RANK[method], score) > (
+        _METHOD_RANK[cur["method"]],
+        cur.get("score", 100.0),
+    ):
         poi["match"] = prov
     for form in (strip_elevation(mention["surface"]), mention["name"]):
         if form != poi["name"] and form not in poi["aliases"]:
@@ -305,8 +338,12 @@ def register(pois: dict, mention: dict, entry: dict, method: str, score: float,
 def _add_link(links: dict, rid: str, pid: str, mention: dict) -> None:
     link = links.setdefault(
         (rid, pid),
-        {"route_id": rid, "poi_id": pid, "surface": mention["surface"],
-         "is_anchor": mention["is_anchor"]},
+        {
+            "route_id": rid,
+            "poi_id": pid,
+            "surface": mention["surface"],
+            "is_anchor": mention["is_anchor"],
+        },
     )
     link["is_anchor"] = link["is_anchor"] or mention["is_anchor"]
 
@@ -330,8 +367,15 @@ def _unmatched_record(rid: str, mention: dict, **extra) -> dict:
 
 def _candidate_rows(survivors: list[tuple[dict, float]]) -> list[dict]:
     return [
-        {"osm": e["osm"], "name": e["name"], "type": e["type"],
-         "ele": e["ele"], "lat": e["lat"], "lon": e["lon"], "score": score}
+        {
+            "osm": e["osm"],
+            "name": e["name"],
+            "type": e["type"],
+            "ele": e["ele"],
+            "lat": e["lat"],
+            "lon": e["lon"],
+            "score": score,
+        }
         for e, score in survivors
     ]
 
@@ -399,7 +443,9 @@ def match_mentions(
                     # Human sent the mention to unmatched; the case stays in
                     # review.jsonl as the persistent record of that decision.
                     bucket["skipped"] += 1
-                    unmatched.append(_unmatched_record(rid, mention, skipped_by="review"))
+                    unmatched.append(
+                        _unmatched_record(rid, mention, skipped_by="review")
+                    )
                 elif decision in by_ref:
                     # Human accepted a candidate: it enters the registry with
                     # review provenance (ranked above exact).
@@ -427,7 +473,9 @@ def match_mentions(
                 skip_reason = out_of_scope_reason(mention["name"], cfg.out_of_scope)
                 if skip_reason:
                     bucket["skipped"] += 1
-                    unmatched.append(_unmatched_record(rid, mention, skip_reason=skip_reason))
+                    unmatched.append(
+                        _unmatched_record(rid, mention, skip_reason=skip_reason)
+                    )
                     continue
                 candidates = shortlist(mention, index, keys)
                 if not candidates:
@@ -445,7 +493,11 @@ def match_mentions(
                 verdict = verdicts.get(cid)
                 note = notes.get(key)
                 by_ref = {e["osm"]: (e, score) for e, score in candidates}
-                if decision is not None and decision != "skip" and decision not in by_ref:
+                if (
+                    decision is not None
+                    and decision != "skip"
+                    and decision not in by_ref
+                ):
                     # Validated against the case's recorded candidates at load
                     # time, so this is not a typo: the accepted ref vanished
                     # from a refetched gazetteer/shortlist. The override is
@@ -476,18 +528,25 @@ def match_mentions(
                     bucket["unmatched"] += 1
                     unmatched.append(_unmatched_record(rid, mention))
                     queue.append(
-                        {"case_id": cid, "route_id": rid,
-                         "mention": mention["surface"], "name": mention["name"],
-                         "type": mention["type"], "is_anchor": mention["is_anchor"],
-                         "elevation_m": mention["elevation_m"],
-                         "candidates": case["candidates"]}
+                        {
+                            "case_id": cid,
+                            "route_id": rid,
+                            "mention": mention["surface"],
+                            "name": mention["name"],
+                            "type": mention["type"],
+                            "is_anchor": mention["is_anchor"],
+                            "elevation_m": mention["elevation_m"],
+                            "candidates": case["candidates"],
+                        }
                     )
                     if note:
                         review.append(case)
                     continue
                 if decision == "skip":
                     bucket["skipped"] += 1
-                    unmatched.append(_unmatched_record(rid, mention, skipped_by="review"))
+                    unmatched.append(
+                        _unmatched_record(rid, mention, skipped_by="review")
+                    )
                 elif decision in by_ref:
                     bucket["review"] += 1
                     entry, score = by_ref[decision]
@@ -496,11 +555,15 @@ def match_mentions(
                 elif verdict["pick"] is None:
                     # LLM declared no-match: unmatched, reason preserved.
                     bucket["unmatched"] += 1
-                    unmatched.append(_unmatched_record(rid, mention, llm_reason=verdict["reason"]))
+                    unmatched.append(
+                        _unmatched_record(rid, mention, llm_reason=verdict["reason"])
+                    )
                 elif verdict["pick"] in by_ref:
                     bucket["llm"] += 1
                     entry, score = by_ref[verdict["pick"]]
-                    pid = register(pois, mention, entry, "llm", score, reason=verdict["reason"])
+                    pid = register(
+                        pois, mention, entry, "llm", score, reason=verdict["reason"]
+                    )
                     _add_link(links, rid, pid, mention)
                 else:
                     # The pick is not one of the case's current candidates —
@@ -539,7 +602,7 @@ def load_decisions(cfg: GuideConfig) -> tuple[dict[tuple, str], dict[tuple, str]
             sys.exit(
                 f"{cfg.review}: decision {decision!r} for {case['name']!r} "
                 f"(route {case['route_id']}) is not one of the case's candidates "
-                f"({', '.join(refs)}) and not \"skip\" — fix the typo and rerun."
+                f'({", ".join(refs)}) and not "skip" — fix the typo and rerun.'
             )
         decisions[key] = decision
     return decisions, notes
@@ -597,7 +660,9 @@ def run_match(cfg: GuideConfig) -> dict:
     write_jsonl(cfg.review, review)
     write_jsonl(cfg.unmatched, unmatched)
     write_jsonl(cfg.adjudication_queue, queue)
-    cfg.funnel.write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8")
+    cfg.funnel.write_text(
+        json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8"
+    )
     write_jsonl(cfg.pois_jsonl, list(pois.values()))
     write_jsonl(cfg.route_pois_jsonl, links)
     cfg.pois_geojson.write_text(

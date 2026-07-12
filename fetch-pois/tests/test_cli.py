@@ -1,6 +1,7 @@
 """Thin subprocess coverage for the argparse entrypoints: `--guide` is
 required, an unknown guide fails clearly, and a happy path runs end to end
 against a throwaway fixture guide dir under the repo's guides/."""
+
 import os
 import shutil
 
@@ -33,8 +34,13 @@ def fixture_guide():
     routes_dir = guide_dir / "data" / "parse-routes" / "03_structured"
     (fetch_data / "01_gazetteer").mkdir(parents=True, exist_ok=True)
     routes_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(REPO_ROOT / "guides" / "wetterstein" / "config.yml", guide_dir / "config.yml")
-    shutil.copyfile(FIXTURES / "overpass_raw.json", fetch_data / "01_gazetteer" / "overpass_raw.json")
+    shutil.copyfile(
+        REPO_ROOT / "guides" / "wetterstein" / "config.yml", guide_dir / "config.yml"
+    )
+    shutil.copyfile(
+        FIXTURES / "overpass_raw.json",
+        fetch_data / "01_gazetteer" / "overpass_raw.json",
+    )
     shutil.copyfile(FIXTURES / "routes.jsonl", routes_dir / "routes.jsonl")
     try:
         yield guide_id, fetch_data

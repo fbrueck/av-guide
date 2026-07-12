@@ -6,6 +6,7 @@ per-page metadata used by the later stages.
 
 Run:  python -m pipeline.extract --guide <id>
 """
+
 from __future__ import annotations
 
 import argparse
@@ -61,7 +62,9 @@ def extract(cfg: GuideConfig) -> list[dict]:
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="Read the OCR text layer out of a guide's PDF.")
+    ap = argparse.ArgumentParser(
+        description="Read the OCR text layer out of a guide's PDF."
+    )
     ap.add_argument("--guide", required=True, help="Guide id (guides/<id>/config.yml).")
     args = ap.parse_args()
     cfg = load_guide(args.guide)

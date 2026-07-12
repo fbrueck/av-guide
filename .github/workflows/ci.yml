@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [parse-routes, fetch-pois]
+    defaults:
+      run:
+        working-directory: ${{ matrix.package }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.13"
+
+      - name: Sync (with dev deps)
+        run: uv sync --dev
+
+      # Non-blocking until the lint/type baseline is cleared (#26); then remove
+      # continue-on-error so a regression fails the build.
+      - name: Ruff lint
+        continue-on-error: true
+        run: uv run ruff check .
+
+      - name: Ruff format check
+        run: uv run ruff format --check .
+
+      # Non-blocking until #26; then remove continue-on-error.
+      - name: Mypy
+        continue-on-error: true
+        run: uv run mypy --config-file "${{ github.workspace }}/mypy.ini" pipeline
+
+      - name: Pytest
+        run: uv run pytest
