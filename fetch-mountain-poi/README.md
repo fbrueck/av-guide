@@ -33,6 +33,21 @@ out of scope — no point representation — and the matcher records such mentio
 in `unmatched.jsonl` with a `skip_reason` (`OUT_OF_SCOPE` in config) and counts
 them as `skipped` in the funnel instead of unmatched.
 
+Valley-floor inns the 1996 book calls Hütten/Häuser are often tagged
+`amenity=restaurant` / `tourism=chalet` / `tourism=guest_house` in OSM
+(Bockhütte, Kreuzalm, Kreuzjochhaus, Bayernhaus, …). Those tags are fetched
+too but guarded (`GUARDED_TAG_MAP` in config, #14): an element classified only
+by a guarded tag becomes a `hut` entry when it is (1) at least
+`SETTLEMENT_EXCLUSION_KM` (1 km) from every settlement entry fetched in the
+same run and (2) gap-filling — its normalized name is not already in the
+gazetteer, so a hut's restaurant sub-element never duplicates the hut and
+same-named admissions can't turn existing exact matches into ties. Known
+limits: an inn sitting inside a hamlet is excluded along with the town
+restaurants (e.g. Almwirtschaft Hintergraseck, right at the Hintergraseck
+hamlet node), and a handful of remote-but-mundane names (holiday flats, resort
+hotels) are admitted — harmless unless the book mentions an identical name,
+in which case the tie/review machinery still applies.
+
 The matcher resolves route anchors (the `peak` field) and every extracted
 mention through a deterministic cascade: exact on normalized names, then
 RapidFuzz >= 90 guarded by taxonomy-type compatibility and (where the book

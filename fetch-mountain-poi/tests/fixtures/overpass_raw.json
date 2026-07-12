@@ -28,6 +28,12 @@
     {"type": "relation", "id": 3002, "center": {"lat": 47.47, "lon": 11.12},
      "tags": {"name": "Partnach", "waterway": "river"}},
     {"type": "way", "id": 2006, "center": {"lat": 47.4523, "lon": 11.067},
-     "tags": {"name": "Kreuzeckbahn Bergstation", "aerialway": "station", "ele": "1638"}}
+     "tags": {"name": "Kreuzeckbahn Bergstation", "aerialway": "station", "ele": "1638"}},
+    {"type": "way", "id": 2007, "center": {"lat": 47.41, "lon": 11.2},
+     "tags": {"name": "Bockhütte", "amenity": "restaurant", "ele": "1052"}},
+    {"type": "node", "id": 1007, "lat": 47.492, "lon": 11.101,
+     "tags": {"name": "Gasthof zur Post", "amenity": "restaurant"}},
+    {"type": "node", "id": 1008, "lat": 47.42, "lon": 11.03,
+     "tags": {"name": "Knorr-Hütte", "amenity": "restaurant"}}
   ]
 }

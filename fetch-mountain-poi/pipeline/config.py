@@ -73,6 +73,28 @@ TAG_MAP: dict[str, list[tuple[str, str]]] = {
     "locality": [("place", "locality")],
 }
 
+# Valley-floor inns and serviced houses the 1996 book calls Hütten/Häuser are
+# often tagged amenity=restaurant / tourism=chalet / tourism=guest_house in
+# OSM (Bockhütte, Kreuzalm, Kreuzjochhaus, Bayernhaus, … — #14). Adding those
+# tags to TAG_MAP directly would ingest every town restaurant in
+# Garmisch-Partenkirchen, so they are guarded instead: an element classified
+# only via GUARDED_TAG_MAP is kept when it is
+#   1. at least SETTLEMENT_EXCLUSION_KM from every settlement entry
+#      (place=town/village/hamlet/suburb) fetched in the same run, and
+#   2. gap-filling — its normalized name is not already in the gazetteer
+#      (so a hut's restaurant sub-element never duplicates the hut, and
+#      same-named entries can't turn existing exact matches into ties).
+# TAG_MAP wins over GUARDED_TAG_MAP: a tourism=alpine_hut that also carries
+# amenity=restaurant is a plain (unguarded) hut.
+GUARDED_TAG_MAP: dict[str, list[tuple[str, str]]] = {
+    "hut": [
+        ("amenity", "restaurant"),
+        ("tourism", "chalet"),
+        ("tourism", "guest_house"),
+    ],
+}
+SETTLEMENT_EXCLUSION_KM = 1.0
+
 # Linear features arrive from Overpass split into many same-named segments
 # (a path or stream is dozens of ways). For these types the gazetteer keeps
 # one representative entry per name — unlike e.g. peaks, where two elements
