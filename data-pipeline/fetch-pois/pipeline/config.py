@@ -17,9 +17,9 @@ from pathlib import Path
 
 import yaml
 
-# Repo root: guides/ and each pipeline dir are direct children of it, and this
-# file is <repo>/fetch-pois/pipeline/config.py.
-REPO_ROOT = Path(__file__).resolve().parents[2]
+# Repo root: guides/ lives here, and this file is
+# <repo>/data-pipeline/fetch-pois/pipeline/config.py.
+REPO_ROOT = Path(__file__).resolve().parents[3]
 
 DEFAULT_OVERPASS_URL = "https://overpass-api.de/api/interpreter"
 
