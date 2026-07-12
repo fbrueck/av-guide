@@ -217,23 +217,23 @@ def test_funnel(data_dir):
     assert funnel["routes"] == {"total": 9, "with_mentions": 3}
     # r8's station anchor matches exactly via canonicalization; r9's
     # 'Wettersteingebirge' is the documented out-of-scope skip.
-    assert funnel["types"]["anchor"] == {"mentions": 8, "exact": 5, "fuzzy": 0, "review": 0,
-                                         "tie": 1, "skipped": 1, "unmatched": 1}
-    assert funnel["types"]["peak"] == {"mentions": 6, "exact": 1, "fuzzy": 2, "review": 0,
-                                       "tie": 1, "skipped": 0, "unmatched": 2}
-    assert funnel["totals"] == {"mentions": 16, "exact": 7, "fuzzy": 3, "review": 0,
+    assert funnel["types"]["anchor"] == {"mentions": 8, "exact": 5, "fuzzy": 0, "llm": 0,
+                                         "review": 0, "tie": 1, "skipped": 1, "unmatched": 1}
+    assert funnel["types"]["peak"] == {"mentions": 6, "exact": 1, "fuzzy": 2, "llm": 0,
+                                       "review": 0, "tie": 1, "skipped": 0, "unmatched": 2}
+    assert funnel["totals"] == {"mentions": 16, "exact": 7, "fuzzy": 3, "llm": 0, "review": 0,
                                 "tie": 2, "skipped": 1, "unmatched": 3}
 
     # The planner renders it as a per-type table with a totals row.
     result = run_stage("plan", data_dir, routes=FIXTURES / "routes.jsonl", args=["funnel"])
     assert result.returncode == 0, result.stderr
     lines = result.stdout.splitlines()
-    assert lines[0].split() == ["type", "mentions", "exact", "fuzzy", "review",
+    assert lines[0].split() == ["type", "mentions", "exact", "fuzzy", "llm", "review",
                                 "tie", "skipped", "unmatched"]
     rows = {line.split()[0]: line.split()[1:] for line in lines[1:]}
-    assert rows["anchor"] == ["8", "5", "0", "0", "1", "1", "1"]
-    assert rows["settlement"] == ["1", "1", "0", "0", "0", "0", "0"]
-    assert rows["total"] == ["16", "7", "3", "0", "2", "1", "3"]
+    assert rows["anchor"] == ["8", "5", "0", "0", "0", "1", "1", "1"]
+    assert rows["settlement"] == ["1", "1", "0", "0", "0", "0", "0", "0"]
+    assert rows["total"] == ["16", "7", "3", "0", "0", "2", "1", "3"]
     assert "3/9 routes have extracted mentions" in result.stderr
 
 

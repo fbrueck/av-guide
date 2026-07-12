@@ -1,5 +1,5 @@
 ---
-description: Orchestrate the mountain-POI pipeline (gazetteer → mention extraction → matching) using subagents.
+description: Orchestrate the mountain-POI pipeline (gazetteer → mention extraction → matching → LLM adjudication) using subagents.
 ---
 
 You are the orchestrator for resolving the digitized AV-guide routes to OSM
@@ -45,11 +45,37 @@ for fresh OSM data.)
 uv run python -m pipeline.match
 ```
 
+## Stage 4 — Adjudicate leftovers (subagents: `match-adjudicator`)
+
+The matcher queues unresolved mentions that still have candidates in
+`data/03_matched/adjudication_queue.jsonl`.
+
+1. Get the work plan:
+   ```
+   uv run python -m pipeline.plan adjudicate --batch 10
+   ```
+   Each stdout line is a batch: `{"batch": N, "cases": [{"case_id": ...,
+   "mention": ..., "candidates": [...], "route": {...}}, ...]}`. Cases with an
+   existing verdict file never reappear.
+2. For each batch, spawn a `match-adjudicator` subagent, passing it the
+   batch's cases verbatim and telling it to write one verdict file per case.
+   Launch up to **5 subagents at a time**, wave by wave, until all batches are
+   done; re-run `pipeline.plan adjudicate` and dispatch whatever remains,
+   until the planner reports nothing to do.
+3. Consume the verdicts:
+   ```
+   uv run python -m pipeline.match
+   ```
+   Picks enter the registry with `llm` provenance; no-matches stay in
+   `unmatched.jsonl` with the reason. Every verdict is recorded in
+   `review.jsonl` (`source: "llm"`), where a human can override it later.
+
 ## Finish
 
 Report: gazetteer entries, routes extracted, mentions found, the match funnel
-from the matcher's summary, and the paths to `data/04_final/`. Note anything
-that failed and how to resume.
+from the final matcher summary (including the `llm` column and remaining open
+ties), and the paths to `data/04_final/`. Note anything that failed and how
+to resume.
 
 If the user passes an argument (e.g. "stage 2 only" or a batch limit), scope
 the run accordingly instead of doing the whole thing.
