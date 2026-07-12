@@ -21,17 +21,45 @@ from . import config
 # Trailing elevation as the book writes it: "Höllentorkopf, 2150 m".
 _ELEV_SUFFIX = re.compile(r",?\s*\(?\d{3,4}\s*m\)?\.?\s*$")
 _TRANSLIT = str.maketrans({"ä": "ae", "ö": "oe", "ü": "ue", "ß": "ss"})
+# Cable-car station naming drift (#11): the book writes "Bergstation der
+# Kreuzeckbahn"; OSM has "Kreuzeckbahn Bergstation", "Talstation Hausbergbahn",
+# even "Bergstation Hausberg". Canonicalize both sides (word order, dropped
+# article, "-bahn" suffix of the lift name) to "<lift> <berg|tal|mittel>station".
+_STATION_PREFIX = re.compile(r"^(berg|tal|mittel)station\s+(?:de[rs]\s+)?(.+)$")
+_STATION_SUFFIX = re.compile(r"^(.+?)\s+(berg|tal|mittel)station$")
 
 
 def strip_elevation(surface: str) -> str:
     return _ELEV_SUFFIX.sub("", surface).strip(" ,")
 
 
+def _canon_station(s: str) -> str:
+    """Canonical form for station names (s already casefolded); non-station
+    names pass through unchanged."""
+    if m := _STATION_PREFIX.match(s):
+        position, lift = m.group(1), m.group(2)
+    elif m := _STATION_SUFFIX.match(s):
+        lift, position = m.group(1), m.group(2)
+    else:
+        return s
+    return f"{re.sub(r'bahn$', '', lift)} {position}station"
+
+
 def norm_key(name: str) -> str:
     """Matching key: casefolded, transliterated, all non-alphanumerics removed
     (so 'Knorr-Hütte' and 'Knorrhütte' collide)."""
-    s = strip_elevation(name).casefold().translate(_TRANSLIT)
+    s = _canon_station(strip_elevation(name).casefold()).translate(_TRANSLIT)
     return re.sub(r"[^a-z0-9]", "", s)
+
+
+def out_of_scope_reason(name: str) -> str | None:
+    """Reason string if the name belongs to a class deliberately outside the
+    gazetteer's scope (config.OUT_OF_SCOPE), else None."""
+    stripped = strip_elevation(name)
+    for pattern, reason in config.OUT_OF_SCOPE:
+        if re.search(pattern, stripped, re.IGNORECASE):
+            return reason
+    return None
 
 
 def poi_id(osm_ref: str) -> str:
@@ -74,17 +102,19 @@ def match_anchors(routes: list[dict], gazetteer: list[dict]) -> tuple[dict, list
                 {"route_id": route["route_id"], "poi_id": pid, "surface": surface, "is_anchor": True}
             )
         else:
-            open_cases.append(
-                {
-                    "route_id": route["route_id"],
-                    "surface": surface,
-                    "status": "tie" if candidates else "unmatched",
-                    "candidates": [
-                        {"osm": c["osm"], "name": c["name"], "type": c["type"], "ele": c["ele"]}
-                        for c in candidates
-                    ],
-                }
-            )
+            reason = None if candidates else out_of_scope_reason(surface)
+            case = {
+                "route_id": route["route_id"],
+                "surface": surface,
+                "status": "tie" if candidates else ("skipped" if reason else "unmatched"),
+                "candidates": [
+                    {"osm": c["osm"], "name": c["name"], "type": c["type"], "ele": c["ele"]}
+                    for c in candidates
+                ],
+            }
+            if reason:
+                case["reason"] = reason
+            open_cases.append(case)
     return pois, links, open_cases
 
 
@@ -133,10 +163,12 @@ def main() -> None:
 
     with_anchor = sum(1 for r in routes if r.get("peak"))
     ties = sum(1 for c in open_cases if c["status"] == "tie")
+    skipped = sum(1 for c in open_cases if c["status"] == "skipped")
     print(
         f"[match] routes: {len(routes)}, with anchor: {with_anchor} -> "
         f"matched: {len(links)} ({len(pois)} unique POIs), "
-        f"ties: {ties}, unmatched: {len(open_cases) - ties} "
+        f"ties: {ties}, skipped: {skipped}, "
+        f"unmatched: {len(open_cases) - ties - skipped} "
         f"(open cases -> {config.ANCHOR_OPEN})",
         file=sys.stderr,
     )

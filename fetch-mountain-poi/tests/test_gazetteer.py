@@ -31,6 +31,20 @@ def test_gazetteer_from_cached_response(data_dir):
 
     assert entries["node/1006"]["type"] == "settlement"
 
+    # Named paths and water features (#11 classes).
+    assert entries["way/2004"]["type"] == "water"          # Blaue Gumpe (lake)
+    assert entries["way/2006"]["type"] == "station"        # Kreuzeckbahn Bergstation
+
+    # Linear features are deduped to one entry per name: the two Stangensteig
+    # path segments collapse (lowest way id wins) …
+    stangensteig = [e for e in entries.values() if e["name"] == "Stangensteig"]
+    assert [e["osm"] for e in stangensteig] == ["way/2002"]
+    assert stangensteig[0]["type"] == "path"
+    # … and the Partnach river relation is preferred over its member way.
+    partnach = [e for e in entries.values() if e["name"] == "Partnach"]
+    assert [e["osm"] for e in partnach] == ["relation/3002"]
+    assert partnach[0]["type"] == "water"
+
     # The nameless peak (node/1005) is skipped.
     assert "node/1005" not in entries
-    assert len(entries) == 7
+    assert len(entries) == 11

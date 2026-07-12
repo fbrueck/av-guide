@@ -16,6 +16,18 @@
     {"type": "node", "id": 1005, "lat": 47.4, "lon": 11.0,
      "tags": {"natural": "peak", "ele": "2000"}},
     {"type": "node", "id": 1006, "lat": 47.49, "lon": 11.1,
-     "tags": {"name": "Hammersbach", "place": "hamlet"}}
+     "tags": {"name": "Hammersbach", "place": "hamlet"}},
+    {"type": "way", "id": 2002, "center": {"lat": 47.451, "lon": 11.042},
+     "tags": {"name": "Stangensteig", "highway": "path"}},
+    {"type": "way", "id": 2003, "center": {"lat": 47.455, "lon": 11.048},
+     "tags": {"name": "Stangensteig", "highway": "path"}},
+    {"type": "way", "id": 2004, "center": {"lat": 47.443, "lon": 11.09},
+     "tags": {"name": "Blaue Gumpe", "natural": "water"}},
+    {"type": "way", "id": 2005, "center": {"lat": 47.46, "lon": 11.11},
+     "tags": {"name": "Partnach", "waterway": "river"}},
+    {"type": "relation", "id": 3002, "center": {"lat": 47.47, "lon": 11.12},
+     "tags": {"name": "Partnach", "waterway": "river"}},
+    {"type": "way", "id": 2006, "center": {"lat": 47.4523, "lon": 11.067},
+     "tags": {"name": "Kreuzeckbahn Bergstation", "aerialway": "station", "ele": "1638"}}
   ]
 }

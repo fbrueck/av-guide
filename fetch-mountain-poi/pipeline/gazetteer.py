@@ -70,6 +70,30 @@ def parse_ele(tags: dict) -> float | None:
     return float(m.group().replace(",", ".")) if m else None
 
 
+# For deduped linear types, prefer the element that represents the whole
+# feature: a relation over its member ways, a way over a node; then lowest id
+# so the pick is deterministic.
+_OSM_RANK = {"relation": 0, "way": 1, "node": 2}
+
+
+def dedupe_linear(entries: list[dict]) -> list[dict]:
+    """Collapse same-named entries of DEDUPED_TYPES (paths/streams arrive as
+    many segments) to one representative each; other types pass through."""
+    best: dict[tuple[str, str], dict] = {}
+    for entry in entries:
+        if entry["type"] not in config.DEDUPED_TYPES:
+            continue
+        key = (entry["type"], entry["name"])
+        kind, osm_id = entry["osm"].split("/")
+        rank = (_OSM_RANK[kind], int(osm_id))
+        if key not in best or rank < best[key][0]:
+            best[key] = (rank, entry)
+    kept = {id(entry) for _, entry in best.values()}
+    return [
+        e for e in entries if e["type"] not in config.DEDUPED_TYPES or id(e) in kept
+    ]
+
+
 def parse(raw: dict) -> list[dict]:
     entries = []
     for el in raw.get("elements", []):
@@ -90,7 +114,7 @@ def parse(raw: dict) -> list[dict]:
                 "osm": f"{el['type']}/{el['id']}",
             }
         )
-    return entries
+    return dedupe_linear(entries)
 
 
 def main() -> None:

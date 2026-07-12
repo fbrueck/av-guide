@@ -55,7 +55,33 @@ TAG_MAP: dict[str, list[tuple[str, str]]] = {
     "valley": [("natural", "valley")],
     "ridge": [("natural", "ridge"), ("natural", "arete")],
     "station": [("aerialway", "station")],
-    "settlement": [("place", "village"), ("place", "hamlet")],
+    # town/suburb: Garmisch-Partenkirchen is place=town, Garmisch a suburb of
+    # it — both were unmatched in the extraction demo (#11).
+    "settlement": [
+        ("place", "town"),
+        ("place", "village"),
+        ("place", "hamlet"),
+        ("place", "suburb"),
+    ],
     "bridge": [("man_made", "bridge"), ("natural", "gorge")],
+    # Named paths/Steige (Stangensteig, Klammweg, …) and water features
+    # (Blaue Gumpe, Partnach, …) — coverage gaps found during extraction (#11).
+    "path": [("highway", "path"), ("highway", "track"), ("highway", "via_ferrata")],
+    "water": [("natural", "water"), ("waterway", "river"), ("waterway", "stream")],
     "locality": [("place", "locality")],
 }
+
+# Linear features arrive from Overpass split into many same-named segments
+# (a path or stream is dozens of ways). For these types the gazetteer keeps
+# one representative entry per name — unlike e.g. peaks, where two elements
+# with the same name are genuinely distinct places.
+DEDUPED_TYPES = {"path", "water"}
+
+# Mention classes deliberately outside the gazetteer's scope. A mention whose
+# (elevation-stripped) name matches one of these patterns is recorded as
+# status "skipped" with the given reason instead of polluting the unmatched
+# funnel: mountain ranges/regions (Wettersteingebirge) have no useful point
+# representation, so we never fetch them from Overpass (#11).
+OUT_OF_SCOPE: list[tuple[str, str]] = [
+    (r"gebirge$", "mountain range/region — deliberately not in the gazetteer (no point representation)"),
+]
