@@ -74,6 +74,15 @@ export function App() {
 		mapRef.current?.setTerrain(terrainEnabled);
 	}, [terrainEnabled]);
 
+	// Highlight the selected Route's POI set on the map and fit to it (#24).
+	// Passing null (deselect) clears the prior highlight; selecting another Route
+	// replaces it and re-fits. The base all-POIs layer stays visible underneath —
+	// this is an emphasis layer, not a redraw. highlightRoute buffers until the
+	// style is ready, so ordering against map creation does not matter.
+	useEffect(() => {
+		mapRef.current?.highlightRoute(selectedRoute);
+	}, [selectedRoute]);
+
 	const handleSelectRoute = useCallback((route: Route) => {
 		setSelectedRoute(route);
 	}, []);

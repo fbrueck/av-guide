@@ -18,6 +18,17 @@ interface MetaRow {
 // (CSS white-space: pre-wrap over the raw string, which contains "\n"). This
 // ticket is route reading only; map highlighting of the POI set is #24.
 export function RouteDetail({ route, onClose }: RouteDetailProps) {
+	// Honest note on the highlighted POI set: the Anchor (target summit) and how
+	// many Mentions (places the prose passes through) resolved to POIs — or that
+	// none did (route-map/CLAUDE.md rule 3; CONTEXT.md Anker/Mention).
+	const anchorNote = route.anchor
+		? `Anker: ${route.anchor.name}`
+		: "Kein Anker verknüpft";
+	const mentionNote =
+		route.mentions.length > 0
+			? `Mentions: ${route.mentions.length}`
+			: "Keine Mentions verknüpft";
+
 	const rows: MetaRow[] = [
 		{ label: "Gipfel", value: route.peak },
 		{ label: "Schwierigkeit", value: route.grade },
@@ -47,6 +58,26 @@ export function RouteDetail({ route, onClose }: RouteDetailProps) {
 					</div>
 				))}
 			</dl>
+			<div className="route-detail__pois">
+				<span
+					className={
+						route.anchor
+							? "route-detail__poi"
+							: "route-detail__poi route-detail__poi--unlinked"
+					}
+				>
+					{anchorNote}
+				</span>
+				<span
+					className={
+						route.mentions.length > 0
+							? "route-detail__poi"
+							: "route-detail__poi route-detail__poi--unlinked"
+					}
+				>
+					{mentionNote}
+				</span>
+			</div>
 			{route.summary ? (
 				<p className="route-detail__summary">{route.summary}</p>
 			) : null}

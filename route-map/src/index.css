@@ -183,6 +183,23 @@ body,
 	font-weight: 600;
 }
 
+/* Honest note on the highlighted POI set (#24): Anchor + Mention counts, with
+ * the extraction gap ("Kein Anker …", "Keine Mentions …") de-emphasised so it
+ * reads as intentional rather than an error. */
+.route-detail__pois {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.4rem 0.9rem;
+	margin: 0 0 1rem;
+	font-size: 0.8rem;
+	color: #444;
+}
+
+.route-detail__poi--unlinked {
+	font-style: italic;
+	color: #999;
+}
+
 .route-detail__summary {
 	margin: 0 0 1rem;
 	font-style: italic;
