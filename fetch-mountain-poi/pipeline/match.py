@@ -21,19 +21,36 @@ Decisions are validated against the case's own recorded candidates — any
 other value is a typo and aborts the run — then re-applied on every rerun,
 so review work survives matcher reruns and gazetteer/mention refreshes; an
 accepted ref that has vanished from the gazetteer reopens the case with a
-note instead. No surviving candidate at either level lands in
-unmatched.jsonl. Both files supersede the old anchor_open.jsonl.
+note instead.
+
+No surviving candidate at either level lands in unmatched.jsonl — and, when
+the mention still has shortlist candidates (unguarded fuzzy >=
+ADJUDICATION_CUTOFF, top ADJUDICATION_SHORTLIST), it is additionally queued
+in adjudication_queue.jsonl for the LLM adjudicator (#6): `plan adjudicate`
+batches the queue to match-adjudicator subagents, which write one verdict
+file per case to 03_matched/verdicts/<case_id>.json — a pick (one of the
+case's candidate refs) or an explicit no-match, always with a reason. On
+rerun the matcher consumes verdicts: picks enter the registry with
+`{"method": "llm", "score": ..., "reason": ...}` provenance (ranked below
+the deterministic cascade), no-matches stay in unmatched.jsonl with the
+reason preserved as `llm_reason`. Every verdict is also written to
+review.jsonl with `source: "llm"` so it can be audited and overridden
+through the same decision loop — a hand-written `decision` (candidate ref
+or "skip") always wins over the LLM verdict. Verdict files are the
+resumability unit: a case with a verdict is never re-adjudicated.
 
   python -m pipeline.match
 
 Outputs: pois.jsonl (deduplicated registry with aliases and best-method
-provenance, exact > fuzzy), route_pois.jsonl (one link per route/POI pair
-with anchor flag), pois.geojson (webapp export), and matcher bookkeeping in
-03_matched/: review.jsonl, unmatched.jsonl, funnel.json (rendered by
+provenance, review > exact > fuzzy > llm), route_pois.jsonl (one link per
+route/POI pair with anchor flag), pois.geojson (webapp export), and matcher
+bookkeeping in 03_matched/: review.jsonl, unmatched.jsonl,
+adjudication_queue.jsonl, funnel.json (rendered by
 `python -m pipeline.plan funnel`).
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import sys
@@ -65,9 +82,10 @@ _STATION_SUFFIX = re.compile(r"^(.+?)\s+(berg|tal|mittel)station$")
 # incompatible — a `peak` mention never matches a `settlement`.
 _NEAR_GROUPS = ({"peak", "pass", "ridge"}, {"hut", "settlement"})
 
-# A human review decision always wins best-method selection.
-_METHOD_RANK = {"review": 3, "exact": 2, "fuzzy": 1}
-_FUNNEL_COLS = ("mentions", "exact", "fuzzy", "review", "tie", "skipped", "unmatched")
+# A human review decision always wins best-method selection; an LLM verdict
+# ranks below the deterministic cascade.
+_METHOD_RANK = {"review": 4, "exact": 3, "fuzzy": 2, "llm": 1}
+_FUNNEL_COLS = ("mentions", "exact", "fuzzy", "llm", "review", "tie", "skipped", "unmatched")
 
 
 def strip_elevation(surface: str) -> str:
@@ -191,12 +209,81 @@ def resolve(mention: dict, index: dict[str, list[dict]], keys: list[str]) -> tup
     return ("fuzzy" if len(top) == 1 else "tie"), top
 
 
-def register(pois: dict, mention: dict, entry: dict, method: str, score: float) -> str:
+def shortlist(mention: dict, index: dict[str, list[dict]], keys: list[str]) -> list[tuple[dict, float]]:
+    """Candidate shortlist for the LLM adjudicator: the top
+    ADJUDICATION_SHORTLIST gazetteer entries by fuzzy ratio >=
+    ADJUDICATION_CUTOFF, deliberately unguarded — the adjudicator sees each
+    candidate's type and elevation and judges drift the cascade's guards
+    can't (renamed huts, book-elevation typos, 1996 spellings)."""
+    key = norm_key(mention["name"])
+    hits = process.extract(
+        key, keys, scorer=fuzz.ratio, score_cutoff=config.ADJUDICATION_CUTOFF, limit=None
+    )
+    ranked = sorted(
+        ((e, round(score, 1)) for hit_key, score, _ in hits for e in index[hit_key]),
+        key=lambda es: (-es[1], es[0]["osm"]),
+    )
+    return ranked[: config.ADJUDICATION_SHORTLIST]
+
+
+def case_id(rid: str, mention: dict) -> str:
+    """Filesystem-safe identity of an adjudication case — same fields as
+    _case_key, so it is stable across reruns and refreshes and a verdict
+    file survives them. The hash suffix disambiguates names that collide
+    after slugging (e.g. 'Knorr Hütte' vs 'Knorr-Hütte')."""
+    kind = "anchor" if mention["is_anchor"] else mention["type"]
+    slug = re.sub(
+        r"[^a-z0-9]+", "-", mention["name"].casefold().translate(_TRANSLIT)
+    ).strip("-")
+    raw = f"{rid}\x1f{mention['name']}\x1f{mention['type']}\x1f{mention['is_anchor']}"
+    return f"{rid}__{slug}__{kind}__{hashlib.sha1(raw.encode()).hexdigest()[:8]}"
+
+
+def load_verdicts() -> dict[str, dict]:
+    """Adjudicator verdicts, one file per case in VERDICTS_DIR (the
+    resumability unit: a case with a verdict file is never re-adjudicated).
+    Each verdict must carry a `pick` (a candidate OSM ref, or null for
+    no-match) and a non-empty `reason` — anything else is a malformed
+    subagent write and aborts the run."""
+    verdicts: dict[str, dict] = {}
+    if not config.VERDICTS_DIR.exists():
+        return verdicts
+    for path in sorted(config.VERDICTS_DIR.glob("*.json")):
+        try:
+            verdict = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as err:
+            sys.exit(f"{path}: not valid JSON ({err}) — delete the file and re-adjudicate.")
+        if verdict.get("case_id", path.stem) != path.stem:
+            sys.exit(
+                f"{path}: verdict case_id {verdict['case_id']!r} does not match the "
+                f"file name {path.stem!r} — the subagent wrote to the wrong file; "
+                "fix the name and rerun."
+            )
+        pick, reason = verdict.get("pick"), verdict.get("reason")
+        if "pick" not in verdict or not (pick is None or isinstance(pick, str)) or not (
+            isinstance(reason, str) and reason.strip()
+        ):
+            sys.exit(
+                f"{path}: a verdict needs a `pick` (candidate OSM ref or null) and a "
+                "non-empty `reason` — delete the file and re-adjudicate."
+            )
+        verdicts[path.stem] = {"pick": pick, "reason": reason}
+    return verdicts
+
+
+def register(pois: dict, mention: dict, entry: dict, method: str, score: float,
+             reason: str | None = None) -> str:
     """Upsert the POI: aliases collect differing surface forms, provenance
-    keeps the best method (exact > fuzzy, then highest score)."""
+    keeps the best method (review > exact > fuzzy > llm, then highest
+    score). LLM provenance carries the adjudicator's reason."""
     pid = poi_id(entry["osm"])
     poi = pois.setdefault(pid, {"poi_id": pid, **entry, "aliases": [], "match": None})
-    prov = {"method": method, "score": score} if method == "fuzzy" else {"method": method}
+    prov = {"method": method}
+    if method == "fuzzy":
+        prov["score"] = score
+    elif method == "llm":
+        prov["score"] = score
+        prov["reason"] = reason
     cur = poi["match"]
     if cur is None or (_METHOD_RANK[method], score) > (_METHOD_RANK[cur["method"]], cur.get("score", 100.0)):
         poi["match"] = prov
@@ -220,17 +307,41 @@ def _case_key(rid: str, mention: dict) -> tuple:
     return (rid, mention["name"], mention["type"], mention["is_anchor"])
 
 
+def _unmatched_record(rid: str, mention: dict, **extra) -> dict:
+    return {
+        "route_id": rid,
+        "mention": mention["surface"],
+        "name": mention["name"],
+        "type": mention["type"],
+        "is_anchor": mention["is_anchor"],
+        "elevation_m": mention["elevation_m"],
+        **extra,
+    }
+
+
+def _candidate_rows(survivors: list[tuple[dict, float]]) -> list[dict]:
+    return [
+        {"osm": e["osm"], "name": e["name"], "type": e["type"],
+         "ele": e["ele"], "lat": e["lat"], "lon": e["lon"], "score": score}
+        for e, score in survivors
+    ]
+
+
 def match_mentions(
     routes: list[dict],
     gazetteer: list[dict],
     decisions: dict[tuple, str] | None = None,
     notes: dict[tuple, str] | None = None,
+    verdicts: dict[str, dict] | None = None,
 ):
     """Returns (pois by id, route<->poi links, review cases, unmatched,
-    funnel by type, routes with a mention part file). `decisions`/`notes`
-    come from load_decisions() and are applied to tie cases."""
+    adjudication queue, funnel by type, routes with a mention part file).
+    `decisions`/`notes` come from load_decisions() and are applied to tie
+    and adjudication cases alike; `verdicts` come from load_verdicts() and
+    resolve adjudication cases that no decision overrides."""
     decisions = decisions or {}
     notes = notes or {}
+    verdicts = verdicts or {}
     index: dict[str, list[dict]] = {}
     for entry in gazetteer:
         index.setdefault(norm_key(entry["name"]), []).append(entry)
@@ -240,6 +351,7 @@ def match_mentions(
     links: dict[tuple[str, str], dict] = {}
     review: list[dict] = []
     unmatched: list[dict] = []
+    queue: list[dict] = []
     funnel: dict[str, dict[str, int]] = {}
     with_parts = 0
 
@@ -269,11 +381,7 @@ def match_mentions(
                     "type": mention["type"],
                     "route_id": rid,
                     "is_anchor": mention["is_anchor"],
-                    "candidates": [
-                        {"osm": e["osm"], "name": e["name"], "type": e["type"],
-                         "ele": e["ele"], "lat": e["lat"], "lon": e["lon"], "score": score}
-                        for e, score in survivors
-                    ],
+                    "candidates": _candidate_rows(survivors),
                     "decision": decision,
                     "source": "tie",
                 }
@@ -281,13 +389,7 @@ def match_mentions(
                     # Human sent the mention to unmatched; the case stays in
                     # review.jsonl as the persistent record of that decision.
                     bucket["skipped"] += 1
-                    unmatched.append(
-                        {"route_id": rid, "mention": mention["surface"],
-                         "name": mention["name"], "type": mention["type"],
-                         "is_anchor": mention["is_anchor"],
-                         "elevation_m": mention["elevation_m"],
-                         "skipped_by": "review"}
-                    )
+                    unmatched.append(_unmatched_record(rid, mention, skipped_by="review"))
                 elif decision in by_ref:
                     # Human accepted a candidate: it enters the registry with
                     # review provenance (ranked above exact).
@@ -313,26 +415,104 @@ def match_mentions(
                 # Classes deliberately outside the gazetteer (#11,
                 # config.OUT_OF_SCOPE) count as skipped, not unmatched.
                 skip_reason = out_of_scope_reason(mention["name"])
-                bucket["skipped" if skip_reason else "unmatched"] += 1
+                if skip_reason:
+                    bucket["skipped"] += 1
+                    unmatched.append(_unmatched_record(rid, mention, skip_reason=skip_reason))
+                    continue
+                candidates = shortlist(mention, index, keys)
+                if not candidates:
+                    # Nothing worth judging: plain unmatched, never adjudicated.
+                    bucket["unmatched"] += 1
+                    unmatched.append(_unmatched_record(rid, mention))
+                    continue
+                # Cascade leftover with shortlist candidates: an adjudication
+                # case (#6). A human decision (candidate ref or "skip") always
+                # wins; otherwise the LLM verdict applies; without either the
+                # case is queued for `plan adjudicate`.
+                cid = case_id(rid, mention)
+                key = _case_key(rid, mention)
+                decision = decisions.get(key)
+                verdict = verdicts.get(cid)
+                note = notes.get(key)
+                by_ref = {e["osm"]: (e, score) for e, score in candidates}
+                if decision is not None and decision != "skip" and decision not in by_ref:
+                    # Validated against the case's recorded candidates at load
+                    # time, so this is not a typo: the accepted ref vanished
+                    # from a refetched gazetteer/shortlist. The override is
+                    # cleared — audibly — and the LLM verdict applies again.
+                    note = (
+                        f"accepted candidate {decision} is no longer a candidate "
+                        "— override cleared"
+                    )
+                    decision = None
                 case = {
-                    "route_id": rid,
                     "mention": mention["surface"],
                     "name": mention["name"],
                     "type": mention["type"],
+                    "route_id": rid,
                     "is_anchor": mention["is_anchor"],
-                    "elevation_m": mention["elevation_m"],
+                    "case_id": cid,
+                    "candidates": _candidate_rows(candidates),
+                    "verdict": verdict,
+                    "decision": decision,
+                    "source": "llm",
                 }
-                if skip_reason:
-                    case["skip_reason"] = skip_reason
-                unmatched.append(case)
-    return pois, list(links.values()), review, unmatched, funnel, with_parts
+                if note:
+                    case["note"] = note
+                if decision is None and verdict is None:
+                    # Not yet adjudicated: stays unmatched and is queued. The
+                    # case enters review.jsonl once a verdict exists (or, edge
+                    # case, to keep a note visible while re-adjudication runs).
+                    bucket["unmatched"] += 1
+                    unmatched.append(_unmatched_record(rid, mention))
+                    queue.append(
+                        {"case_id": cid, "route_id": rid,
+                         "mention": mention["surface"], "name": mention["name"],
+                         "type": mention["type"], "is_anchor": mention["is_anchor"],
+                         "elevation_m": mention["elevation_m"],
+                         "candidates": case["candidates"]}
+                    )
+                    if note:
+                        review.append(case)
+                    continue
+                if decision == "skip":
+                    bucket["skipped"] += 1
+                    unmatched.append(_unmatched_record(rid, mention, skipped_by="review"))
+                elif decision in by_ref:
+                    bucket["review"] += 1
+                    entry, score = by_ref[decision]
+                    pid = register(pois, mention, entry, "review", score)
+                    _add_link(links, rid, pid, mention)
+                elif verdict["pick"] is None:
+                    # LLM declared no-match: unmatched, reason preserved.
+                    bucket["unmatched"] += 1
+                    unmatched.append(_unmatched_record(rid, mention, llm_reason=verdict["reason"]))
+                elif verdict["pick"] in by_ref:
+                    bucket["llm"] += 1
+                    entry, score = by_ref[verdict["pick"]]
+                    pid = register(pois, mention, entry, "llm", score, reason=verdict["reason"])
+                    _add_link(links, rid, pid, mention)
+                else:
+                    # The pick is not one of the case's current candidates —
+                    # hallucinated, or vanished with a gazetteer refresh.
+                    bucket["unmatched"] += 1
+                    case["note"] = (
+                        f"verdict pick {verdict['pick']} is not among the current "
+                        f"candidates — verdict ignored; delete "
+                        f"{config.VERDICTS_DIR / (cid + '.json')} to re-adjudicate"
+                    )
+                    unmatched.append(_unmatched_record(rid, mention))
+                review.append(case)
+    return pois, list(links.values()), review, unmatched, queue, funnel, with_parts
 
 
 def load_decisions() -> tuple[dict[tuple, str], dict[tuple, str]]:
     """Review work must survive matcher reruns: decisions (and notes on still-
     open cases) in the existing review.jsonl are loaded so match_mentions can
-    re-apply them. A non-null decision must be "skip" or one of the case's own
-    recorded candidate refs — anything else is a typo and aborts the run."""
+    re-apply them — to tie cases and LLM adjudication cases alike, which is
+    how a hand-written override outlives the LLM verdict. A non-null decision
+    must be "skip" or one of the case's own recorded candidate refs — anything
+    else is a typo and aborts the run."""
     decisions: dict[tuple, str] = {}
     notes: dict[tuple, str] = {}
     if not config.REVIEW.exists():
@@ -392,8 +572,9 @@ def main() -> None:
     routes = load_jsonl(config.ROUTES_JSONL)
     gazetteer = load_jsonl(config.GAZETTEER)
     decisions, notes = load_decisions()
-    pois, links, review, unmatched, funnel, with_parts = match_mentions(
-        routes, gazetteer, decisions, notes
+    verdicts = load_verdicts()
+    pois, links, review, unmatched, queue, funnel, with_parts = match_mentions(
+        routes, gazetteer, decisions, notes, verdicts
     )
     report = funnel_report(funnel, len(routes), with_parts)
 
@@ -403,6 +584,7 @@ def main() -> None:
     (config.MATCH_DIR / "anchor_open.jsonl").unlink(missing_ok=True)
     write_jsonl(config.REVIEW, review)
     write_jsonl(config.UNMATCHED, unmatched)
+    write_jsonl(config.ADJUDICATION_QUEUE, queue)
     config.FUNNEL.write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8")
     write_jsonl(config.POIS_JSONL, list(pois.values()))
     write_jsonl(config.ROUTE_POIS_JSONL, links)
@@ -414,10 +596,12 @@ def main() -> None:
     print(
         f"[match] routes: {len(routes)} ({with_parts} with extracted mentions) -> "
         f"mentions: {totals['mentions']}, exact: {totals['exact']}, "
-        f"fuzzy: {totals['fuzzy']}, review: {totals['review']}, "
+        f"fuzzy: {totals['fuzzy']}, llm: {totals['llm']}, "
+        f"review: {totals['review']}, "
         f"ties: {totals['tie']} open (-> {config.REVIEW}), "
         f"skipped: {totals['skipped']}, "
-        f"unmatched: {totals['unmatched']} (-> {config.UNMATCHED}); "
+        f"unmatched: {totals['unmatched']} (-> {config.UNMATCHED}, "
+        f"{len(queue)} queued for adjudication); "
         f"{len(pois)} unique POIs, {len(links)} links",
         file=sys.stderr,
     )

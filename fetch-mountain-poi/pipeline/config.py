@@ -31,9 +31,14 @@ POIS_JSONL = FINAL_DIR / "pois.jsonl"
 ROUTE_POIS_JSONL = FINAL_DIR / "route_pois.jsonl"
 POIS_GEOJSON = FINAL_DIR / "pois.geojson"
 
-REVIEW = MATCH_DIR / "review.jsonl"        # open tie cases awaiting a decision
+REVIEW = MATCH_DIR / "review.jsonl"        # open tie cases + recorded decisions/verdicts
 UNMATCHED = MATCH_DIR / "unmatched.jsonl"  # mentions with no surviving candidate
 FUNNEL = MATCH_DIR / "funnel.json"         # per-type cascade counts for `plan funnel`
+
+# LLM adjudication of cascade leftovers (#6): unmatched mentions that still
+# have shortlist candidates are queued for the match-adjudicator subagent.
+ADJUDICATION_QUEUE = MATCH_DIR / "adjudication_queue.jsonl"  # open cases for `plan adjudicate`
+VERDICTS_DIR = MATCH_DIR / "verdicts"  # one verdict file per case — the resumability unit
 
 OVERPASS_URL = os.environ.get("AV_POI_OVERPASS_URL", "https://overpass-api.de/api/interpreter")
 
@@ -100,6 +105,14 @@ SETTLEMENT_EXCLUSION_KM = 1.0
 # one representative entry per name — unlike e.g. peaks, where two elements
 # with the same name are genuinely distinct places.
 DEDUPED_TYPES = {"path", "water"}
+
+# Shortlist for the LLM adjudicator (#6): the top candidates by RapidFuzz
+# ratio on the normalized names, without the cascade's type/elevation guards
+# (the adjudicator sees each candidate's type and elevation and judges drift
+# the deterministic guards can't). Mentions whose best candidate scores below
+# the floor have nothing worth judging and stay plain unmatched.
+ADJUDICATION_SHORTLIST = 10   # max candidates per case
+ADJUDICATION_CUTOFF = 60.0    # minimum RapidFuzz ratio to enter the shortlist
 
 # Mention classes deliberately outside the gazetteer's scope. A mention whose
 # (elevation-stripped) name matches one of these patterns is recorded as
