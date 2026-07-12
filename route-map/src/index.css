@@ -5,10 +5,201 @@ body,
 	margin: 0;
 }
 
-/* The map owns the full viewport; UI (sidebar, panels) lands in later tickets. */
+/* Two-column shell: the map pane is the main surface, the Route panel docks on
+ * the right. A real flex layout (not an overlay) keeps the map's own controls —
+ * navigation, scale, attribution — inside the map pane and always visible. */
+.app {
+	display: flex;
+	height: 100%;
+}
+
+.map-pane {
+	position: relative;
+	flex: 1;
+	min-width: 0;
+}
+
 .map-root {
 	position: absolute;
 	inset: 0;
+}
+
+/* The Route panel: the sidebar fills it; the detail panel overlays it (inset 0,
+ * opaque) when a Route is selected, so the map controls are never covered. */
+.route-panel {
+	position: relative;
+	flex: none;
+	width: 340px;
+	border-left: 1px solid #ccc;
+	background: #fff;
+}
+
+/* Route sidebar (#22): search box + scrollable list of all Routes. */
+.route-sidebar {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	flex-direction: column;
+	font:
+		13px / 1.4 system-ui,
+		sans-serif;
+}
+
+.route-sidebar__search {
+	flex: none;
+	padding: 0.75rem;
+	border-bottom: 1px solid #ddd;
+}
+
+.route-sidebar__input {
+	box-sizing: border-box;
+	width: 100%;
+	padding: 0.4rem 0.55rem;
+	font-size: 0.9rem;
+	border: 1px solid #bbb;
+	border-radius: 5px;
+}
+
+.route-sidebar__count {
+	margin: 0.5rem 0 0;
+	font-size: 0.75rem;
+	color: #666;
+}
+
+.route-sidebar__list {
+	flex: 1;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	overflow-y: auto;
+}
+
+.route-row {
+	display: flex;
+	flex-direction: column;
+	gap: 0.15rem;
+	width: 100%;
+	padding: 0.5rem 0.75rem;
+	border: none;
+	border-bottom: 1px solid #eee;
+	background: none;
+	font: inherit;
+	text-align: left;
+	cursor: pointer;
+}
+
+.route-row:hover {
+	background: #f0f4f8;
+}
+
+.route-row--selected {
+	background: #dbeafe;
+}
+
+.route-row__name {
+	font-weight: 600;
+	color: #1a1a1a;
+}
+
+.route-row__meta {
+	display: flex;
+	justify-content: space-between;
+	gap: 0.5rem;
+	font-size: 0.8rem;
+	color: #555;
+}
+
+.route-row__grade {
+	flex: none;
+	color: #884422;
+}
+
+/* Route detail panel (#22): verbatim metadata + full German description. */
+.route-detail {
+	position: absolute;
+	inset: 0;
+	z-index: 2;
+	display: flex;
+	flex-direction: column;
+	overflow-y: auto;
+	padding: 0 1rem 1.5rem;
+	background: #fff;
+	font:
+		14px / 1.5 system-ui,
+		sans-serif;
+}
+
+.route-detail__header {
+	position: sticky;
+	top: 0;
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 0.5rem;
+	padding: 1rem 0 0.5rem;
+	border-bottom: 1px solid #ddd;
+	background: #fff;
+}
+
+.route-detail__title {
+	margin: 0;
+	font-size: 1.05rem;
+}
+
+.route-detail__close {
+	flex: none;
+	padding: 0 0.25rem;
+	border: none;
+	background: none;
+	font-size: 1.5rem;
+	line-height: 1;
+	color: #666;
+	cursor: pointer;
+}
+
+.route-detail__close:hover {
+	color: #000;
+}
+
+.route-detail__meta {
+	display: grid;
+	gap: 0.4rem;
+	margin: 1rem 0;
+}
+
+.route-detail__row {
+	display: flex;
+	gap: 0.75rem;
+}
+
+.route-detail__row dt {
+	flex: none;
+	width: 7.5rem;
+	color: #666;
+}
+
+.route-detail__row dd {
+	margin: 0;
+	font-weight: 600;
+}
+
+.route-detail__summary {
+	margin: 0 0 1rem;
+	font-style: italic;
+	color: #333;
+}
+
+.route-detail__subtitle {
+	margin: 0.5rem 0 0.3rem;
+	font-size: 0.8rem;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: #444;
+}
+
+.route-detail__description {
+	margin: 0;
+	white-space: pre-wrap;
 }
 
 /* POI identity popup (#21): name, type, elevation, OSM verify link. */
