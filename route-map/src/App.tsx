@@ -27,19 +27,34 @@ export function App() {
 	// The third state atom (route-map/CLAUDE.md rule 5): 2D vs 3D terrain.
 	const [terrainEnabled, setTerrainEnabled] = useState(false);
 
+	// The single selection entry point (route-map/CLAUDE.md): the sidebar, and the
+	// POI popup's Route cross-links (#25), both call this. Declared before the
+	// map-creation effect that passes it to createRouteMap. Stable useCallback so
+	// that effect does not re-create the map.
+	const handleSelectRoute = useCallback((route: Route) => {
+		setSelectedRoute(route);
+	}, []);
+	const handleClearSelection = useCallback(() => {
+		setSelectedRoute(null);
+	}, []);
+
 	// Create the map instance once and keep it in a ref for effects to drive.
+	// Pass handleSelectRoute at construction so a Route clicked in a POI popup
+	// (#25) selects it through the exact same entry point as a sidebar click —
+	// the map calls back, it never owns selection (route-map/CLAUDE.md rule 4).
+	// handleSelectRoute is a stable useCallback, available before data loads.
 	useEffect(() => {
 		const container = containerRef.current;
 		if (!container) {
 			return;
 		}
-		const map = createRouteMap(container);
+		const map = createRouteMap(container, { onSelectRoute: handleSelectRoute });
 		mapRef.current = map;
 		return () => {
 			mapRef.current = null;
 			map.destroy();
 		};
-	}, []);
+	}, [handleSelectRoute]);
 
 	// Load + join the guide's artifacts once through the src/data boundary, then
 	// hold the result in state so the sidebar, search, and detail panel all read
@@ -64,7 +79,7 @@ export function App() {
 	// style is ready, so ordering against map creation does not matter.
 	useEffect(() => {
 		if (guideData) {
-			mapRef.current?.showPois(guideData.pois);
+			mapRef.current?.showPois(guideData.pois, guideData.routesByPoiId);
 		}
 	}, [guideData]);
 
@@ -82,13 +97,6 @@ export function App() {
 	useEffect(() => {
 		mapRef.current?.highlightRoute(selectedRoute);
 	}, [selectedRoute]);
-
-	const handleSelectRoute = useCallback((route: Route) => {
-		setSelectedRoute(route);
-	}, []);
-	const handleClearSelection = useCallback(() => {
-		setSelectedRoute(null);
-	}, []);
 
 	return (
 		<div className="app">
