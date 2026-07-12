@@ -100,9 +100,8 @@ export default defineConfig({
 		fs: { allow: [REPO_ROOT] },
 	},
 	test: {
-		// route-map/CLAUDE.md: Vitest is node-env only, for pure src/data adapter
-		// tests. No adapter yet in this scaffold, so zero tests must pass green.
+		// route-map/CLAUDE.md: Vitest is node-env only, for the pure src/data
+		// adapter's load/join logic — the one sanctioned automated-test point.
 		environment: "node",
-		passWithNoTests: true,
 	},
 });

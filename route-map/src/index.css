@@ -10,3 +10,82 @@ body,
 	position: absolute;
 	inset: 0;
 }
+
+/* POI identity popup (#21): name, type, elevation, OSM verify link. */
+.poi-popup__name {
+	display: block;
+	font-size: 1rem;
+	margin-bottom: 0.35rem;
+}
+
+.poi-popup__meta {
+	margin: 0 0 0.5rem;
+	font-size: 0.85rem;
+}
+
+.poi-popup__meta div {
+	display: flex;
+	gap: 0.4rem;
+}
+
+.poi-popup__meta dt {
+	color: #666;
+	min-width: 3rem;
+}
+
+.poi-popup__meta dd {
+	margin: 0;
+	font-weight: 600;
+}
+
+.poi-popup__osm {
+	font-size: 0.85rem;
+}
+
+/* Legend of the POI type colours, so the map reads without clicking. */
+.poi-legend {
+	position: absolute;
+	top: 0.75rem;
+	left: 0.75rem;
+	z-index: 1;
+	background: rgba(255, 255, 255, 0.92);
+	border-radius: 6px;
+	padding: 0.5rem 0.75rem;
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+	font:
+		12px / 1.4 system-ui,
+		sans-serif;
+	max-height: calc(100% - 1.5rem);
+	overflow-y: auto;
+}
+
+.poi-legend__title {
+	margin: 0 0 0.4rem;
+	font-size: 0.8rem;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: #444;
+}
+
+.poi-legend__list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.poi-legend__item {
+	display: flex;
+	align-items: center;
+	gap: 0.45rem;
+	white-space: nowrap;
+}
+
+.poi-legend__swatch {
+	display: inline-block;
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+	border: 1.5px solid #fff;
+	box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2);
+	flex: none;
+}
