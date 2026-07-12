@@ -4,3 +4,4 @@
 export { PoiLegend } from "./PoiLegend";
 export { RouteDetail } from "./RouteDetail";
 export { RouteSidebar } from "./RouteSidebar";
+export { TerrainToggle } from "./TerrainToggle";

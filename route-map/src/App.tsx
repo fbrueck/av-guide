@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { PoiLegend, RouteDetail, RouteSidebar } from "./components";
+import {
+	PoiLegend,
+	RouteDetail,
+	RouteSidebar,
+	TerrainToggle,
+} from "./components";
 import { loadGuideData } from "./data";
 import type { GuideData, Route } from "./domain";
 import { createRouteMap, type RouteMap } from "./map";
@@ -19,6 +24,8 @@ export function App() {
 	const [guideData, setGuideData] = useState<GuideData | null>(null);
 	const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
 	const [searchText, setSearchText] = useState("");
+	// The third state atom (route-map/CLAUDE.md rule 5): 2D vs 3D terrain.
+	const [terrainEnabled, setTerrainEnabled] = useState(false);
 
 	// Create the map instance once and keep it in a ref for effects to drive.
 	useEffect(() => {
@@ -61,6 +68,12 @@ export function App() {
 		}
 	}, [guideData]);
 
+	// Drive the terrain flag into the imperative map API; setTerrain buffers
+	// until the style is ready, so ordering against map creation does not matter.
+	useEffect(() => {
+		mapRef.current?.setTerrain(terrainEnabled);
+	}, [terrainEnabled]);
+
 	const handleSelectRoute = useCallback((route: Route) => {
 		setSelectedRoute(route);
 	}, []);
@@ -73,6 +86,7 @@ export function App() {
 			<div className="map-pane">
 				<div ref={containerRef} className="map-root" />
 				<PoiLegend />
+				<TerrainToggle enabled={terrainEnabled} onToggle={setTerrainEnabled} />
 			</div>
 			<div className="route-panel">
 				<RouteSidebar
