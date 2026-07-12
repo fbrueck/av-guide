@@ -1,0 +1,21 @@
+{
+  "version": 0.6,
+  "elements": [
+    {"type": "node", "id": 1001, "lat": 47.4211, "lon": 10.9863,
+     "tags": {"name": "Zugspitze", "natural": "peak", "ele": "2962"}},
+    {"type": "way", "id": 2001, "center": {"lat": 47.418, "lon": 11.025},
+     "tags": {"name": "Knorrhütte", "tourism": "alpine_hut", "ele": "2051"}},
+    {"type": "node", "id": 1002, "lat": 47.44, "lon": 11.05,
+     "tags": {"name": "Höllentorkopf", "natural": "peak", "ele": "2150"}},
+    {"type": "node", "id": 1003, "lat": 47.4, "lon": 10.9,
+     "tags": {"name": "Wasserfall", "natural": "peak"}},
+    {"type": "node", "id": 1004, "lat": 47.45, "lon": 11.1,
+     "tags": {"name": "Wasserfall", "natural": "peak"}},
+    {"type": "relation", "id": 3001, "center": {"lat": 47.413, "lon": 10.98},
+     "tags": {"name": "Nördlicher Schneeferner", "natural": "glacier"}},
+    {"type": "node", "id": 1005, "lat": 47.4, "lon": 11.0,
+     "tags": {"natural": "peak", "ele": "2000"}},
+    {"type": "node", "id": 1006, "lat": 47.49, "lon": 11.1,
+     "tags": {"name": "Hammersbach", "place": "hamlet"}}
+  ]
+}
