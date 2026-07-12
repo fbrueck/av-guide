@@ -1,7 +1,9 @@
 """Stage 1: build the OSM gazetteer for the configured bbox.
 
 One Overpass query fetches every named element matching the taxonomy tag map
-inside BBOX. The raw response is cached to disk so reruns are offline and
+inside BBOX, plus the guarded lodging/restaurant tags (GUARDED_TAG_MAP, #14)
+that are only admitted outside settlement radius and where the name fills a
+gap. The raw response is cached to disk so reruns are offline and
 reproducible; pass --refresh to refetch.
 
   python -m pipeline.gazetteer [--refresh]
@@ -14,12 +16,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import re
 import sys
 import urllib.parse
 import urllib.request
 
 from . import config
+from .match import norm_key
 
 _ELE_RE = re.compile(r"-?\d+(?:[.,]\d+)?")
 
@@ -27,7 +31,7 @@ _ELE_RE = re.compile(r"-?\d+(?:[.,]\d+)?")
 def build_query() -> str:
     s, w, n, e = config.BBOX
     lines = []
-    for pairs in config.TAG_MAP.values():
+    for pairs in (*config.TAG_MAP.values(), *config.GUARDED_TAG_MAP.values()):
         for key, value in pairs:
             lines.append(f'  nwr["{key}"="{value}"]["name"]({s},{w},{n},{e});')
     body = "\n".join(dict.fromkeys(lines))  # dedupe repeated tag pairs across types
@@ -58,8 +62,8 @@ def fetch(refresh: bool) -> dict:
     return json.loads(raw)
 
 
-def classify(tags: dict) -> str | None:
-    for poi_type, pairs in config.TAG_MAP.items():
+def classify(tags: dict, tag_map: dict[str, list[tuple[str, str]]]) -> str | None:
+    for poi_type, pairs in tag_map.items():
         if any(tags.get(key) == value for key, value in pairs):
             return poi_type
     return None
@@ -94,26 +98,59 @@ def dedupe_linear(entries: list[dict]) -> list[dict]:
     ]
 
 
+def dist_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Equirectangular approximation — plenty accurate at bbox scale."""
+    dlat = (lat2 - lat1) * 111.32
+    dlon = (lon2 - lon1) * 111.32 * math.cos(math.radians((lat1 + lat2) / 2))
+    return math.hypot(dlat, dlon)
+
+
+def admit_guarded(candidates: list[dict], entries: list[dict]) -> list[dict]:
+    """Precision guard for GUARDED_TAG_MAP candidates (#14): admit only
+    elements at least SETTLEMENT_EXCLUSION_KM from every settlement entry and
+    whose normalized name fills a gap in the (unguarded) gazetteer — so town
+    restaurants and duplicates of already-covered features stay out."""
+    settlements = [e for e in entries if e["type"] == "settlement"]
+    covered = {norm_key(e["name"]) for e in entries}
+    return [
+        c
+        for c in candidates
+        if norm_key(c["name"]) not in covered
+        and all(
+            dist_km(c["lat"], c["lon"], s["lat"], s["lon"])
+            >= config.SETTLEMENT_EXCLUSION_KM
+            for s in settlements
+        )
+    ]
+
+
 def parse(raw: dict) -> list[dict]:
     entries = []
+    guarded = []
     for el in raw.get("elements", []):
         tags = el.get("tags", {})
         name = tags.get("name")
-        poi_type = classify(tags)
         center = el.get("center", el)
         lat, lon = center.get("lat"), center.get("lon")
-        if not name or poi_type is None or lat is None or lon is None:
+        if not name or lat is None or lon is None:
             continue
-        entries.append(
+        # TAG_MAP wins: a double-tagged element (alpine_hut + restaurant) is a
+        # plain hut; only elements covered solely by GUARDED_TAG_MAP are guarded.
+        poi_type = classify(tags, config.TAG_MAP)
+        guarded_type = None if poi_type else classify(tags, config.GUARDED_TAG_MAP)
+        if poi_type is None and guarded_type is None:
+            continue
+        (entries if poi_type else guarded).append(
             {
                 "name": name,
-                "type": poi_type,
+                "type": poi_type or guarded_type,
                 "lat": lat,
                 "lon": lon,
                 "ele": parse_ele(tags),
                 "osm": f"{el['type']}/{el['id']}",
             }
         )
+    entries.extend(admit_guarded(guarded, entries))
     return dedupe_linear(entries)
 
 

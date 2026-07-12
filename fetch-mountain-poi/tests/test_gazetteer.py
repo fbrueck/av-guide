@@ -45,6 +45,17 @@ def test_gazetteer_from_cached_response(data_dir):
     assert [e["osm"] for e in partnach] == ["relation/3002"]
     assert partnach[0]["type"] == "water"
 
+    # Guarded lodging/restaurant widening (#14): the valley inn far from any
+    # settlement is admitted as a hut …
+    bock = entries["way/2007"]
+    assert (bock["name"], bock["type"], bock["ele"]) == ("Bockhütte", "hut", 1052.0)
+    # … the restaurant ~0.2 km from the Hammersbach settlement node is not …
+    assert "node/1007" not in entries
+    # … and neither is the far-from-town restaurant whose normalized name is
+    # already covered ('Knorr-Hütte' vs the alpine_hut 'Knorrhütte') — guarded
+    # tags fill gaps, they never duplicate a covered feature into a tie.
+    assert "node/1008" not in entries
+
     # The nameless peak (node/1005) is skipped.
     assert "node/1005" not in entries
-    assert len(entries) == 11
+    assert len(entries) == 12
