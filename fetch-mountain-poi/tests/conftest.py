@@ -14,12 +14,17 @@ PKG = Path(__file__).resolve().parent.parent
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 
 
-def run_stage(module: str, data_dir: Path, routes: Path | None = None) -> subprocess.CompletedProcess:
+def run_stage(
+    module: str,
+    data_dir: Path,
+    routes: Path | None = None,
+    args: list[str] | None = None,
+) -> subprocess.CompletedProcess:
     env = os.environ | {"AV_POI_DATA": str(data_dir)}
     if routes is not None:
         env["AV_POI_ROUTES"] = str(routes)
     return subprocess.run(
-        [sys.executable, "-m", f"pipeline.{module}"],
+        [sys.executable, "-m", f"pipeline.{module}", *(args or [])],
         cwd=PKG,
         env=env,
         capture_output=True,
