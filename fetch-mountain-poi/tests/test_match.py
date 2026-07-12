@@ -31,14 +31,32 @@ def write_part(data_dir, route_id, *mentions):
     )
 
 
-def run_pipeline(data_dir):
+def run_pipeline(data_dir, extra=()):
     assert run_stage("gazetteer", data_dir).returncode == 0
     with (data_dir / "01_gazetteer" / "gazetteer.jsonl").open("a", encoding="utf-8") as f:
-        for entry in EXTRA_GAZETTEER:
+        for entry in (*EXTRA_GAZETTEER, *extra):
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
     result = run_stage("match", data_dir, routes=FIXTURES / "routes.jsonl")
     assert result.returncode == 0, result.stderr
     return result
+
+
+def rerun_match(data_dir):
+    """Rerun the matcher only — the gazetteer (and any hand-edited
+    review.jsonl) stays exactly as it is on disk."""
+    return run_stage("match", data_dir, routes=FIXTURES / "routes.jsonl")
+
+
+def decide(data_dir, decision, route_id="r5"):
+    """Hand-edit review.jsonl the way a reviewer does: fill in the decision
+    on one case, leave everything else untouched."""
+    path = data_dir / "03_matched" / "review.jsonl"
+    cases = load_jsonl(path)
+    next(c for c in cases if c["route_id"] == route_id)["decision"] = decision
+    path.write_text(
+        "".join(json.dumps(c, ensure_ascii=False) + "\n" for c in cases),
+        encoding="utf-8",
+    )
 
 
 def write_cascade_parts(data_dir):
@@ -199,37 +217,189 @@ def test_funnel(data_dir):
     assert funnel["routes"] == {"total": 9, "with_mentions": 3}
     # r8's station anchor matches exactly via canonicalization; r9's
     # 'Wettersteingebirge' is the documented out-of-scope skip.
-    assert funnel["types"]["anchor"] == {"mentions": 8, "exact": 5, "fuzzy": 0,
+    assert funnel["types"]["anchor"] == {"mentions": 8, "exact": 5, "fuzzy": 0, "review": 0,
                                          "tie": 1, "skipped": 1, "unmatched": 1}
-    assert funnel["types"]["peak"] == {"mentions": 6, "exact": 1, "fuzzy": 2,
+    assert funnel["types"]["peak"] == {"mentions": 6, "exact": 1, "fuzzy": 2, "review": 0,
                                        "tie": 1, "skipped": 0, "unmatched": 2}
-    assert funnel["totals"] == {"mentions": 16, "exact": 7, "fuzzy": 3,
+    assert funnel["totals"] == {"mentions": 16, "exact": 7, "fuzzy": 3, "review": 0,
                                 "tie": 2, "skipped": 1, "unmatched": 3}
 
     # The planner renders it as a per-type table with a totals row.
     result = run_stage("plan", data_dir, routes=FIXTURES / "routes.jsonl", args=["funnel"])
     assert result.returncode == 0, result.stderr
     lines = result.stdout.splitlines()
-    assert lines[0].split() == ["type", "mentions", "exact", "fuzzy", "tie", "skipped", "unmatched"]
+    assert lines[0].split() == ["type", "mentions", "exact", "fuzzy", "review",
+                                "tie", "skipped", "unmatched"]
     rows = {line.split()[0]: line.split()[1:] for line in lines[1:]}
-    assert rows["anchor"] == ["8", "5", "0", "1", "1", "1"]
-    assert rows["settlement"] == ["1", "1", "0", "0", "0", "0"]
-    assert rows["total"] == ["16", "7", "3", "2", "1", "3"]
+    assert rows["anchor"] == ["8", "5", "0", "0", "1", "1", "1"]
+    assert rows["settlement"] == ["1", "1", "0", "0", "0", "0", "0"]
+    assert rows["total"] == ["16", "7", "3", "0", "2", "1", "3"]
     assert "3/9 routes have extracted mentions" in result.stderr
 
 
+def test_accepted_decision_enters_registry_with_review_provenance(data_dir):
+    run_pipeline(data_dir)
+    # The r5 'Wasserfall' anchor tie: accept the node/1003 candidate.
+    decide(data_dir, "node/1003")
+    result = rerun_match(data_dir)
+    assert result.returncode == 0, result.stderr
+
+    # The accepted candidate is in the registry with review provenance ...
+    pois = {p["name"]: p for p in load_jsonl(data_dir / "04_final" / "pois.jsonl")}
+    assert pois["Wasserfall"]["osm"] == "node/1003"
+    assert pois["Wasserfall"]["match"] == {"method": "review"}
+
+    # ... linked to the deciding route with its anchor flag ...
+    links = load_jsonl(data_dir / "04_final" / "route_pois.jsonl")
+    link = next(l for l in links if l["poi_id"] == pois["Wasserfall"]["poi_id"])
+    assert link == {"route_id": "r5", "poi_id": pois["Wasserfall"]["poi_id"],
+                    "surface": "Wasserfall", "is_anchor": True}
+
+    # ... and exported to the GeoJSON.
+    geojson = json.loads((data_dir / "04_final" / "pois.geojson").read_text(encoding="utf-8"))
+    assert "Wasserfall" in {f["properties"]["name"] for f in geojson["features"]}
+
+    # Funnel: the case moved from tie to the review column.
+    funnel = json.loads((data_dir / "03_matched" / "funnel.json").read_text(encoding="utf-8"))
+    assert funnel["types"]["anchor"]["review"] == 1
+    assert funnel["types"]["anchor"]["tie"] == 0
+    assert "review: 1" in result.stderr
+    assert "ties: 0 open" in result.stderr
+
+    # The case stays in review.jsonl as the persistent decision record.
+    case = next(c for c in load_jsonl(data_dir / "03_matched" / "review.jsonl")
+                if c["route_id"] == "r5")
+    assert case["decision"] == "node/1003"
+
+
+def test_review_provenance_outranks_exact(data_dir):
+    # 'Doppelspitze' twice in the gazetteer: r1's mention states 2000 m, so
+    # the elevation guard resolves it exactly to node/9010; r3's mention
+    # states nothing and ties.
+    doppel = [
+        {"name": "Doppelspitze", "type": "peak", "lat": 47.45, "lon": 11.05,
+         "ele": 2000.0, "osm": "node/9010"},
+        {"name": "Doppelspitze", "type": "peak", "lat": 47.48, "lon": 11.11,
+         "ele": 2500.0, "osm": "node/9011"},
+    ]
+    write_part(data_dir, "r1", mention("Doppelspitze", elevation_m=2000))
+    write_part(data_dir, "r3", mention("Doppelspitze"))
+    run_pipeline(data_dir, extra=doppel)
+
+    pois = {p["name"]: p for p in load_jsonl(data_dir / "04_final" / "pois.jsonl")}
+    assert pois["Doppelspitze"]["match"] == {"method": "exact"}
+
+    # Accepting node/9010 for the r3 tie upgrades the provenance: a human
+    # decision outranks the exact match from r1.
+    decide(data_dir, "node/9010", route_id="r3")
+    assert rerun_match(data_dir).returncode == 0
+
+    pois = {p["name"]: p for p in load_jsonl(data_dir / "04_final" / "pois.jsonl")}
+    assert pois["Doppelspitze"]["osm"] == "node/9010"
+    assert pois["Doppelspitze"]["match"] == {"method": "review"}
+
+
+def test_skip_decision_routes_to_unmatched(data_dir):
+    run_pipeline(data_dir)
+    decide(data_dir, "skip")
+    result = rerun_match(data_dir)
+    assert result.returncode == 0, result.stderr
+
+    # The mention lands in unmatched.jsonl, marked as a human skip ...
+    unmatched = {c["route_id"]: c for c in load_jsonl(data_dir / "03_matched" / "unmatched.jsonl")}
+    assert unmatched["r5"] == {
+        "route_id": "r5", "mention": "Wasserfall", "name": "Wasserfall",
+        "type": None, "is_anchor": True, "elevation_m": None, "skipped_by": "review",
+    }
+
+    # ... never in the registry, and the funnel counts it as skipped.
+    assert "Wasserfall" not in {p["name"] for p in load_jsonl(data_dir / "04_final" / "pois.jsonl")}
+    # skipped = r9's out-of-scope skip + this review skip.
+    funnel = json.loads((data_dir / "03_matched" / "funnel.json").read_text(encoding="utf-8"))
+    assert funnel["types"]["anchor"]["skipped"] == 2
+    assert funnel["types"]["anchor"]["tie"] == 0
+
+    # The decision record persists in review.jsonl.
+    case = next(c for c in load_jsonl(data_dir / "03_matched" / "review.jsonl")
+                if c["route_id"] == "r5")
+    assert case["decision"] == "skip"
+
+
 def test_review_decisions_survive_reruns(data_dir):
-    result = run_pipeline(data_dir)
+    write_cascade_parts(data_dir)  # adds a second, mention-level tie (r3)
+    run_pipeline(data_dir)
 
     review_path = data_dir / "03_matched" / "review.jsonl"
-    case = load_jsonl(review_path)[0]
-    case["decision"] = "node/1003"
-    review_path.write_text(json.dumps(case, ensure_ascii=False) + "\n", encoding="utf-8")
+    open_before = next(c for c in load_jsonl(review_path) if c["route_id"] == "r3")
+    decide(data_dir, "node/1003", route_id="r5")
 
-    # Rerunning the matcher rewrites review.jsonl but keeps the decision.
-    result = run_stage("match", data_dir, routes=FIXTURES / "routes.jsonl")
+    # The decided case never reopens; the undecided one is re-emitted
+    # unchanged — on the first rerun and on every one after.
+    for _ in range(2):
+        result = rerun_match(data_dir)
+        assert result.returncode == 0, result.stderr
+        by_route = {c["route_id"]: c for c in load_jsonl(review_path)}
+        assert by_route["r5"]["decision"] == "node/1003"
+        assert by_route["r3"] == open_before
+        funnel = json.loads((data_dir / "03_matched" / "funnel.json").read_text(encoding="utf-8"))
+        assert funnel["totals"]["review"] == 1
+        assert funnel["totals"]["tie"] == 1
+
+
+def test_invalid_decision_ref_fails_loudly(data_dir):
+    run_pipeline(data_dir)
+    decide(data_dir, "node/99999")  # not one of the case's candidates: a typo
+
+    result = rerun_match(data_dir)
+    assert result.returncode != 0
+    for needle in ("node/99999", "Wasserfall", "r5", "node/1003", "node/1004"):
+        assert needle in result.stderr
+    # Nothing was silently accepted: the case is still open on disk.
+    # (The failed run must not have rewritten any artifact.)
+    case = next(c for c in load_jsonl(data_dir / "03_matched" / "review.jsonl")
+                if c["route_id"] == "r5")
+    assert case["decision"] == "node/99999"
+
+
+def test_vanished_accepted_candidate_reopens_case(data_dir):
+    # Three-way 'Wasserfall' tie; the reviewer accepts the extra candidate.
+    extra = [{"name": "Wasserfall", "type": "peak", "lat": 47.50, "lon": 11.20,
+              "ele": None, "osm": "node/9003"}]
+    run_pipeline(data_dir, extra=extra)
+    decide(data_dir, "node/9003")
+
+    # A gazetteer refetch drops node/9003; the decision points nowhere.
+    gaz_path = data_dir / "01_gazetteer" / "gazetteer.jsonl"
+    kept = [e for e in load_jsonl(gaz_path) if e["osm"] != "node/9003"]
+    gaz_path.write_text(
+        "".join(json.dumps(e, ensure_ascii=False) + "\n" for e in kept),
+        encoding="utf-8",
+    )
+
+    # No crash: the case is reopened with a note and counted as a tie again.
+    result = rerun_match(data_dir)
     assert result.returncode == 0, result.stderr
-    assert load_jsonl(review_path)[0]["decision"] == "node/1003"
+    case = next(c for c in load_jsonl(data_dir / "03_matched" / "review.jsonl")
+                if c["route_id"] == "r5")
+    assert case["decision"] is None
+    assert "node/9003" in case["note"]
+    assert {c["osm"] for c in case["candidates"]} == {"node/1003", "node/1004"}
+    funnel = json.loads((data_dir / "03_matched" / "funnel.json").read_text(encoding="utf-8"))
+    assert funnel["types"]["anchor"]["tie"] == 1
+    assert funnel["types"]["anchor"]["review"] == 0
+
+    # The note survives further reruns while the case stays undecided ...
+    assert rerun_match(data_dir).returncode == 0
+    case = next(c for c in load_jsonl(data_dir / "03_matched" / "review.jsonl")
+                if c["route_id"] == "r5")
+    assert "node/9003" in case["note"]
+
+    # ... and a fresh decision on a surviving candidate closes it again.
+    decide(data_dir, "node/1004")
+    assert rerun_match(data_dir).returncode == 0
+    pois = {p["name"]: p for p in load_jsonl(data_dir / "04_final" / "pois.jsonl")}
+    assert pois["Wasserfall"]["osm"] == "node/1004"
+    assert pois["Wasserfall"]["match"] == {"method": "review"}
 
 
 def test_geojson_export(data_dir):

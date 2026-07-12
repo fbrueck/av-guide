@@ -13,10 +13,16 @@ elevation, agree within ELE_TOLERANCE meters. Exactly one surviving candidate
 matches; provenance records the method (and score for fuzzy). More than one
 candidate at equal footing — same cascade level, same score — is never
 auto-resolved: the mention becomes an open case in review.jsonl with
-decision: null (non-null decisions already in the file are carried over on
-rerun, so review work survives matcher reruns). No surviving candidate at
-either level lands in unmatched.jsonl. Both files supersede the old
-anchor_open.jsonl.
+decision: null. A human closes a case by editing `decision` to either one of
+the case's candidate OSM refs (accept: the POI enters the registry with
+`{"method": "review"}` provenance, ranked above exact) or the string "skip"
+(the mention is routed to unmatched.jsonl with `skipped_by: "review"`).
+Decisions are validated against the case's own recorded candidates — any
+other value is a typo and aborts the run — then re-applied on every rerun,
+so review work survives matcher reruns and gazetteer/mention refreshes; an
+accepted ref that has vanished from the gazetteer reopens the case with a
+note instead. No surviving candidate at either level lands in
+unmatched.jsonl. Both files supersede the old anchor_open.jsonl.
 
   python -m pipeline.match
 
@@ -59,8 +65,9 @@ _STATION_SUFFIX = re.compile(r"^(.+?)\s+(berg|tal|mittel)station$")
 # incompatible — a `peak` mention never matches a `settlement`.
 _NEAR_GROUPS = ({"peak", "pass", "ridge"}, {"hut", "settlement"})
 
-_METHOD_RANK = {"exact": 2, "fuzzy": 1}
-_FUNNEL_COLS = ("mentions", "exact", "fuzzy", "tie", "skipped", "unmatched")
+# A human review decision always wins best-method selection.
+_METHOD_RANK = {"review": 3, "exact": 2, "fuzzy": 1}
+_FUNNEL_COLS = ("mentions", "exact", "fuzzy", "review", "tie", "skipped", "unmatched")
 
 
 def strip_elevation(surface: str) -> str:
@@ -189,7 +196,7 @@ def register(pois: dict, mention: dict, entry: dict, method: str, score: float) 
     keeps the best method (exact > fuzzy, then highest score)."""
     pid = poi_id(entry["osm"])
     poi = pois.setdefault(pid, {"poi_id": pid, **entry, "aliases": [], "match": None})
-    prov = {"method": method} if method == "exact" else {"method": method, "score": score}
+    prov = {"method": method, "score": score} if method == "fuzzy" else {"method": method}
     cur = poi["match"]
     if cur is None or (_METHOD_RANK[method], score) > (_METHOD_RANK[cur["method"]], cur.get("score", 100.0)):
         poi["match"] = prov
@@ -199,9 +206,31 @@ def register(pois: dict, mention: dict, entry: dict, method: str, score: float) 
     return pid
 
 
-def match_mentions(routes: list[dict], gazetteer: list[dict]):
+def _add_link(links: dict, rid: str, pid: str, mention: dict) -> None:
+    link = links.setdefault(
+        (rid, pid),
+        {"route_id": rid, "poi_id": pid, "surface": mention["surface"],
+         "is_anchor": mention["is_anchor"]},
+    )
+    link["is_anchor"] = link["is_anchor"] or mention["is_anchor"]
+
+
+def _case_key(rid: str, mention: dict) -> tuple:
+    """Identity of a review case, stable across reruns and refreshes."""
+    return (rid, mention["name"], mention["type"], mention["is_anchor"])
+
+
+def match_mentions(
+    routes: list[dict],
+    gazetteer: list[dict],
+    decisions: dict[tuple, str] | None = None,
+    notes: dict[tuple, str] | None = None,
+):
     """Returns (pois by id, route<->poi links, review cases, unmatched,
-    funnel by type, routes with a mention part file)."""
+    funnel by type, routes with a mention part file). `decisions`/`notes`
+    come from load_decisions() and are applied to tie cases."""
+    decisions = decisions or {}
+    notes = notes or {}
     index: dict[str, list[dict]] = {}
     for entry in gazetteer:
         index.setdefault(norm_key(entry["name"]), []).append(entry)
@@ -220,42 +249,71 @@ def match_mentions(routes: list[dict], gazetteer: list[dict]):
         with_parts += has_part
         for mention in mentions:
             method, survivors = resolve(mention, index, keys)
-            # Classes deliberately outside the gazetteer (#11, config.OUT_OF_SCOPE)
-            # count as skipped, not unmatched — but only when nothing matched.
-            skip_reason = out_of_scope_reason(mention["name"]) if method == "unmatched" else None
             bucket = funnel.setdefault(
                 "anchor" if mention["is_anchor"] else mention["type"],
                 dict.fromkeys(_FUNNEL_COLS, 0),
             )
             bucket["mentions"] += 1
-            bucket["skipped" if skip_reason else method] += 1
             if method in ("exact", "fuzzy"):
+                bucket[method] += 1
                 entry, score = survivors[0]
                 pid = register(pois, mention, entry, method, score)
-                link = links.setdefault(
-                    (rid, pid),
-                    {"route_id": rid, "poi_id": pid, "surface": mention["surface"],
-                     "is_anchor": mention["is_anchor"]},
-                )
-                link["is_anchor"] = link["is_anchor"] or mention["is_anchor"]
+                _add_link(links, rid, pid, mention)
             elif method == "tie":
-                review.append(
-                    {
-                        "mention": mention["surface"],
-                        "name": mention["name"],
-                        "type": mention["type"],
-                        "route_id": rid,
-                        "is_anchor": mention["is_anchor"],
-                        "candidates": [
-                            {"osm": e["osm"], "name": e["name"], "type": e["type"],
-                             "ele": e["ele"], "lat": e["lat"], "lon": e["lon"], "score": score}
-                            for e, score in survivors
-                        ],
-                        "decision": None,
-                        "source": "tie",
-                    }
-                )
+                key = _case_key(rid, mention)
+                decision = decisions.get(key)
+                by_ref = {e["osm"]: (e, score) for e, score in survivors}
+                case = {
+                    "mention": mention["surface"],
+                    "name": mention["name"],
+                    "type": mention["type"],
+                    "route_id": rid,
+                    "is_anchor": mention["is_anchor"],
+                    "candidates": [
+                        {"osm": e["osm"], "name": e["name"], "type": e["type"],
+                         "ele": e["ele"], "lat": e["lat"], "lon": e["lon"], "score": score}
+                        for e, score in survivors
+                    ],
+                    "decision": decision,
+                    "source": "tie",
+                }
+                if decision == "skip":
+                    # Human sent the mention to unmatched; the case stays in
+                    # review.jsonl as the persistent record of that decision.
+                    bucket["skipped"] += 1
+                    unmatched.append(
+                        {"route_id": rid, "mention": mention["surface"],
+                         "name": mention["name"], "type": mention["type"],
+                         "is_anchor": mention["is_anchor"],
+                         "elevation_m": mention["elevation_m"],
+                         "skipped_by": "review"}
+                    )
+                elif decision in by_ref:
+                    # Human accepted a candidate: it enters the registry with
+                    # review provenance (ranked above exact).
+                    bucket["review"] += 1
+                    entry, score = by_ref[decision]
+                    pid = register(pois, mention, entry, "review", score)
+                    _add_link(links, rid, pid, mention)
+                else:
+                    bucket["tie"] += 1
+                    if decision is not None:
+                        # Validated against the recorded candidates, so this is
+                        # not a typo: the accepted ref vanished from a refetched
+                        # gazetteer. Reopen instead of crashing.
+                        case["decision"] = None
+                        case["note"] = (
+                            f"accepted candidate {decision} is no longer in the "
+                            "gazetteer — case reopened"
+                        )
+                    elif key in notes:
+                        case["note"] = notes[key]
+                review.append(case)
             else:
+                # Classes deliberately outside the gazetteer (#11,
+                # config.OUT_OF_SCOPE) count as skipped, not unmatched.
+                skip_reason = out_of_scope_reason(mention["name"])
+                bucket["skipped" if skip_reason else "unmatched"] += 1
                 case = {
                     "route_id": rid,
                     "mention": mention["surface"],
@@ -270,20 +328,31 @@ def match_mentions(routes: list[dict], gazetteer: list[dict]):
     return pois, list(links.values()), review, unmatched, funnel, with_parts
 
 
-def carry_decisions(review: list[dict]) -> None:
-    """Rerunning the matcher must not lose review work: non-null decisions in
-    the existing review.jsonl are carried over to matching open cases."""
+def load_decisions() -> tuple[dict[tuple, str], dict[tuple, str]]:
+    """Review work must survive matcher reruns: decisions (and notes on still-
+    open cases) in the existing review.jsonl are loaded so match_mentions can
+    re-apply them. A non-null decision must be "skip" or one of the case's own
+    recorded candidate refs — anything else is a typo and aborts the run."""
+    decisions: dict[tuple, str] = {}
+    notes: dict[tuple, str] = {}
     if not config.REVIEW.exists():
-        return
-    decided = {
-        (case["route_id"], case["name"], case["type"], case["is_anchor"]): case["decision"]
-        for case in load_jsonl(config.REVIEW)
-        if case.get("decision") is not None
-    }
-    for case in review:
+        return decisions, notes
+    for case in load_jsonl(config.REVIEW):
         key = (case["route_id"], case["name"], case["type"], case["is_anchor"])
-        if key in decided:
-            case["decision"] = decided[key]
+        decision = case.get("decision")
+        if decision is None:
+            if case.get("note"):
+                notes[key] = case["note"]
+            continue
+        refs = [c["osm"] for c in case["candidates"]]
+        if decision != "skip" and decision not in refs:
+            sys.exit(
+                f"{config.REVIEW}: decision {decision!r} for {case['name']!r} "
+                f"(route {case['route_id']}) is not one of the case's candidates "
+                f"({', '.join(refs)}) and not \"skip\" — fix the typo and rerun."
+            )
+        decisions[key] = decision
+    return decisions, notes
 
 
 def funnel_report(funnel: dict, n_routes: int, with_parts: int) -> dict:
@@ -322,8 +391,10 @@ def to_geojson(pois: dict, links: list[dict]) -> dict:
 def main() -> None:
     routes = load_jsonl(config.ROUTES_JSONL)
     gazetteer = load_jsonl(config.GAZETTEER)
-    pois, links, review, unmatched, funnel, with_parts = match_mentions(routes, gazetteer)
-    carry_decisions(review)
+    decisions, notes = load_decisions()
+    pois, links, review, unmatched, funnel, with_parts = match_mentions(
+        routes, gazetteer, decisions, notes
+    )
     report = funnel_report(funnel, len(routes), with_parts)
 
     config.MATCH_DIR.mkdir(parents=True, exist_ok=True)
@@ -343,7 +414,8 @@ def main() -> None:
     print(
         f"[match] routes: {len(routes)} ({with_parts} with extracted mentions) -> "
         f"mentions: {totals['mentions']}, exact: {totals['exact']}, "
-        f"fuzzy: {totals['fuzzy']}, ties: {totals['tie']} (-> {config.REVIEW}), "
+        f"fuzzy: {totals['fuzzy']}, review: {totals['review']}, "
+        f"ties: {totals['tie']} open (-> {config.REVIEW}), "
         f"skipped: {totals['skipped']}, "
         f"unmatched: {totals['unmatched']} (-> {config.UNMATCHED}); "
         f"{len(pois)} unique POIs, {len(links)} links",

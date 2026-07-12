@@ -39,9 +39,44 @@ RapidFuzz >= 90 guarded by taxonomy-type compatibility and (where the book
 states one) elevation agreement within +-50 m. Normalization also
 canonicalizes cable-car station naming drift ("Bergstation der Kreuzeckbahn" ↔
 OSM "Kreuzeckbahn Bergstation"). Ties are never auto-resolved — they become
-open cases in `review.jsonl` (`decision: null`; filled-in decisions survive
-reruns); no-candidate mentions land in `unmatched.jsonl`. LLM adjudication of
-the leftovers is a later ticket.
+open cases in `review.jsonl` (`decision: null`); no-candidate mentions land in
+`unmatched.jsonl`. LLM adjudication of the leftovers is a later ticket.
+
+## Review workflow
+
+Open tie cases in `data/03_matched/review.jsonl` are decided by editing the
+file by hand. Each line carries the mention, its route, and the surviving
+`candidates` (OSM ref, name, type, elevation, coordinates). To decide a case,
+set its `decision` field to either
+
+- one of the case's candidate OSM refs (e.g. `"node/2061799676"`) — accept
+  that candidate, or
+- the string `"skip"` — the mention has no usable OSM representation.
+
+Then rerun the matcher (`uv run python -m pipeline.match`). Accepted
+candidates enter the POI registry (and the GeoJSON) with
+`{"method": "review"}` provenance, which outranks `exact` and `fuzzy` in
+best-method selection — a human decision always wins. Skipped mentions are
+routed to `unmatched.jsonl` marked `"skipped_by": "review"` to distinguish
+them from mentions the cascade itself could not resolve. The funnel counts
+accepted decisions in its `review` column and human skips under `skipped`;
+`tie` counts only still-open cases.
+
+Decisions persist: decided cases stay in `review.jsonl` (that file is the
+durable decision record) and are re-applied on every rerun, so a decided case
+never reappears as open — even after the gazetteer or the extracted mentions
+are refreshed. Undecided cases are re-emitted unchanged. Two guard rails:
+
+- A `decision` that is neither `"skip"` nor one of the case's own recorded
+  candidate refs is treated as a typo — the matcher aborts with a message
+  naming the case and its valid refs, and writes nothing.
+- If an accepted ref later disappears from a refetched gazetteer, the case is
+  reopened (`decision: null` plus a `note` naming the vanished ref) and
+  counted as an open tie again; decide it afresh.
+
+A decision applies for as long as the case remains a tie; if a gazetteer
+refresh makes the cascade resolve the mention deterministically, the case
+(and its decision) drops out of `review.jsonl`.
 
 The data root defaults to `./data` and can be overridden with `AV_POI_DATA`;
 the route index defaults to the digitization package's `routes.jsonl` and can

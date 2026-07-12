@@ -19,8 +19,9 @@ A human-readable summary goes to stderr.
   python -m pipeline.plan funnel
 
 prints the matcher's funnel (03_matched/funnel.json) as a per-type table —
-mentions -> exact / fuzzy / tie / skipped / unmatched — with a totals row on
-stdout and the usual one-line summary on stderr.
+mentions -> exact / fuzzy / review / tie / skipped / unmatched — with a totals
+row on stdout and the usual one-line summary on stderr. `review` counts
+human-accepted tie decisions; `tie` counts only still-open cases.
 """
 from __future__ import annotations
 
@@ -44,7 +45,7 @@ def _print_funnel() -> None:
         sys.exit(f"missing {config.FUNNEL} — run the matcher first.")
     report = json.loads(config.FUNNEL.read_text(encoding="utf-8"))
 
-    cols = ("mentions", "exact", "fuzzy", "tie", "skipped", "unmatched")
+    cols = ("mentions", "exact", "fuzzy", "review", "tie", "skipped", "unmatched")
     width = max(len("total"), *(len(t) for t in report["types"] or [""]))
     print("type".ljust(width) + "".join(c.rjust(11) for c in cols))
     for poi_type, row in report["types"].items():
