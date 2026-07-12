@@ -42,3 +42,53 @@ jobs:
 
       - name: Pytest
         run: uv run pytest
+
+  route-map:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The guidelines (#31) land before the scaffold (#20). Until package.json
+      # exists this job no-ops; once the scaffold is committed it enforces the
+      # green-bar automatically — blocking from day one, no debt baseline.
+      - name: Detect scaffold
+        id: scaffold
+        run: |
+          if [ -f route-map/package.json ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "route-map/package.json not present yet — skipping (see route-map/CLAUDE.md, #20)."
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.scaffold.outputs.exists == 'true'
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: route-map/package-lock.json
+
+      - name: Install
+        if: steps.scaffold.outputs.exists == 'true'
+        working-directory: route-map
+        run: npm ci
+
+      - name: Biome (format + lint)
+        if: steps.scaffold.outputs.exists == 'true'
+        working-directory: route-map
+        run: npm run check
+
+      - name: Typecheck
+        if: steps.scaffold.outputs.exists == 'true'
+        working-directory: route-map
+        run: npm run typecheck
+
+      - name: Test
+        if: steps.scaffold.outputs.exists == 'true'
+        working-directory: route-map
+        run: npm run test
+
+      - name: Build
+        if: steps.scaffold.outputs.exists == 'true'
+        working-directory: route-map
+        run: npm run build
