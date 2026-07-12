@@ -14,7 +14,7 @@ A monorepo of independent modules plus shared, per-guide data:
 data-pipeline/         # Python data pipelines (see data-pipeline/CLAUDE.md)
   parse-routes/        #   stage A: PDF (OCR text layer) -> structured routes.jsonl
   fetch-pois/          #   stage B: route place-names -> OpenStreetMap POIs + GeoJSON
-route-map/             # TypeScript map webapp — consumes the pipeline's GeoJSON (planned, #17)
+route-map/             # TypeScript map webapp (Vite+React) — renders the pipeline's route/POI data (see route-map/CLAUDE.md)
 guides/<id>/config.yml # one committed config per guide (facts + per-pipeline settings)
 guides/<id>/data/<pipeline>/NN_stage/   # that guide's pipeline artifacts (gitignored)
 CONTEXT.md             # ubiquitous language (Route, POI, Anchor, Mention, …)
