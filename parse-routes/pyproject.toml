@@ -1,0 +1,21 @@
+[project]
+name = "parse-routes"
+version = "0.1.0"
+description = "Parse a scanned Alpenvereinsführer guidebook PDF into structured route data."
+requires-python = ">=3.13"
+dependencies = [
+    # Stages 2 and 3 shell out to the `claude` CLI (Claude Code) — no Python SDK needed.
+    "pymupdf>=1.24",
+    "pyyaml>=6",
+]
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[tool.pytest.ini_options]
+# Make the `pipeline` package importable so tests can call step functions
+# directly (tests/ is auto-added for conftest/test cross-imports).
+pythonpath = ["."]
+
+[tool.uv]
+package = false
