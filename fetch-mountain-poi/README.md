@@ -23,9 +23,21 @@ The planner batches the route list sorted by route_id, so batch numbers and
 membership are stable across runs, and an interrupted run resumes without
 redoing completed routes.
 
+The gazetteer taxonomy (`TAG_MAP` in `pipeline/config.py`) covers: peak, pass,
+hut, glacier, valley, ridge, station, settlement, bridge, path (named
+Steige/Wege like the Stangensteig), water (lakes and streams like Rießersee
+and Partnach), and locality. Linear features (path, water) arrive from
+Overpass as many same-named segments and are deduped to one representative
+entry per name. Mountain ranges/regions (Wettersteingebirge) are deliberately
+out of scope — no point representation — and the matcher records such mentions
+as `skipped` with a reason (`OUT_OF_SCOPE` in config) instead of counting them
+as unmatched.
+
 Currently the matcher resolves route anchors (the `peak` field) by exact
-matching on normalized names. Fuzzy matching, tie review, and LLM adjudication
-are later tickets.
+matching on normalized names; normalization also canonicalizes cable-car
+station naming drift ("Bergstation der Kreuzeckbahn" ↔ OSM "Kreuzeckbahn
+Bergstation"). Fuzzy matching, tie review, and LLM adjudication are later
+tickets.
 
 The data root defaults to `./data` and can be overridden with `AV_POI_DATA`;
 the route index defaults to the digitization package's `routes.jsonl` and can

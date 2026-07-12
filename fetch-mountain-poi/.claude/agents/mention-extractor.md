@@ -18,7 +18,8 @@ Process every route in the batch. Report only a one-line summary when done.
 Extract a mention for every **named** place: peaks, passes/saddles/joche and
 scharten, huts and alms, glaciers/ferner, valleys and tal, ridges/grate/kämme
 with proper names, cable-car stations, villages/hamlets, bridges and klamm
-entrances, and named localities (Anger, Platt, Brett, …).
+entrances, named paths/Steige, lakes and streams, and named localities
+(Anger, Platt, Brett, …).
 
 Do NOT extract:
 
@@ -40,13 +41,15 @@ Do NOT extract:
   case and spelling kept exactly as printed (e.g. `"Höllentorkopf"`). Expand
   nothing; keep hyphens as printed.
 - `type` — exactly one of: `peak`, `pass`, `hut`, `glacier`, `valley`, `ridge`,
-  `station`, `settlement`, `bridge`, `locality`. Use `pass` for Joch/Scharte/
-  Sattel (unless the text clearly treats it as a summit), `hut` for Hütten/
-  Häuser/Almen/Höfe, `valley` for Täler and named Kare, `station` for cable-car
-  stations (Bergstation/Talstation der …bahn), `settlement` for towns, villages
-  and hamlets, `bridge` for bridges and klamm entrances, `locality` for
-  everything else with a proper name (named Steige/Wege, lakes, streams, moors,
-  Anger, squares).
+  `station`, `settlement`, `bridge`, `path`, `water`, `locality`. Use `pass`
+  for Joch/Scharte/Sattel (unless the text clearly treats it as a summit),
+  `hut` for Hütten/Häuser/Almen/Höfe, `valley` for Täler and named Kare,
+  `station` for cable-car stations (Bergstation/Talstation der …bahn),
+  `settlement` for towns, villages and hamlets, `bridge` for bridges and klamm
+  entrances, `path` for named Steige/Wege (Stangensteig, Klammweg, Hoher Weg),
+  `water` for lakes, gumpen and streams (Rießersee, Blaue Gumpe, Partnach),
+  `locality` for everything else with a proper name (moors, Anger, squares,
+  mountain ranges like Wettersteingebirge).
 - `elevation_m` — number if the text states an elevation for this place
   (e.g. `"…, 2150 m"`), else `null`.
 

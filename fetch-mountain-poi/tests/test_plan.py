@@ -23,17 +23,17 @@ def mark_done(data_dir, *route_ids):
 def test_batches_sorted_routes(data_dir):
     batches, stderr = run_plan(data_dir)
 
-    # 7 fixture routes, batch size 3 -> 3 batches, sorted by route_id.
+    # 9 fixture routes, batch size 3 -> 3 batches, sorted by route_id.
     assert [b["batch"] for b in batches] == [1, 2, 3]
     ids = [[r["route_id"] for r in b["routes"]] for b in batches]
-    assert ids == [["r1", "r2", "r3"], ["r4", "r5", "r6"], ["r7"]]
+    assert ids == [["r1", "r2", "r3"], ["r4", "r5", "r6"], ["r7", "r8", "r9"]]
 
     # Each route carries what the extractor subagent needs, nothing more.
     r7 = batches[2]["routes"][0]
     assert set(r7) == {"route_id", "peak", "description"}
     assert r7["peak"] is None  # routes without an anchor still get extracted
 
-    assert "7 remaining in 3 batches" in stderr
+    assert "9 remaining in 3 batches" in stderr
 
 
 def test_resume_skips_completed_and_keeps_batch_numbers(data_dir):
@@ -46,15 +46,15 @@ def test_resume_skips_completed_and_keeps_batch_numbers(data_dir):
     # its missing routes; batch 3 is untouched.
     assert [b["batch"] for b in batches] == [2, 3]
     assert [r["route_id"] for r in batches[0]["routes"]] == ["r5", "r6"]
-    assert [r["route_id"] for r in batches[1]["routes"]] == ["r7"]
-    assert "4/7 routes extracted" in stderr
+    assert [r["route_id"] for r in batches[1]["routes"]] == ["r7", "r8", "r9"]
+    assert "4/9 routes extracted" in stderr
 
     # Batch composition is stable: rerunning yields the identical plan.
     assert run_plan(data_dir) == (batches, stderr)
 
 
 def test_nothing_to_do(data_dir):
-    mark_done(data_dir, "r1", "r2", "r3", "r4", "r5", "r6", "r7")
+    mark_done(data_dir, "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9")
 
     batches, stderr = run_plan(data_dir)
 
