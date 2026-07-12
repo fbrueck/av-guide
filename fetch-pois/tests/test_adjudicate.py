@@ -10,10 +10,22 @@ from test_match import load_jsonl, mention, rerun_match, run_pipeline, write_par
 # cascade's 90 cutoff but above the shortlist floor. 'Meilerkopf' is a
 # lower-scoring decoy so shortlists carry more than one candidate.
 ADJ_GAZETTEER = [
-    {"name": "Meilerhütte", "type": "hut", "lat": 47.44, "lon": 11.15,
-     "ele": 2366.0, "osm": "node/8001"},
-    {"name": "Meilerkopf", "type": "peak", "lat": 47.45, "lon": 11.16,
-     "ele": 2120.0, "osm": "node/8002"},
+    {
+        "name": "Meilerhütte",
+        "type": "hut",
+        "lat": 47.44,
+        "lon": 11.15,
+        "ele": 2366.0,
+        "osm": "node/8001",
+    },
+    {
+        "name": "Meilerkopf",
+        "type": "peak",
+        "lat": 47.45,
+        "lon": 11.16,
+        "ele": 2120.0,
+        "osm": "node/8002",
+    },
 ]
 
 
@@ -30,10 +42,14 @@ def queued_cases(cfg):
     return load_jsonl(cfg.adjudication_queue)
 
 
-def write_verdict(cfg, case_id, pick, reason="1996 'Meilerhaus' is today's Meilerhütte."):
+def write_verdict(
+    cfg, case_id, pick, reason="1996 'Meilerhaus' is today's Meilerhütte."
+):
     cfg.verdicts_dir.mkdir(parents=True, exist_ok=True)
     (cfg.verdicts_dir / f"{case_id}.json").write_text(
-        json.dumps({"case_id": case_id, "pick": pick, "reason": reason}, ensure_ascii=False),
+        json.dumps(
+            {"case_id": case_id, "pick": pick, "reason": reason}, ensure_ascii=False
+        ),
         encoding="utf-8",
     )
 
@@ -81,8 +97,16 @@ def test_leftovers_are_queued_with_shortlists(cfg):
     assert "Meilerhaus" in unmatched
     assert all(c["route_id"] != "r7" for c in load_jsonl(cfg.review))
     funnel = json.loads(cfg.funnel.read_text(encoding="utf-8"))
-    assert funnel["types"]["hut"] == {"mentions": 1, "exact": 0, "fuzzy": 0, "llm": 0,
-                                      "review": 0, "tie": 0, "skipped": 0, "unmatched": 1}
+    assert funnel["types"]["hut"] == {
+        "mentions": 1,
+        "exact": 0,
+        "fuzzy": 0,
+        "llm": 0,
+        "review": 0,
+        "tie": 0,
+        "skipped": 0,
+        "unmatched": 1,
+    }
 
     # Leftovers without any shortlist candidate (r6's 'Unbekanntspitze') are
     # plain unmatched — nothing worth judging, never queued.
@@ -124,7 +148,8 @@ def test_pick_enters_registry_with_llm_provenance(cfg, capsys):
     pois = {p["name"]: p for p in load_jsonl(cfg.pois_jsonl)}
     assert pois["Meilerhütte"]["osm"] == "node/8001"
     assert pois["Meilerhütte"]["match"] == {
-        "method": "llm", "score": 72.7,
+        "method": "llm",
+        "score": 72.7,
         "reason": "1996 'Meilerhaus' is today's Meilerhütte.",
     }
     assert pois["Meilerhütte"]["aliases"] == ["Meilerhaus"]
@@ -132,8 +157,12 @@ def test_pick_enters_registry_with_llm_provenance(cfg, capsys):
     # ... linked to the route and exported to the GeoJSON ...
     links = load_jsonl(cfg.route_pois_jsonl)
     link = next(l for l in links if l["poi_id"] == pois["Meilerhütte"]["poi_id"])
-    assert link == {"route_id": "r7", "poi_id": pois["Meilerhütte"]["poi_id"],
-                    "surface": "Meilerhaus", "is_anchor": False}
+    assert link == {
+        "route_id": "r7",
+        "poi_id": pois["Meilerhütte"]["poi_id"],
+        "surface": "Meilerhaus",
+        "is_anchor": False,
+    }
     geojson = json.loads(cfg.pois_geojson.read_text(encoding="utf-8"))
     assert "Meilerhütte" in {f["properties"]["name"] for f in geojson["features"]}
 
@@ -149,8 +178,10 @@ def test_pick_enters_registry_with_llm_provenance(cfg, capsys):
     # the verdict, and an open decision a human may still override.
     case = review_case(cfg)
     assert case["source"] == "llm"
-    assert case["verdict"] == {"pick": "node/8001",
-                               "reason": "1996 'Meilerhaus' is today's Meilerhütte."}
+    assert case["verdict"] == {
+        "pick": "node/8001",
+        "reason": "1996 'Meilerhaus' is today's Meilerhütte.",
+    }
     assert case["decision"] is None
     assert [c["osm"] for c in case["candidates"]] == ["node/8001", "node/8002"]
 
@@ -163,16 +194,24 @@ def test_pick_enters_registry_with_llm_provenance(cfg, capsys):
 def test_no_match_lands_in_unmatched_with_reason(cfg):
     run_adj_pipeline(cfg)
     [case] = queued_cases(cfg)
-    write_verdict(cfg, case["case_id"], None,
-                  reason="No candidate is this place: both are 3+ km from the route.")
+    write_verdict(
+        cfg,
+        case["case_id"],
+        None,
+        reason="No candidate is this place: both are 3+ km from the route.",
+    )
 
     rerun_match(cfg)
 
     # Unmatched, with the adjudicator's reason preserved; never registered.
     unmatched = next(u for u in load_jsonl(cfg.unmatched) if u["route_id"] == "r7")
     assert unmatched == {
-        "route_id": "r7", "mention": "Meilerhaus", "name": "Meilerhaus",
-        "type": "hut", "is_anchor": False, "elevation_m": None,
+        "route_id": "r7",
+        "mention": "Meilerhaus",
+        "name": "Meilerhaus",
+        "type": "hut",
+        "is_anchor": False,
+        "elevation_m": None,
         "llm_reason": "No candidate is this place: both are 3+ km from the route.",
     }
     assert "Meilerhütte" not in {p["name"] for p in load_jsonl(cfg.pois_jsonl)}
@@ -184,8 +223,16 @@ def test_no_match_lands_in_unmatched_with_reason(cfg):
     assert case["decision"] is None
     assert queued_cases(cfg) == []
     funnel = json.loads(cfg.funnel.read_text(encoding="utf-8"))
-    assert funnel["types"]["hut"] == {"mentions": 1, "exact": 0, "fuzzy": 0, "llm": 0,
-                                      "review": 0, "tie": 0, "skipped": 0, "unmatched": 1}
+    assert funnel["types"]["hut"] == {
+        "mentions": 1,
+        "exact": 0,
+        "fuzzy": 0,
+        "llm": 0,
+        "review": 0,
+        "tie": 0,
+        "skipped": 0,
+        "unmatched": 1,
+    }
 
 
 def test_override_beats_verdict_and_persists(cfg):
@@ -263,7 +310,9 @@ def test_llm_provenance_ranks_below_cascade(cfg):
     assert pois["Meilerhütte"]["match"] == {"method": "exact"}
     assert pois["Meilerhütte"]["aliases"] == ["Meilerhaus"]
     links = load_jsonl(cfg.route_pois_jsonl)
-    assert {l["route_id"] for l in links if l["poi_id"] == pois["Meilerhütte"]["poi_id"]} == {"r1", "r7"}
+    assert {
+        l["route_id"] for l in links if l["poi_id"] == pois["Meilerhütte"]["poi_id"]
+    } == {"r1", "r7"}
     assert review_case(cfg)["verdict"]["pick"] == "node/8001"
 
 

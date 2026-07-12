@@ -14,6 +14,7 @@ from scratch on every run (deterministic, no stale files).
 
   python -m pipeline.merge --guide <id>
 """
+
 from __future__ import annotations
 
 import argparse
@@ -47,7 +48,8 @@ def merge(cfg: GuideConfig) -> None:
             route_id = f"p{page:04d}_{seq:02d}"
             record = {"route_id": route_id, "source_page": page, **route}
             (cfg.routes_dir / f"{route_id}.json").write_text(
-                json.dumps(record, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+                json.dumps(record, ensure_ascii=False, indent=2) + "\n",
+                encoding="utf-8",
             )
             all_routes.append(record)
 
@@ -62,7 +64,9 @@ def merge(cfg: GuideConfig) -> None:
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="Merge per-page route parts into routes.jsonl.")
+    ap = argparse.ArgumentParser(
+        description="Merge per-page route parts into routes.jsonl."
+    )
     ap.add_argument("--guide", required=True, help="Guide id (guides/<id>/config.yml).")
     args = ap.parse_args()
     merge(load_guide(args.guide))

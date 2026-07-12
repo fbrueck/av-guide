@@ -12,6 +12,7 @@ Output: gazetteer.jsonl — one entry per named element with taxonomy type,
 representative coordinates (node position or way/relation center), elevation
 where OSM has one, and the OSM reference.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -94,9 +95,7 @@ def dedupe_linear(entries: list[dict], cfg: GuideConfig) -> list[dict]:
         if key not in best or rank < best[key][0]:
             best[key] = (rank, entry)
     kept = {id(entry) for _, entry in best.values()}
-    return [
-        e for e in entries if e["type"] not in cfg.deduped_types or id(e) in kept
-    ]
+    return [e for e in entries if e["type"] not in cfg.deduped_types or id(e) in kept]
 
 
 def dist_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -106,7 +105,9 @@ def dist_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     return math.hypot(dlat, dlon)
 
 
-def admit_guarded(candidates: list[dict], entries: list[dict], cfg: GuideConfig) -> list[dict]:
+def admit_guarded(
+    candidates: list[dict], entries: list[dict], cfg: GuideConfig
+) -> list[dict]:
     """Precision guard for guarded_tag_map candidates (#14): admit only
     elements at least settlement_exclusion_km from every settlement entry and
     whose normalized name fills a gap in the (unguarded) gazetteer — so town
@@ -167,14 +168,23 @@ def build_gazetteer(cfg: GuideConfig, refresh: bool) -> list[dict]:
     for entry in entries:
         by_type[entry["type"]] = by_type.get(entry["type"], 0) + 1
     summary = ", ".join(f"{t}: {n}" for t, n in sorted(by_type.items()))
-    print(f"[gazetteer] {len(entries)} entries ({summary}) -> {cfg.gazetteer}", file=sys.stderr)
+    print(
+        f"[gazetteer] {len(entries)} entries ({summary}) -> {cfg.gazetteer}",
+        file=sys.stderr,
+    )
     return entries
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="Build the OSM gazetteer for a guide's bbox.")
+    ap = argparse.ArgumentParser(
+        description="Build the OSM gazetteer for a guide's bbox."
+    )
     ap.add_argument("--guide", required=True, help="Guide id (guides/<id>/config.yml).")
-    ap.add_argument("--refresh", action="store_true", help="Refetch even if a cached response exists.")
+    ap.add_argument(
+        "--refresh",
+        action="store_true",
+        help="Refetch even if a cached response exists.",
+    )
     args = ap.parse_args()
 
     build_gazetteer(load_guide(args.guide), args.refresh)

@@ -15,6 +15,7 @@ Output: one JSON object per line on stdout, e.g.
   {"batch": 1, "pages": ["page_0006", "page_0007", ...]}
 A human-readable summary goes to stderr.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -45,8 +46,11 @@ def _todo_clean(records: list[dict], cfg: GuideConfig) -> list[str]:
             passthrough += 1
             continue
         todo.append(r["stem"])
-    print(f"[plan clean] {passthrough} sketch pages passed through; "
-          f"{len(todo)} text pages need cleaning.", file=sys.stderr)
+    print(
+        f"[plan clean] {passthrough} sketch pages passed through; "
+        f"{len(todo)} text pages need cleaning.",
+        file=sys.stderr,
+    )
     return todo
 
 
@@ -61,8 +65,10 @@ def _todo_structure(records: list[dict], cfg: GuideConfig) -> list[str]:
         if (cfg.struct_parts / f"{r['stem']}.json").exists():
             continue  # already structured
         todo.append(r["stem"])
-    print(f"[plan structure] {len(todo)} cleaned pages need route extraction.",
-          file=sys.stderr)
+    print(
+        f"[plan structure] {len(todo)} cleaned pages need route extraction.",
+        file=sys.stderr,
+    )
     return todo
 
 
@@ -75,14 +81,24 @@ def main() -> None:
 
     cfg = load_guide(args.guide)
     records = _load_manifest(cfg)
-    todo = _todo_clean(records, cfg) if args.stage == "clean" else _todo_structure(records, cfg)
+    todo = (
+        _todo_clean(records, cfg)
+        if args.stage == "clean"
+        else _todo_structure(records, cfg)
+    )
 
     for i in range(0, len(todo), args.batch):
         chunk = todo[i : i + args.batch]
-        print(json.dumps({"batch": i // args.batch + 1, "pages": chunk}, ensure_ascii=False))
+        print(
+            json.dumps(
+                {"batch": i // args.batch + 1, "pages": chunk}, ensure_ascii=False
+            )
+        )
 
     if not todo:
-        print(f"[plan {args.stage}] nothing to do — all pages complete.", file=sys.stderr)
+        print(
+            f"[plan {args.stage}] nothing to do — all pages complete.", file=sys.stderr
+        )
 
 
 if __name__ == "__main__":

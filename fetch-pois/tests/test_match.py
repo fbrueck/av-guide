@@ -2,17 +2,28 @@ import json
 
 import pytest
 
-from conftest import FIXTURES
 from pipeline import gazetteer, plan
 from pipeline.match import run_match
 
 # Extra gazetteer entries for the fuzzy scenarios, appended to the stage's
 # output so the shared Overpass fixture stays untouched.
 EXTRA_GAZETTEER = [
-    {"name": "Predigtstein", "type": "peak", "lat": 47.46, "lon": 11.08,
-     "ele": 1921.0, "osm": "node/9001"},
-    {"name": "Partnachalm", "type": "hut", "lat": 47.47, "lon": 11.09,
-     "ele": 1177.0, "osm": "node/9002"},
+    {
+        "name": "Predigtstein",
+        "type": "peak",
+        "lat": 47.46,
+        "lon": 11.08,
+        "ele": 1921.0,
+        "osm": "node/9001",
+    },
+    {
+        "name": "Partnachalm",
+        "type": "hut",
+        "lat": 47.47,
+        "lon": 11.09,
+        "ele": 1177.0,
+        "osm": "node/9002",
+    },
 ]
 
 
@@ -22,14 +33,20 @@ def load_jsonl(path):
 
 
 def mention(surface, type="peak", name=None, elevation_m=None):
-    return {"surface": surface, "name": name or surface,
-            "type": type, "elevation_m": elevation_m}
+    return {
+        "surface": surface,
+        "name": name or surface,
+        "type": type,
+        "elevation_m": elevation_m,
+    }
 
 
 def write_part(cfg, route_id, *mentions):
     cfg.mention_parts.mkdir(parents=True, exist_ok=True)
     (cfg.mention_parts / f"{route_id}.json").write_text(
-        json.dumps({"route_id": route_id, "mentions": list(mentions)}, ensure_ascii=False),
+        json.dumps(
+            {"route_id": route_id, "mentions": list(mentions)}, ensure_ascii=False
+        ),
         encoding="utf-8",
     )
 
@@ -65,20 +82,27 @@ def write_cascade_parts(cfg):
     """Mention parts exercising every cascade path (r1, r3, r7 of the fixture
     routes; the other routes contribute anchors only)."""
     # Same POI as r1's own anchor -> the (route, poi) link is deduplicated.
-    write_part(cfg, "r1",
-               mention("Zugspitze, 2962 m", name="Zugspitze", elevation_m=2962))
-    write_part(cfg, "r3",
-               # Fuzzy 90.9 to 'Partnachalm' but peak never matches hut.
-               mention("Partnachalb", type="peak"),
-               # Fuzzy 91.7 to 'Predigtstein' but book says 1700, OSM 1921.
-               mention("Predigtstain", type="peak", elevation_m=1700),
-               # Two 'Wasserfall' peaks in the gazetteer -> tie.
-               mention("Wasserfall", type="peak"))
-    write_part(cfg, "r7",
-               mention("Hammersbach", type="settlement"),          # exact
-               mention("Predigtstain", type="peak", elevation_m=1900),  # fuzzy, ele ok
-               mention("Zugspitz", type="peak"),                   # fuzzy, no ele stated
-               mention("Partnachalb", type="hut"))                 # fuzzy, type ok
+    write_part(
+        cfg, "r1", mention("Zugspitze, 2962 m", name="Zugspitze", elevation_m=2962)
+    )
+    write_part(
+        cfg,
+        "r3",
+        # Fuzzy 90.9 to 'Partnachalm' but peak never matches hut.
+        mention("Partnachalb", type="peak"),
+        # Fuzzy 91.7 to 'Predigtstein' but book says 1700, OSM 1921.
+        mention("Predigtstain", type="peak", elevation_m=1700),
+        # Two 'Wasserfall' peaks in the gazetteer -> tie.
+        mention("Wasserfall", type="peak"),
+    )
+    write_part(
+        cfg,
+        "r7",
+        mention("Hammersbach", type="settlement"),  # exact
+        mention("Predigtstain", type="peak", elevation_m=1900),  # fuzzy, ele ok
+        mention("Zugspitz", type="peak"),  # fuzzy, no ele stated
+        mention("Partnachalb", type="hut"),
+    )  # fuzzy, type ok
 
 
 def test_anchor_matching(cfg):
@@ -88,7 +112,12 @@ def test_anchor_matching(cfg):
     links = load_jsonl(cfg.route_pois_jsonl)
 
     # Two routes anchor the Zugspitze -> one registry entry, two links.
-    assert set(pois) == {"Zugspitze", "Knorrhütte", "Höllentorkopf", "Kreuzeckbahn Bergstation"}
+    assert set(pois) == {
+        "Zugspitze",
+        "Knorrhütte",
+        "Höllentorkopf",
+        "Kreuzeckbahn Bergstation",
+    }
     zug_links = [l for l in links if l["poi_id"] == pois["Zugspitze"]["poi_id"]]
     assert {l["route_id"] for l in zug_links} == {"r1", "r2"}
     # Surfaces stay verbatim; elevation-suffix variant produces no alias.
@@ -143,8 +172,12 @@ def test_ties_and_unmatched_are_reported_not_dropped(cfg):
     # alongside with a skip_reason and counted as skipped, not unmatched.
     unmatched = {c["route_id"]: c for c in load_jsonl(cfg.unmatched)}
     assert unmatched["r6"] == {
-        "route_id": "r6", "mention": "Unbekanntspitze", "name": "Unbekanntspitze",
-        "type": None, "is_anchor": True, "elevation_m": None,
+        "route_id": "r6",
+        "mention": "Unbekanntspitze",
+        "name": "Unbekanntspitze",
+        "type": None,
+        "is_anchor": True,
+        "elevation_m": None,
     }
     assert "range" in unmatched["r9"]["skip_reason"]
     assert len(unmatched) == 2
@@ -166,9 +199,15 @@ def test_mention_cascade(cfg):
     pois = {p["name"]: p for p in load_jsonl(cfg.pois_jsonl)}
     links = load_jsonl(cfg.route_pois_jsonl)
 
-    assert set(pois) == {"Zugspitze", "Knorrhütte", "Höllentorkopf",
-                         "Kreuzeckbahn Bergstation",
-                         "Hammersbach", "Predigtstein", "Partnachalm"}
+    assert set(pois) == {
+        "Zugspitze",
+        "Knorrhütte",
+        "Höllentorkopf",
+        "Kreuzeckbahn Bergstation",
+        "Hammersbach",
+        "Predigtstein",
+        "Partnachalm",
+    }
 
     # Exact mention match carries exact provenance.
     assert pois["Hammersbach"]["match"] == {"method": "exact"}
@@ -183,8 +222,8 @@ def test_mention_cascade(cfg):
 
     # Guard-blocked fuzzy candidates land in unmatched, not the registry.
     unmatched = {(u["route_id"], u["name"]) for u in load_jsonl(cfg.unmatched)}
-    assert ("r3", "Partnachalb") in unmatched     # type-incompatible
-    assert ("r3", "Predigtstain") in unmatched    # elevation off by 221 m
+    assert ("r3", "Partnachalb") in unmatched  # type-incompatible
+    assert ("r3", "Predigtstain") in unmatched  # elevation off by 221 m
     assert ("r6", "Unbekanntspitze") in unmatched
 
     # A mention-level tie joins the anchor tie in review.jsonl.
@@ -196,8 +235,12 @@ def test_mention_cascade(cfg):
     zug = pois["Zugspitze"]
     zug_links = {l["route_id"]: l for l in links if l["poi_id"] == zug["poi_id"]}
     assert set(zug_links) == {"r1", "r2", "r7"}
-    assert zug_links["r1"] == {"route_id": "r1", "poi_id": zug["poi_id"],
-                               "surface": "Zugspitze", "is_anchor": True}
+    assert zug_links["r1"] == {
+        "route_id": "r1",
+        "poi_id": zug["poi_id"],
+        "surface": "Zugspitze",
+        "is_anchor": True,
+    }
     # The fuzzy 'Zugspitz' mention adds an alias but the exact anchor match
     # keeps the better provenance.
     assert zug_links["r7"]["is_anchor"] is False
@@ -205,7 +248,10 @@ def test_mention_cascade(cfg):
     assert zug["match"] == {"method": "exact"}
 
     geojson = json.loads(cfg.pois_geojson.read_text(encoding="utf-8"))
-    n_routes = {f["properties"]["name"]: f["properties"]["n_routes"] for f in geojson["features"]}
+    n_routes = {
+        f["properties"]["name"]: f["properties"]["n_routes"]
+        for f in geojson["features"]
+    }
     assert n_routes["Zugspitze"] == 3
 
 
@@ -217,20 +263,53 @@ def test_funnel(cfg, capsys):
     assert funnel["routes"] == {"total": 9, "with_mentions": 3}
     # r8's station anchor matches exactly via canonicalization; r9's
     # 'Wettersteingebirge' is the documented out-of-scope skip.
-    assert funnel["types"]["anchor"] == {"mentions": 8, "exact": 5, "fuzzy": 0, "llm": 0,
-                                         "review": 0, "tie": 1, "skipped": 1, "unmatched": 1}
-    assert funnel["types"]["peak"] == {"mentions": 6, "exact": 1, "fuzzy": 2, "llm": 0,
-                                       "review": 0, "tie": 1, "skipped": 0, "unmatched": 2}
-    assert funnel["totals"] == {"mentions": 16, "exact": 7, "fuzzy": 3, "llm": 0, "review": 0,
-                                "tie": 2, "skipped": 1, "unmatched": 3}
+    assert funnel["types"]["anchor"] == {
+        "mentions": 8,
+        "exact": 5,
+        "fuzzy": 0,
+        "llm": 0,
+        "review": 0,
+        "tie": 1,
+        "skipped": 1,
+        "unmatched": 1,
+    }
+    assert funnel["types"]["peak"] == {
+        "mentions": 6,
+        "exact": 1,
+        "fuzzy": 2,
+        "llm": 0,
+        "review": 0,
+        "tie": 1,
+        "skipped": 0,
+        "unmatched": 2,
+    }
+    assert funnel["totals"] == {
+        "mentions": 16,
+        "exact": 7,
+        "fuzzy": 3,
+        "llm": 0,
+        "review": 0,
+        "tie": 2,
+        "skipped": 1,
+        "unmatched": 3,
+    }
 
     # The planner renders it as a per-type table with a totals row.
     capsys.readouterr()  # drop the matcher's summary output
     plan._print_funnel(cfg)
     out = capsys.readouterr()
     lines = out.out.splitlines()
-    assert lines[0].split() == ["type", "mentions", "exact", "fuzzy", "llm", "review",
-                                "tie", "skipped", "unmatched"]
+    assert lines[0].split() == [
+        "type",
+        "mentions",
+        "exact",
+        "fuzzy",
+        "llm",
+        "review",
+        "tie",
+        "skipped",
+        "unmatched",
+    ]
     rows = {line.split()[0]: line.split()[1:] for line in lines[1:]}
     assert rows["anchor"] == ["8", "5", "0", "0", "0", "1", "1", "1"]
     assert rows["settlement"] == ["1", "1", "0", "0", "0", "0", "0", "0"]
@@ -252,8 +331,12 @@ def test_accepted_decision_enters_registry_with_review_provenance(cfg):
     # ... linked to the deciding route with its anchor flag ...
     links = load_jsonl(cfg.route_pois_jsonl)
     link = next(l for l in links if l["poi_id"] == pois["Wasserfall"]["poi_id"])
-    assert link == {"route_id": "r5", "poi_id": pois["Wasserfall"]["poi_id"],
-                    "surface": "Wasserfall", "is_anchor": True}
+    assert link == {
+        "route_id": "r5",
+        "poi_id": pois["Wasserfall"]["poi_id"],
+        "surface": "Wasserfall",
+        "is_anchor": True,
+    }
 
     # ... and exported to the GeoJSON.
     geojson = json.loads(cfg.pois_geojson.read_text(encoding="utf-8"))
@@ -276,10 +359,22 @@ def test_review_provenance_outranks_exact(cfg):
     # the elevation guard resolves it exactly to node/9010; r3's mention
     # states nothing and ties.
     doppel = [
-        {"name": "Doppelspitze", "type": "peak", "lat": 47.45, "lon": 11.05,
-         "ele": 2000.0, "osm": "node/9010"},
-        {"name": "Doppelspitze", "type": "peak", "lat": 47.48, "lon": 11.11,
-         "ele": 2500.0, "osm": "node/9011"},
+        {
+            "name": "Doppelspitze",
+            "type": "peak",
+            "lat": 47.45,
+            "lon": 11.05,
+            "ele": 2000.0,
+            "osm": "node/9010",
+        },
+        {
+            "name": "Doppelspitze",
+            "type": "peak",
+            "lat": 47.48,
+            "lon": 11.11,
+            "ele": 2500.0,
+            "osm": "node/9011",
+        },
     ]
     write_part(cfg, "r1", mention("Doppelspitze", elevation_m=2000))
     write_part(cfg, "r3", mention("Doppelspitze"))
@@ -306,8 +401,13 @@ def test_skip_decision_routes_to_unmatched(cfg):
     # The mention lands in unmatched.jsonl, marked as a human skip ...
     unmatched = {c["route_id"]: c for c in load_jsonl(cfg.unmatched)}
     assert unmatched["r5"] == {
-        "route_id": "r5", "mention": "Wasserfall", "name": "Wasserfall",
-        "type": None, "is_anchor": True, "elevation_m": None, "skipped_by": "review",
+        "route_id": "r5",
+        "mention": "Wasserfall",
+        "name": "Wasserfall",
+        "type": None,
+        "is_anchor": True,
+        "elevation_m": None,
+        "skipped_by": "review",
     }
 
     # ... never in the registry, and the funnel counts it as skipped.
@@ -357,8 +457,16 @@ def test_invalid_decision_ref_fails_loudly(cfg):
 
 def test_vanished_accepted_candidate_reopens_case(cfg):
     # Three-way 'Wasserfall' tie; the reviewer accepts the extra candidate.
-    extra = [{"name": "Wasserfall", "type": "peak", "lat": 47.50, "lon": 11.20,
-              "ele": None, "osm": "node/9003"}]
+    extra = [
+        {
+            "name": "Wasserfall",
+            "type": "peak",
+            "lat": 47.50,
+            "lon": 11.20,
+            "ele": None,
+            "osm": "node/9003",
+        }
+    ]
     run_pipeline(cfg, extra=extra)
     decide(cfg, "node/9003")
 
@@ -398,7 +506,12 @@ def test_geojson_export(cfg):
     geojson = json.loads(cfg.pois_geojson.read_text(encoding="utf-8"))
     assert geojson["type"] == "FeatureCollection"
     features = {f["properties"]["name"]: f for f in geojson["features"]}
-    assert set(features) == {"Zugspitze", "Knorrhütte", "Höllentorkopf", "Kreuzeckbahn Bergstation"}
+    assert set(features) == {
+        "Zugspitze",
+        "Knorrhütte",
+        "Höllentorkopf",
+        "Kreuzeckbahn Bergstation",
+    }
 
     zug = features["Zugspitze"]
     assert zug["geometry"] == {"type": "Point", "coordinates": [10.9863, 47.4211]}

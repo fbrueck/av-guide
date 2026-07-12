@@ -3,6 +3,7 @@ GuideConfig (the real `wetterstein` guide's values) whose data_root points at a
 fresh tmp dir, so steps read and write under tmp_path with no env vars. A
 couple of thin tests shell out via `--guide` to cover the argparse entrypoints
 (see test_cli.py)."""
+
 from __future__ import annotations
 
 import dataclasses

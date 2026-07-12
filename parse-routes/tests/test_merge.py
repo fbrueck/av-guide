@@ -16,8 +16,16 @@ def load_jsonl(path):
 
 
 def route(name, **fields):
-    base = {"name": name, "peak": None, "grade": None, "first_ascent": None,
-            "time": None, "height_m": None, "description": name, "summary": None}
+    base = {
+        "name": name,
+        "peak": None,
+        "grade": None,
+        "first_ascent": None,
+        "time": None,
+        "height_m": None,
+        "description": name,
+        "summary": None,
+    }
     return {**base, **fields}
 
 

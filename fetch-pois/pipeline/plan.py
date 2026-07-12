@@ -36,6 +36,7 @@ totals row on stdout and the usual one-line summary on stderr. `llm` counts
 adjudicator picks (cascade matches stay under exact/fuzzy); `review` counts
 human-accepted decisions; `tie` counts only still-open cases.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -58,7 +59,16 @@ def _print_funnel(cfg: GuideConfig) -> None:
         sys.exit(f"missing {cfg.funnel} — run the matcher first.")
     report = json.loads(cfg.funnel.read_text(encoding="utf-8"))
 
-    cols = ("mentions", "exact", "fuzzy", "llm", "review", "tie", "skipped", "unmatched")
+    cols = (
+        "mentions",
+        "exact",
+        "fuzzy",
+        "llm",
+        "review",
+        "tie",
+        "skipped",
+        "unmatched",
+    )
     width = max(len("total"), *(len(t) for t in report["types"] or [""]))
     print("type".ljust(width) + "".join(c.rjust(11) for c in cols))
     for poi_type, row in report["types"].items():
@@ -87,33 +97,50 @@ def _plan_adjudicate(cfg: GuideConfig, batch_size: int) -> None:
     if missing_routes:
         sys.exit(
             f"{cfg.adjudication_queue}: routes {', '.join(sorted(missing_routes))} "
-            "are queued but no longer in the route index — rerun the matcher first.")
+            "are queued but no longer in the route index — rerun the matcher first."
+        )
 
     remaining = 0
     batches = 0
     for i in range(0, len(cases), batch_size):
         missing = [
-            {**case,
-             "route": {"peak": routes[case["route_id"]].get("peak"),
-                       "description": routes[case["route_id"]]["description"]}}
+            {
+                **case,
+                "route": {
+                    "peak": routes[case["route_id"]].get("peak"),
+                    "description": routes[case["route_id"]]["description"],
+                },
+            }
             for case in cases[i : i + batch_size]
             if not (cfg.verdicts_dir / f"{case['case_id']}.json").exists()
         ]
         if missing:
-            print(json.dumps({"batch": i // batch_size + 1, "cases": missing}, ensure_ascii=False))
+            print(
+                json.dumps(
+                    {"batch": i // batch_size + 1, "cases": missing}, ensure_ascii=False
+                )
+            )
             remaining += len(missing)
             batches += 1
 
     done = len(cases) - remaining
     if remaining:
-        print(f"[plan adjudicate] {done}/{len(cases)} open cases have verdicts; "
-              f"{remaining} remaining in {batches} batches.", file=sys.stderr)
+        print(
+            f"[plan adjudicate] {done}/{len(cases)} open cases have verdicts; "
+            f"{remaining} remaining in {batches} batches.",
+            file=sys.stderr,
+        )
     elif cases:
-        print(f"[plan adjudicate] nothing to do — all {len(cases)} open cases have "
-              "verdicts (rerun the matcher to consume them).", file=sys.stderr)
+        print(
+            f"[plan adjudicate] nothing to do — all {len(cases)} open cases have "
+            "verdicts (rerun the matcher to consume them).",
+            file=sys.stderr,
+        )
     else:
-        print("[plan adjudicate] nothing to do — no open adjudication cases.",
-              file=sys.stderr)
+        print(
+            "[plan adjudicate] nothing to do — no open adjudication cases.",
+            file=sys.stderr,
+        )
 
 
 def _plan_extract(cfg: GuideConfig, batch_size: int) -> None:
@@ -124,30 +151,48 @@ def _plan_extract(cfg: GuideConfig, batch_size: int) -> None:
     batches = 0
     for i in range(0, len(routes), batch_size):
         missing = [
-            {"route_id": r["route_id"], "peak": r.get("peak"), "description": r["description"]}
+            {
+                "route_id": r["route_id"],
+                "peak": r.get("peak"),
+                "description": r["description"],
+            }
             for r in routes[i : i + batch_size]
             if not (cfg.mention_parts / f"{r['route_id']}.json").exists()
         ]
         if missing:
-            print(json.dumps({"batch": i // batch_size + 1, "routes": missing}, ensure_ascii=False))
+            print(
+                json.dumps(
+                    {"batch": i // batch_size + 1, "routes": missing},
+                    ensure_ascii=False,
+                )
+            )
             remaining += len(missing)
             batches += 1
 
     done = len(routes) - remaining
     if remaining:
-        print(f"[plan extract] {done}/{len(routes)} routes extracted; "
-              f"{remaining} remaining in {batches} batches.", file=sys.stderr)
+        print(
+            f"[plan extract] {done}/{len(routes)} routes extracted; "
+            f"{remaining} remaining in {batches} batches.",
+            file=sys.stderr,
+        )
     else:
-        print(f"[plan extract] nothing to do — all {len(routes)} routes extracted.",
-              file=sys.stderr)
+        print(
+            f"[plan extract] nothing to do — all {len(routes)} routes extracted.",
+            file=sys.stderr,
+        )
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Emit batches of routes needing work.")
     ap.add_argument("stage", choices=["extract", "adjudicate", "funnel"])
     ap.add_argument("--guide", required=True, help="Guide id (guides/<id>/config.yml).")
-    ap.add_argument("--batch", type=int, default=10,
-                    help="Routes (extract) or cases (adjudicate) per subagent batch.")
+    ap.add_argument(
+        "--batch",
+        type=int,
+        default=10,
+        help="Routes (extract) or cases (adjudicate) per subagent batch.",
+    )
     args = ap.parse_args()
 
     cfg = load_guide(args.guide)
