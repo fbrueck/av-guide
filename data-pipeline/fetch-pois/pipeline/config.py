@@ -74,8 +74,12 @@ class GuideConfig:
         return self.final_dir / "pois.jsonl"
 
     @property
-    def route_pois_jsonl(self) -> Path:
-        return self.final_dir / "route_pois.jsonl"
+    def place_pois_jsonl(self) -> Path:  # Place -> POI resolution, one per Place
+        return self.final_dir / "place_pois.jsonl"
+
+    @property
+    def entry_pois_jsonl(self) -> Path:  # Entry mention -> POI links (mentions only)
+        return self.final_dir / "entry_pois.jsonl"
 
     @property
     def pois_geojson(self) -> Path:

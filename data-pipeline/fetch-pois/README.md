@@ -1,11 +1,15 @@
 # fetch-pois
 
-Resolves the places named in parsed AV-guide routes (produced by the
+Resolves the places named in parsed AV-guide **Entries** (produced by the
 `parse-routes` pipeline) to OpenStreetMap coordinates: a gazetteer-first
 pipeline that fetches all named alpine features in the guide's bounding box via
-Overpass, extracts typed place mentions from route descriptions, matches them
-deterministically, and emits a deduplicated POI registry plus a webapp-ready
-GeoJSON export.
+Overpass, resolves each **Place** Entry to at most one POI (its coordinate),
+extracts typed place mentions from every Entry's prose (Route descriptions and
+Place Übersichten alike), matches them deterministically, and emits a
+deduplicated POI registry plus a webapp-ready GeoJSON export. A Route's anchor
+coordinate is not resolved here — it is transitive via the Route's Place
+(`anchor_ids` -> Place -> POI, resolved downstream in `route-map`), so a Route's
+`peak` string stays verbatim metadata.
 
 The reference guide is the *Wetterstein* (Beulke, 1996), but the pipeline is
 guide-agnostic: everything guide-specific lives in external config and data (see
@@ -65,17 +69,17 @@ Data paths below are under `guides/<id>/data/fetch-pois/`.
 | Stage | Command | Output |
 |---|---|---|
 | 1. Gazetteer | `uv run python -m pipeline.gazetteer --guide <id> [--refresh]` | `01_gazetteer/gazetteer.jsonl` (raw Overpass response cached alongside) |
-| 2. Mention extraction (LLM) | `uv run python -m pipeline.plan extract --guide <id> [--batch 10]` plans; `mention-extractor` subagents execute | `02_mentions/parts/<route_id>.json` (one part per route — the resumability unit) |
-| 3. Matching | `uv run python -m pipeline.match --guide <id>` | `04_final/{pois.jsonl,route_pois.jsonl,pois.geojson}`; `03_matched/{review.jsonl,unmatched.jsonl,adjudication_queue.jsonl,funnel.json}` (`uv run python -m pipeline.plan funnel --guide <id>` renders the funnel) |
+| 2. Mention extraction (LLM) | `uv run python -m pipeline.plan extract --guide <id> [--batch 10]` plans; `mention-extractor` subagents execute | `02_mentions/parts/<entry_id>.json` (one part per Entry — the resumability unit) |
+| 3. Matching | `uv run python -m pipeline.match --guide <id>` | `04_final/{pois.jsonl,place_pois.jsonl,entry_pois.jsonl,pois.geojson}`; `03_matched/{review.jsonl,unmatched.jsonl,adjudication_queue.jsonl,funnel.json}` (`uv run python -m pipeline.plan funnel --guide <id>` renders the funnel) |
 | 4. Adjudication (LLM) | `uv run python -m pipeline.plan adjudicate --guide <id> [--batch 10]` plans; `match-adjudicator` subagents execute; rerun `pipeline.match` to consume | `03_matched/verdicts/<case_id>.json` (one verdict per case — the resumability unit) |
 
 The whole pipeline is driven by the `/fetch-pois` slash command (see
 `.claude/commands/fetch-pois.md`): it runs the deterministic stages and fans the
 planner's batches out to `mention-extractor` and `match-adjudicator` subagents
-until nothing remains. The planner batches the route list sorted by route_id
+until nothing remains. The planner batches the entry list sorted by entry id
 (and the adjudication queue in matcher order), so batch numbers and membership
 are stable across runs, and an interrupted run resumes without redoing
-completed routes or re-adjudicating decided cases.
+completed entries or re-adjudicating decided cases.
 
 The gazetteer taxonomy (`tag_map` in the guide's `config.yml`) covers: peak,
 pass, hut, glacier, valley, ridge, station, settlement, bridge, path (named
@@ -102,14 +106,21 @@ hamlet node), and a handful of remote-but-mundane names (holiday flats, resort
 hotels) are admitted — harmless unless the book mentions an identical name,
 in which case the tie/review machinery still applies.
 
-The matcher resolves route anchors (the `peak` field) and every extracted
-mention through a deterministic cascade: exact on normalized names, then
-RapidFuzz >= 90 guarded by taxonomy-type compatibility and (where the book
-states one) elevation agreement within +-50 m. Normalization also
-canonicalizes cable-car station naming drift ("Bergstation der Kreuzeckbahn" ↔
-OSM "Kreuzeckbahn Bergstation"). Ties are never auto-resolved — they become
-open cases in `review.jsonl` (`decision: null`); no-candidate mentions land in
-`unmatched.jsonl`.
+The matcher resolves two kinds of *items* through one deterministic cascade:
+each **Place** Entry (matched on its name, guarded by its best-effort
+`place_type` hint and verbatim elevation) to at most one POI written as a
+`{place_id, poi_id}` row in `place_pois.jsonl`; and every extracted **mention**
+(from any Entry's prose) written as a `{entry_id, poi_id, surface}` row in
+`entry_pois.jsonl`. The cascade is exact on normalized names, then RapidFuzz
+>= 90 guarded by taxonomy-type compatibility and (where the book states one)
+elevation agreement within +-50 m — a `place_type` of `null` simply disables
+the type guard. Normalization also canonicalizes cable-car station naming drift
+("Bergstation der Kreuzeckbahn" ↔ OSM "Kreuzeckbahn Bergstation"). Ties are
+never auto-resolved — they become open cases in `review.jsonl`
+(`decision: null`); no-candidate items land in `unmatched.jsonl`. A Place that
+resolves to nothing is an honest absence surfaced in the funnel's `place` row,
+never a dropped record. No route→POI anchor link is emitted: a Route's anchor
+coordinate is transitive via its Place.
 
 ## LLM adjudication of cascade leftovers
 
@@ -124,8 +135,9 @@ spellings, book-elevation typos). Leftovers whose best candidate scores below
 the floor stay plain unmatched and are never queued.
 
 `uv run python -m pipeline.plan adjudicate --guide <id>` batches the queue for
-`match-adjudicator` subagents, attaching each case's route context (the
-route's `peak` and full description). A subagent must either pick exactly one
+`match-adjudicator` subagents, attaching each case's Entry context (the owning
+Entry's name, kind, `peak` and full description). A subagent must either pick
+exactly one
 candidate ref or declare no-match — always with a readable reason — and
 writes one verdict file per case to `03_matched/verdicts/<case_id>.json`.
 Verdict files are the resumability unit: a case with a verdict never
@@ -155,8 +167,9 @@ Rerunning the matcher consumes verdicts:
 `03_matched/review.jsonl` holds two kinds of cases, told apart by `source`:
 open ties (`"tie"`) awaiting a human decision, and LLM adjudication verdicts
 (`"llm"`) recorded for audit and override. Cases are decided (or verdicts
-overridden) by editing the file by hand. Each line carries the mention, its
-route, and the `candidates` (OSM ref, name, type, elevation, coordinates);
+overridden) by editing the file by hand. Each line carries the item (its
+`name`, `entry_id` and `kind` — `place` or `mention`) and the `candidates`
+(OSM ref, name, type, elevation, coordinates);
 `llm` cases additionally carry the `verdict` (pick + reason) and `case_id`
 (its verdict file). To decide a case — or overrule an LLM verdict — set its
 `decision` field to either

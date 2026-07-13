@@ -54,15 +54,15 @@ def write_verdict(
     )
 
 
-def review_case(cfg, route_id="r7"):
-    return next(c for c in load_jsonl(cfg.review) if c["route_id"] == route_id)
+def review_case(cfg, entry_id="r7"):
+    return next(c for c in load_jsonl(cfg.review) if c["entry_id"] == entry_id)
 
 
-def override(cfg, decision, route_id="r7"):
+def override(cfg, decision, entry_id="r7"):
     """Hand-edit review.jsonl the way a reviewer overrides an LLM verdict:
     fill in the decision, leave the recorded verdict untouched."""
     cases = load_jsonl(cfg.review)
-    next(c for c in cases if c["route_id"] == route_id)["decision"] = decision
+    next(c for c in cases if c["entry_id"] == entry_id)["decision"] = decision
     cfg.review.write_text(
         "".join(json.dumps(c, ensure_ascii=False) + "\n" for c in cases),
         encoding="utf-8",
@@ -80,8 +80,8 @@ def test_leftovers_are_queued_with_shortlists(cfg):
     assert case["mention"] == "Meilerhaus"
     assert case["name"] == "Meilerhaus"
     assert case["type"] == "hut"
-    assert case["route_id"] == "r7"
-    assert case["is_anchor"] is False
+    assert case["entry_id"] == "r7"
+    assert case["kind"] == "mention"
     assert case["case_id"].startswith("r7__meilerhaus__hut__")
     # Shortlist ranked by score; the type-incompatible decoy is included —
     # judging drift is the adjudicator's job, not the guards'.
@@ -95,7 +95,7 @@ def test_leftovers_are_queued_with_shortlists(cfg):
     # case; the funnel counts it as unmatched, nothing under llm.
     unmatched = {u["name"] for u in load_jsonl(cfg.unmatched)}
     assert "Meilerhaus" in unmatched
-    assert all(c["route_id"] != "r7" for c in load_jsonl(cfg.review))
+    assert all(c["entry_id"] != "r7" for c in load_jsonl(cfg.review))
     funnel = json.loads(cfg.funnel.read_text(encoding="utf-8"))
     assert funnel["types"]["hut"] == {
         "mentions": 1,
@@ -108,12 +108,12 @@ def test_leftovers_are_queued_with_shortlists(cfg):
         "unmatched": 1,
     }
 
-    # Leftovers without any shortlist candidate (r6's 'Unbekanntspitze') are
-    # plain unmatched — nothing worth judging, never queued.
-    assert all(c["route_id"] != "r6" for c in cases)
+    # Leftovers without any shortlist candidate (r6's 'Unbekanntspitze' Place)
+    # are plain unmatched — nothing worth judging, never queued.
+    assert all(c["entry_id"] != "r6" for c in cases)
 
 
-def test_plan_adjudicate_batches_with_route_context_and_resumes(cfg, capsys):
+def test_plan_adjudicate_batches_with_entry_context_and_resumes(cfg, capsys):
     run_adj_pipeline(cfg)
     [case] = queued_cases(cfg)
 
@@ -123,8 +123,16 @@ def test_plan_adjudicate_batches_with_route_context_and_resumes(cfg, capsys):
     batches = [json.loads(line) for line in out.out.splitlines()]
     assert [b["batch"] for b in batches] == [1]
     [planned] = batches[0]["cases"]
-    # The queue record verbatim, plus the route context the subagent needs.
-    assert planned == {**case, "route": {"peak": None, "description": "..."}}
+    # The queue record verbatim, plus the entry context the subagent needs.
+    assert planned == {
+        **case,
+        "entry": {
+            "name": "Übergang zum Höllentorkopf",
+            "kind": "route",
+            "peak": None,
+            "description": "...",
+        },
+    }
     assert "1 remaining in 1 batches" in out.err
 
     # A verdict file marks the case done: it never reappears.
@@ -154,14 +162,13 @@ def test_pick_enters_registry_with_llm_provenance(cfg, capsys):
     }
     assert pois["Meilerhütte"]["aliases"] == ["Meilerhaus"]
 
-    # ... linked to the route and exported to the GeoJSON ...
-    links = load_jsonl(cfg.route_pois_jsonl)
-    link = next(l for l in links if l["poi_id"] == pois["Meilerhütte"]["poi_id"])
+    # ... linked to the entry (mention link) and exported to the GeoJSON ...
+    links = load_jsonl(cfg.entry_pois_jsonl)
+    link = next(ln for ln in links if ln["poi_id"] == pois["Meilerhütte"]["poi_id"])
     assert link == {
-        "route_id": "r7",
+        "entry_id": "r7",
         "poi_id": pois["Meilerhütte"]["poi_id"],
         "surface": "Meilerhaus",
-        "is_anchor": False,
     }
     geojson = json.loads(cfg.pois_geojson.read_text(encoding="utf-8"))
     assert "Meilerhütte" in {f["properties"]["name"] for f in geojson["features"]}
@@ -172,7 +179,7 @@ def test_pick_enters_registry_with_llm_provenance(cfg, capsys):
     assert funnel["types"]["hut"]["unmatched"] == 0
     assert "llm: 1" in stderr
     assert queued_cases(cfg) == []
-    assert all(u["route_id"] != "r7" for u in load_jsonl(cfg.unmatched))
+    assert all(u["entry_id"] != "r7" for u in load_jsonl(cfg.unmatched))
 
     # The verdict is on the audit record: a review case with the shortlist,
     # the verdict, and an open decision a human may still override.
@@ -204,13 +211,13 @@ def test_no_match_lands_in_unmatched_with_reason(cfg):
     rerun_match(cfg)
 
     # Unmatched, with the adjudicator's reason preserved; never registered.
-    unmatched = next(u for u in load_jsonl(cfg.unmatched) if u["route_id"] == "r7")
+    unmatched = next(u for u in load_jsonl(cfg.unmatched) if u["entry_id"] == "r7")
     assert unmatched == {
-        "route_id": "r7",
+        "entry_id": "r7",
         "mention": "Meilerhaus",
         "name": "Meilerhaus",
         "type": "hut",
-        "is_anchor": False,
+        "kind": "mention",
         "elevation_m": None,
         "llm_reason": "No candidate is this place: both are 3+ km from the route.",
     }
@@ -273,7 +280,7 @@ def test_override_skip_beats_pick(cfg):
 
     # The pick is out of the registry; the mention is a human skip.
     assert "Meilerhütte" not in {p["name"] for p in load_jsonl(cfg.pois_jsonl)}
-    unmatched = next(u for u in load_jsonl(cfg.unmatched) if u["route_id"] == "r7")
+    unmatched = next(u for u in load_jsonl(cfg.unmatched) if u["entry_id"] == "r7")
     assert unmatched["skipped_by"] == "review"
     funnel = json.loads(cfg.funnel.read_text(encoding="utf-8"))
     assert funnel["types"]["hut"]["skipped"] == 1
@@ -297,9 +304,9 @@ def test_invalid_override_fails_loudly(cfg):
 
 
 def test_llm_provenance_ranks_below_cascade(cfg):
-    # r1 mentions the Meilerhütte by its OSM name (exact); r7's 'Meilerhaus'
-    # is LLM-picked onto the same POI. The deterministic match keeps the
-    # provenance; the verdict stays auditable in review.jsonl.
+    # r1's Übersicht mentions the Meilerhütte by its OSM name (exact); r7's
+    # 'Meilerhaus' is LLM-picked onto the same POI. The deterministic match
+    # keeps the provenance; the verdict stays auditable in review.jsonl.
     write_part(cfg, "r1", mention("Meilerhütte", type="hut"))
     run_adj_pipeline(cfg)
     [case] = queued_cases(cfg)
@@ -309,9 +316,9 @@ def test_llm_provenance_ranks_below_cascade(cfg):
     pois = {p["name"]: p for p in load_jsonl(cfg.pois_jsonl)}
     assert pois["Meilerhütte"]["match"] == {"method": "exact"}
     assert pois["Meilerhütte"]["aliases"] == ["Meilerhaus"]
-    links = load_jsonl(cfg.route_pois_jsonl)
+    links = load_jsonl(cfg.entry_pois_jsonl)
     assert {
-        l["route_id"] for l in links if l["poi_id"] == pois["Meilerhütte"]["poi_id"]
+        ln["entry_id"] for ln in links if ln["poi_id"] == pois["Meilerhütte"]["poi_id"]
     } == {"r1", "r7"}
     assert review_case(cfg)["verdict"]["pick"] == "node/8001"
 
@@ -326,7 +333,7 @@ def test_hallucinated_pick_is_ignored_with_note(cfg):
     rerun_match(cfg)
 
     assert "Meilerhütte" not in {p["name"] for p in load_jsonl(cfg.pois_jsonl)}
-    assert any(u["route_id"] == "r7" for u in load_jsonl(cfg.unmatched))
+    assert any(u["entry_id"] == "r7" for u in load_jsonl(cfg.unmatched))
     case = review_case(cfg)
     assert "node/424242" in case["note"]
     assert "re-adjudicate" in case["note"]

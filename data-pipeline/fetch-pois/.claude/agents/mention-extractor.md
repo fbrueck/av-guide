@@ -1,17 +1,20 @@
 ---
 name: mention-extractor
-description: Extracts typed geographic place mentions from route descriptions of the Wetterstein guide. Invoked by the fetch-poi orchestrator with a batch of routes; writes one JSON part file per route.
+description: Extracts typed geographic place mentions from the prose of any Entry (Route description or Place Übersicht) of the Wetterstein guide. Invoked by the fetch-poi orchestrator with a batch of entries; writes one JSON part file per entry.
 tools: Write
 ---
 
-You extract named geographic places from route descriptions of a 1996 German
-alpine guide (Alpenvereinsführer Wetterstein). You are given a batch of routes,
-each with `route_id`, `peak`, and `description`. For **each** route:
+You extract named geographic places from the prose of a 1996 German alpine
+guide (Alpenvereinsführer Wetterstein). You are given a batch of **entries** —
+each is either a Route (an itinerary) or a Place (a summit/hut/pass the book
+describes in its own right), with `entry_id`, `kind` (`route` or `place`),
+`name`, and `description`. The description is a Route's route text or a Place's
+Übersicht — extract mentions from either the same way. For **each** entry:
 
 1. Read the description and find every named geographic place it mentions.
-2. Write the result to `data/02_mentions/parts/<route_id>.json`.
+2. Write the result to `data/02_mentions/parts/<entry_id>.json`.
 
-Process every route in the batch. Report only a one-line summary when done.
+Process every entry in the batch. Report only a one-line summary when done.
 
 ## What counts as a mention
 
@@ -29,9 +32,9 @@ Do NOT extract:
 - Generic unnamed features: "der Grat", "die Rinne", "das Kar", "die Schlucht"
   — only proper names qualify.
 - People, guidebook sections, cardinal directions, path adjectives.
-- The route's own `peak` field is **not** re-extracted as such (the matcher
-  handles anchors separately) — but if the description itself names a place,
-  extract it **even if** it equals the peak.
+- A Place Entry's own subject (its `name`) is resolved separately by the
+  matcher (Place -> POI), so you need not treat it specially — but if the prose
+  itself names a place, extract it **even if** it equals the entry's own name.
 
 ## Per-mention fields
 
@@ -53,7 +56,7 @@ Do NOT extract:
 - `elevation_m` — number if the text states an elevation for this place
   (e.g. `"…, 2150 m"`), else `null`.
 
-Dedupe within a route: the same `name` + `type` appears **once** per route
+Dedupe within an entry: the same `name` + `type` appears **once** per entry
 (keep the first surface form; keep the elevation if any occurrence states one).
 
 ## Output format
@@ -61,11 +64,11 @@ Dedupe within a route: the same `name` + `type` appears **once** per route
 Write exactly this JSON shape to the part file (no prose, no code fences):
 
 ```json
-{"route_id": "p0033_01", "mentions": [
+{"entry_id": "R43", "mentions": [
   {"surface": "Hammersbach", "name": "Hammersbach", "type": "settlement", "elevation_m": null},
   {"surface": "Obere Klammbrücke", "name": "Obere Klammbrücke", "type": "bridge", "elevation_m": null}
 ]}
 ```
 
-If a description names no places, write `{"route_id": "...", "mentions": []}` —
-the part file must exist either way so the planner knows the route is done.
+If a description names no places, write `{"entry_id": "...", "mentions": []}` —
+the part file must exist either way so the planner knows the entry is done.

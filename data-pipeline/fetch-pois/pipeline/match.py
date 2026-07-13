@@ -1,22 +1,37 @@
-"""Stage 3: resolve anchors and extracted mentions against the gazetteer.
+"""Stage 3: resolve Entries and their mentions against the gazetteer.
 
-Every route contributes its `peak` field as an untyped anchor mention, and —
-where stage 2 has produced a part file — the typed mentions extracted from
-its description. Each mention runs through the deterministic cascade:
+For each Entry the matcher resolves two kinds of thing to a POI (see CONTEXT.md,
+ADR 0001):
 
-  1. exact — gazetteer entries whose normalized name equals the mention's
+  - **Place** (`kind: place`) — the Entry itself resolves to **at most one**
+    POI, its coordinate. The Place's name matches, its best-effort `place_type`
+    (a hint, not required) and verbatim `elevation` guard the match, and the
+    result is a `{place_id, poi_id}` row in place_pois.jsonl (an unresolved
+    Place is an honest absence, surfaced in the funnel, not a dropped record).
+  - **Mention** (`kind: mention`) — a place-name stage 2 extracted from *any*
+    Entry's prose (a Route description or a Place Übersicht). Each resolves to a
+    `{entry_id, poi_id, surface}` row in entry_pois.jsonl.
+
+A Route's `peak` string is **not** matched here: a Route's anchor coordinate is
+transitive via its Place (route-map resolves anchor_ids -> Place -> POI), so
+`peak` stays verbatim Route metadata. A Place and a Mention run the same
+cascade (in code both are a `kind`-tagged `item` dict — the humble unit the
+cascade takes):
+
+  1. exact — gazetteer entries whose normalized name equals the item's
   2. fuzzy — RapidFuzz ratio >= FUZZY_CUTOFF on the normalized names
 
-Both levels are guarded: a candidate must be taxonomy-compatible with the
-mention's type (see _NEAR_GROUPS) and, when both the book and OSM state an
-elevation, agree within ELE_TOLERANCE meters. Exactly one surviving candidate
-matches; provenance records the method (and score for fuzzy). More than one
-candidate at equal footing — same cascade level, same score — is never
-auto-resolved: the mention becomes an open case in review.jsonl with
-decision: null. A human closes a case by editing `decision` to either one of
-the case's candidate OSM refs (accept: the POI enters the registry with
-`{"method": "review"}` provenance, ranked above exact) or the string "skip"
-(the mention is routed to unmatched.jsonl with `skipped_by: "review"`).
+Both levels are guarded: a candidate must be taxonomy-compatible with the item's
+type (see _NEAR_GROUPS; a Place's `place_type` hint is used exactly like a
+mention type, and a null type disables the type guard) and, when both the book
+and OSM state an elevation, agree within ELE_TOLERANCE meters. Exactly one
+surviving candidate matches; provenance records the method (and score for
+fuzzy). More than one candidate at equal footing — same cascade level, same
+score — is never auto-resolved: the Place or Mention becomes an open case in
+review.jsonl with decision: null. A human closes a case by editing `decision`
+to either one of the case's candidate OSM refs (accept: the POI enters the
+registry with `{"method": "review"}` provenance, ranked above exact) or the
+string "skip" (routing it to unmatched.jsonl with `skipped_by: "review"`).
 Decisions are validated against the case's own recorded candidates — any
 other value is a typo and aborts the run — then re-applied on every rerun,
 so review work survives matcher reruns and gazetteer/mention refreshes; an
@@ -24,7 +39,7 @@ accepted ref that has vanished from the gazetteer reopens the case with a
 note instead.
 
 No surviving candidate at either level lands in unmatched.jsonl — and, when
-the mention still has shortlist candidates (unguarded fuzzy >=
+it still has shortlist candidates (unguarded fuzzy >=
 ADJUDICATION_CUTOFF, top ADJUDICATION_SHORTLIST), it is additionally queued
 in adjudication_queue.jsonl for the LLM adjudicator (#6): `plan adjudicate`
 batches the queue to match-adjudicator subagents, which write one verdict
@@ -42,9 +57,10 @@ resumability unit: a case with a verdict is never re-adjudicated.
   python -m pipeline.match --guide <id>
 
 Outputs: pois.jsonl (deduplicated registry with aliases and best-method
-provenance, review > exact > fuzzy > llm), route_pois.jsonl (one link per
-route/POI pair with anchor flag), pois.geojson (webapp export), and matcher
-bookkeeping in 03_matched/: review.jsonl, unmatched.jsonl,
+provenance, review > exact > fuzzy > llm), place_pois.jsonl (`{place_id,
+poi_id}`, one per resolved Place), entry_pois.jsonl (`{entry_id, poi_id,
+surface}`, one per Entry mention/POI pair), pois.geojson (webapp export), and
+matcher bookkeeping in 03_matched/: review.jsonl, unmatched.jsonl,
 adjudication_queue.jsonl, funnel.json (rendered by
 `python -m pipeline.plan funnel`).
 """
@@ -164,59 +180,66 @@ def write_jsonl(path, records: list[dict]) -> None:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
 
 
-def route_mentions(route: dict, cfg: GuideConfig) -> tuple[list[dict], bool]:
-    """The route's mentions — its anchor (untyped; elevation parsed from the
-    surface) first, then the extracted mentions if stage 2 produced a part
-    file. Returns (mentions, part file exists)."""
-    mentions = []
-    if route.get("peak"):
-        mentions.append(
+def entry_items(entry: dict, cfg: GuideConfig) -> tuple[list[dict], bool]:
+    """The resolvable items an Entry contributes: the **Place** itself
+    (`kind: place`, resolving to <=1 POI, typed by its best-effort `place_type`
+    hint with elevation parsed from the verbatim `elevation` string) when the
+    Entry is a Place, followed by every **Mention** (`kind: mention`) stage 2
+    extracted from its prose if a part file exists. A Route's `peak` is not an
+    item — its anchor coordinate is transitive via its Place. Returns
+    (items, part file exists)."""
+    items = []
+    if entry["kind"] == "place":
+        elevation = entry.get("elevation")
+        items.append(
             {
-                "surface": route["peak"],
-                "name": strip_elevation(route["peak"]),
-                "type": None,
-                "elevation_m": stated_elevation(route["peak"]),
-                "is_anchor": True,
+                "surface": entry["name"],
+                "name": entry["name"],
+                "type": entry.get("place_type"),
+                "elevation_m": stated_elevation(elevation) if elevation else None,
+                "kind": "place",
             }
         )
-    part = cfg.mention_parts / f"{route['route_id']}.json"
+    part = cfg.mention_parts / f"{entry['id']}.json"
     if part.exists():
         for m in json.loads(part.read_text(encoding="utf-8"))["mentions"]:
-            mentions.append(
+            items.append(
                 {
                     "surface": m["surface"],
                     "name": m["name"],
                     "type": m["type"],
                     "elevation_m": m.get("elevation_m"),
-                    "is_anchor": False,
+                    "kind": "mention",
                 }
             )
-    return mentions, part.exists()
+    return items, part.exists()
 
 
-def passes_guards(mention: dict, entry: dict) -> bool:
-    t = mention["type"]
+def passes_guards(item: dict, candidate: dict) -> bool:
+    t = item["type"]
     type_ok = (
-        t is None  # anchors carry no type
-        or t == entry["type"]
-        or "locality" in (t, entry["type"])
-        or any(t in g and entry["type"] in g for g in _NEAR_GROUPS)
+        t is None  # untyped item (a Place with no place_type hint) — no guard
+        or t == candidate["type"]
+        or "locality" in (t, candidate["type"])
+        or any(t in g and candidate["type"] in g for g in _NEAR_GROUPS)
     )
-    ele = mention["elevation_m"]
+    ele = item["elevation_m"]
     ele_ok = (
-        ele is None or entry["ele"] is None or abs(ele - entry["ele"]) <= ELE_TOLERANCE
+        ele is None
+        or candidate["ele"] is None
+        or abs(ele - candidate["ele"]) <= ELE_TOLERANCE
     )
     return type_ok and ele_ok
 
 
 def resolve(
-    mention: dict, index: dict[str, list[dict]], keys: list[str]
+    item: dict, index: dict[str, list[dict]], keys: list[str]
 ) -> tuple[str, list]:
-    """Run the cascade for one mention. Returns (method, [(entry, score), ...])
+    """Run the cascade for one item. Returns (method, [(entry, score), ...])
     where method is 'exact'/'fuzzy' (single survivor), 'tie' (several at equal
     footing) or 'unmatched' (none)."""
-    key = norm_key(mention["name"])
-    exact = [(e, 100.0) for e in index.get(key, []) if passes_guards(mention, e)]
+    key = norm_key(item["name"])
+    exact = [(e, 100.0) for e in index.get(key, []) if passes_guards(item, e)]
     if exact:
         return ("exact" if len(exact) == 1 else "tie"), exact
 
@@ -227,7 +250,7 @@ def resolve(
         (e, round(score, 1))
         for hit_key, score, _ in hits
         for e in index[hit_key]
-        if passes_guards(mention, e)
+        if passes_guards(item, e)
     ]
     if not survivors:
         return "unmatched", []
@@ -237,14 +260,14 @@ def resolve(
 
 
 def shortlist(
-    mention: dict, index: dict[str, list[dict]], keys: list[str]
+    item: dict, index: dict[str, list[dict]], keys: list[str]
 ) -> list[tuple[dict, float]]:
     """Candidate shortlist for the LLM adjudicator: the top
     ADJUDICATION_SHORTLIST gazetteer entries by fuzzy ratio >=
     ADJUDICATION_CUTOFF, deliberately unguarded — the adjudicator sees each
     candidate's type and elevation and judges drift the cascade's guards
     can't (renamed huts, book-elevation typos, 1996 spellings)."""
-    key = norm_key(mention["name"])
+    key = norm_key(item["name"])
     hits = process.extract(
         key, keys, scorer=fuzz.ratio, score_cutoff=ADJUDICATION_CUTOFF, limit=None
     )
@@ -255,17 +278,17 @@ def shortlist(
     return ranked[:ADJUDICATION_SHORTLIST]
 
 
-def case_id(rid: str, mention: dict) -> str:
+def case_id(eid: str, item: dict) -> str:
     """Filesystem-safe identity of an adjudication case — same fields as
     _case_key, so it is stable across reruns and refreshes and a verdict
     file survives them. The hash suffix disambiguates names that collide
     after slugging (e.g. 'Knorr Hütte' vs 'Knorr-Hütte')."""
-    kind = "anchor" if mention["is_anchor"] else mention["type"]
+    label = "place" if item["kind"] == "place" else item["type"]
     slug = re.sub(
-        r"[^a-z0-9]+", "-", mention["name"].casefold().translate(_TRANSLIT)
+        r"[^a-z0-9]+", "-", item["name"].casefold().translate(_TRANSLIT)
     ).strip("-")
-    raw = f"{rid}\x1f{mention['name']}\x1f{mention['type']}\x1f{mention['is_anchor']}"
-    return f"{rid}__{slug}__{kind}__{hashlib.sha1(raw.encode()).hexdigest()[:8]}"
+    raw = f"{eid}\x1f{item['name']}\x1f{item['type']}\x1f{item['kind']}"
+    return f"{eid}__{slug}__{label}__{hashlib.sha1(raw.encode()).hexdigest()[:8]}"
 
 
 def load_verdicts(cfg: GuideConfig) -> dict[str, dict]:
@@ -306,8 +329,8 @@ def load_verdicts(cfg: GuideConfig) -> dict[str, dict]:
 
 def register(
     pois: dict,
-    mention: dict,
-    entry: dict,
+    item: dict,
+    candidate: dict,
     method: str,
     score: float,
     reason: str | None = None,
@@ -315,8 +338,10 @@ def register(
     """Upsert the POI: aliases collect differing surface forms, provenance
     keeps the best method (review > exact > fuzzy > llm, then highest
     score). LLM provenance carries the adjudicator's reason."""
-    pid = poi_id(entry["osm"])
-    poi = pois.setdefault(pid, {"poi_id": pid, **entry, "aliases": [], "match": None})
+    pid = poi_id(candidate["osm"])
+    poi = pois.setdefault(
+        pid, {"poi_id": pid, **candidate, "aliases": [], "match": None}
+    )
     prov = {"method": method}
     if method == "fuzzy":
         prov["score"] = score
@@ -329,38 +354,51 @@ def register(
         cur.get("score", 100.0),
     ):
         poi["match"] = prov
-    for form in (strip_elevation(mention["surface"]), mention["name"]):
+    for form in (strip_elevation(item["surface"]), item["name"]):
         if form != poi["name"] and form not in poi["aliases"]:
             poi["aliases"].append(form)
     return pid
 
 
-def _add_link(links: dict, rid: str, pid: str, mention: dict) -> None:
-    link = links.setdefault(
-        (rid, pid),
-        {
-            "route_id": rid,
-            "poi_id": pid,
-            "surface": mention["surface"],
-            "is_anchor": mention["is_anchor"],
-        },
+def _add_place_link(place_links: dict, eid: str, pid: str) -> None:
+    """Record a Place's single POI. A Place resolves to at most one POI, so
+    the link is keyed by place_id (a rerun overwrites with the same value)."""
+    place_links[eid] = {"place_id": eid, "poi_id": pid}
+
+
+def _add_entry_link(entry_links: dict, eid: str, pid: str, item: dict) -> None:
+    """Record an Entry mention -> POI link, deduplicated per (entry, POI);
+    the first surface form seen wins."""
+    entry_links.setdefault(
+        (eid, pid),
+        {"entry_id": eid, "poi_id": pid, "surface": item["surface"]},
     )
-    link["is_anchor"] = link["is_anchor"] or mention["is_anchor"]
 
 
-def _case_key(rid: str, mention: dict) -> tuple:
+def _add_link(
+    place_links: dict, entry_links: dict, eid: str, pid: str, item: dict
+) -> None:
+    """Route a resolved item to its link table: a Place to place_pois, an
+    Entry mention to entry_pois."""
+    if item["kind"] == "place":
+        _add_place_link(place_links, eid, pid)
+    else:
+        _add_entry_link(entry_links, eid, pid, item)
+
+
+def _case_key(eid: str, item: dict) -> tuple:
     """Identity of a review case, stable across reruns and refreshes."""
-    return (rid, mention["name"], mention["type"], mention["is_anchor"])
+    return (eid, item["name"], item["type"], item["kind"])
 
 
-def _unmatched_record(rid: str, mention: dict, **extra) -> dict:
+def _unmatched_record(eid: str, item: dict, **extra) -> dict:
     return {
-        "route_id": rid,
-        "mention": mention["surface"],
-        "name": mention["name"],
-        "type": mention["type"],
-        "is_anchor": mention["is_anchor"],
-        "elevation_m": mention["elevation_m"],
+        "entry_id": eid,
+        "mention": item["surface"],
+        "name": item["name"],
+        "type": item["type"],
+        "kind": item["kind"],
+        "elevation_m": item["elevation_m"],
         **extra,
     }
 
@@ -381,78 +419,77 @@ def _candidate_rows(survivors: list[tuple[dict, float]]) -> list[dict]:
 
 
 def match_mentions(
-    routes: list[dict],
+    entries: list[dict],
     gazetteer: list[dict],
     cfg: GuideConfig,
     decisions: dict[tuple, str] | None = None,
     notes: dict[tuple, str] | None = None,
     verdicts: dict[str, dict] | None = None,
 ):
-    """Returns (pois by id, route<->poi links, review cases, unmatched,
-    adjudication queue, funnel by type, routes with a mention part file).
-    `decisions`/`notes` come from load_decisions() and are applied to tie
-    and adjudication cases alike; `verdicts` come from load_verdicts() and
+    """Returns (pois by id, place->poi links, entry->poi mention links, review
+    cases, unmatched, adjudication queue, funnel by type, entries with a mention
+    part file). `decisions`/`notes` come from load_decisions() and are applied to
+    tie and adjudication cases alike; `verdicts` come from load_verdicts() and
     resolve adjudication cases that no decision overrides."""
     decisions = decisions or {}
     notes = notes or {}
     verdicts = verdicts or {}
     index: dict[str, list[dict]] = {}
-    for entry in gazetteer:
-        index.setdefault(norm_key(entry["name"]), []).append(entry)
+    for candidate in gazetteer:
+        index.setdefault(norm_key(candidate["name"]), []).append(candidate)
     keys = list(index)
 
     pois: dict[str, dict] = {}
-    links: dict[tuple[str, str], dict] = {}
+    place_links: dict[str, dict] = {}
+    entry_links: dict[tuple[str, str], dict] = {}
     review: list[dict] = []
     unmatched: list[dict] = []
     queue: list[dict] = []
     funnel: dict[str, dict[str, int]] = {}
     with_parts = 0
 
-    for route in sorted(routes, key=lambda r: r["route_id"]):
-        rid = route["route_id"]
-        mentions, has_part = route_mentions(route, cfg)
+    for entry in sorted(entries, key=lambda e: e["id"]):
+        eid = entry["id"]
+        items, has_part = entry_items(entry, cfg)
         with_parts += has_part
-        for mention in mentions:
-            method, survivors = resolve(mention, index, keys)
+        for item in items:
+            method, survivors = resolve(item, index, keys)
             bucket = funnel.setdefault(
-                "anchor" if mention["is_anchor"] else mention["type"],
+                "place" if item["kind"] == "place" else item["type"],
                 dict.fromkeys(_FUNNEL_COLS, 0),
             )
             bucket["mentions"] += 1
             if method in ("exact", "fuzzy"):
                 bucket[method] += 1
-                entry, score = survivors[0]
-                pid = register(pois, mention, entry, method, score)
-                _add_link(links, rid, pid, mention)
+                candidate, score = survivors[0]
+                pid = register(pois, item, candidate, method, score)
+                _add_link(place_links, entry_links, eid, pid, item)
             elif method == "tie":
-                key = _case_key(rid, mention)
+                key = _case_key(eid, item)
                 decision = decisions.get(key)
                 by_ref = {e["osm"]: (e, score) for e, score in survivors}
                 case = {
-                    "mention": mention["surface"],
-                    "name": mention["name"],
-                    "type": mention["type"],
-                    "route_id": rid,
-                    "is_anchor": mention["is_anchor"],
+                    "mention": item["surface"],
+                    "name": item["name"],
+                    "type": item["type"],
+                    "entry_id": eid,
+                    "kind": item["kind"],
                     "candidates": _candidate_rows(survivors),
                     "decision": decision,
                     "source": "tie",
                 }
                 if decision == "skip":
-                    # Human sent the mention to unmatched; the case stays in
+                    # Human sent the item to unmatched; the case stays in
                     # review.jsonl as the persistent record of that decision.
                     bucket["skipped"] += 1
-                    unmatched.append(
-                        _unmatched_record(rid, mention, skipped_by="review")
-                    )
+                    unmatched.append(_unmatched_record(eid, item, skipped_by="review"))
                 elif decision in by_ref:
                     # Human accepted a candidate: it enters the registry with
                     # review provenance (ranked above exact).
                     bucket["review"] += 1
-                    entry, score = by_ref[decision]
-                    pid = register(pois, mention, entry, "review", score)
-                    _add_link(links, rid, pid, mention)
+                    candidate, score = by_ref[decision]
+                    pid = register(pois, item, candidate, "review", score)
+                    _add_link(place_links, entry_links, eid, pid, item)
                 else:
                     bucket["tie"] += 1
                     if decision is not None:
@@ -470,25 +507,25 @@ def match_mentions(
             else:
                 # Classes deliberately outside the gazetteer (#11,
                 # cfg.out_of_scope) count as skipped, not unmatched.
-                skip_reason = out_of_scope_reason(mention["name"], cfg.out_of_scope)
+                skip_reason = out_of_scope_reason(item["name"], cfg.out_of_scope)
                 if skip_reason:
                     bucket["skipped"] += 1
                     unmatched.append(
-                        _unmatched_record(rid, mention, skip_reason=skip_reason)
+                        _unmatched_record(eid, item, skip_reason=skip_reason)
                     )
                     continue
-                candidates = shortlist(mention, index, keys)
+                candidates = shortlist(item, index, keys)
                 if not candidates:
                     # Nothing worth judging: plain unmatched, never adjudicated.
                     bucket["unmatched"] += 1
-                    unmatched.append(_unmatched_record(rid, mention))
+                    unmatched.append(_unmatched_record(eid, item))
                     continue
                 # Cascade leftover with shortlist candidates: an adjudication
                 # case (#6). A human decision (candidate ref or "skip") always
                 # wins; otherwise the LLM verdict applies; without either the
                 # case is queued for `plan adjudicate`.
-                cid = case_id(rid, mention)
-                key = _case_key(rid, mention)
+                cid = case_id(eid, item)
+                key = _case_key(eid, item)
                 decision = decisions.get(key)
                 verdict = verdicts.get(cid)
                 note = notes.get(key)
@@ -508,11 +545,11 @@ def match_mentions(
                     )
                     decision = None
                 case = {
-                    "mention": mention["surface"],
-                    "name": mention["name"],
-                    "type": mention["type"],
-                    "route_id": rid,
-                    "is_anchor": mention["is_anchor"],
+                    "mention": item["surface"],
+                    "name": item["name"],
+                    "type": item["type"],
+                    "entry_id": eid,
+                    "kind": item["kind"],
                     "case_id": cid,
                     "candidates": _candidate_rows(candidates),
                     "verdict": verdict,
@@ -526,16 +563,16 @@ def match_mentions(
                     # case enters review.jsonl once a verdict exists (or, edge
                     # case, to keep a note visible while re-adjudication runs).
                     bucket["unmatched"] += 1
-                    unmatched.append(_unmatched_record(rid, mention))
+                    unmatched.append(_unmatched_record(eid, item))
                     queue.append(
                         {
                             "case_id": cid,
-                            "route_id": rid,
-                            "mention": mention["surface"],
-                            "name": mention["name"],
-                            "type": mention["type"],
-                            "is_anchor": mention["is_anchor"],
-                            "elevation_m": mention["elevation_m"],
+                            "entry_id": eid,
+                            "mention": item["surface"],
+                            "name": item["name"],
+                            "type": item["type"],
+                            "kind": item["kind"],
+                            "elevation_m": item["elevation_m"],
                             "candidates": case["candidates"],
                         }
                     )
@@ -544,27 +581,25 @@ def match_mentions(
                     continue
                 if decision == "skip":
                     bucket["skipped"] += 1
-                    unmatched.append(
-                        _unmatched_record(rid, mention, skipped_by="review")
-                    )
+                    unmatched.append(_unmatched_record(eid, item, skipped_by="review"))
                 elif decision in by_ref:
                     bucket["review"] += 1
-                    entry, score = by_ref[decision]
-                    pid = register(pois, mention, entry, "review", score)
-                    _add_link(links, rid, pid, mention)
+                    candidate, score = by_ref[decision]
+                    pid = register(pois, item, candidate, "review", score)
+                    _add_link(place_links, entry_links, eid, pid, item)
                 elif verdict["pick"] is None:
                     # LLM declared no-match: unmatched, reason preserved.
                     bucket["unmatched"] += 1
                     unmatched.append(
-                        _unmatched_record(rid, mention, llm_reason=verdict["reason"])
+                        _unmatched_record(eid, item, llm_reason=verdict["reason"])
                     )
                 elif verdict["pick"] in by_ref:
                     bucket["llm"] += 1
-                    entry, score = by_ref[verdict["pick"]]
+                    candidate, score = by_ref[verdict["pick"]]
                     pid = register(
-                        pois, mention, entry, "llm", score, reason=verdict["reason"]
+                        pois, item, candidate, "llm", score, reason=verdict["reason"]
                     )
-                    _add_link(links, rid, pid, mention)
+                    _add_link(place_links, entry_links, eid, pid, item)
                 else:
                     # The pick is not one of the case's current candidates —
                     # hallucinated, or vanished with a gazetteer refresh.
@@ -574,9 +609,18 @@ def match_mentions(
                         f"candidates — verdict ignored; delete "
                         f"{cfg.verdicts_dir / (cid + '.json')} to re-adjudicate"
                     )
-                    unmatched.append(_unmatched_record(rid, mention))
+                    unmatched.append(_unmatched_record(eid, item))
                 review.append(case)
-    return pois, list(links.values()), review, unmatched, queue, funnel, with_parts
+    return (
+        pois,
+        list(place_links.values()),
+        list(entry_links.values()),
+        review,
+        unmatched,
+        queue,
+        funnel,
+        with_parts,
+    )
 
 
 def load_decisions(cfg: GuideConfig) -> tuple[dict[tuple, str], dict[tuple, str]]:
@@ -591,7 +635,7 @@ def load_decisions(cfg: GuideConfig) -> tuple[dict[tuple, str], dict[tuple, str]
     if not cfg.review.exists():
         return decisions, notes
     for case in load_jsonl(cfg.review):
-        key = (case["route_id"], case["name"], case["type"], case["is_anchor"])
+        key = (case["entry_id"], case["name"], case["type"], case["kind"])
         decision = case.get("decision")
         if decision is None:
             if case.get("note"):
@@ -601,27 +645,31 @@ def load_decisions(cfg: GuideConfig) -> tuple[dict[tuple, str], dict[tuple, str]
         if decision != "skip" and decision not in refs:
             sys.exit(
                 f"{cfg.review}: decision {decision!r} for {case['name']!r} "
-                f"(route {case['route_id']}) is not one of the case's candidates "
+                f"(entry {case['entry_id']}) is not one of the case's candidates "
                 f'({", ".join(refs)}) and not "skip" — fix the typo and rerun.'
             )
         decisions[key] = decision
     return decisions, notes
 
 
-def funnel_report(funnel: dict, n_routes: int, with_parts: int) -> dict:
+def funnel_report(funnel: dict, n_entries: int, with_parts: int) -> dict:
     ordered = dict(sorted(funnel.items(), key=lambda kv: (-kv[1]["mentions"], kv[0])))
     totals = {col: sum(row[col] for row in funnel.values()) for col in _FUNNEL_COLS}
     return {
-        "routes": {"total": n_routes, "with_mentions": with_parts},
+        "entries": {"total": n_entries, "with_mentions": with_parts},
         "types": ordered,
         "totals": totals,
     }
 
 
-def to_geojson(pois: dict, links: list[dict]) -> dict:
-    n_routes: dict[str, int] = {}
-    for link in links:
-        n_routes[link["poi_id"]] = n_routes.get(link["poi_id"], 0) + 1
+def to_geojson(pois: dict, place_links: list[dict], entry_links: list[dict]) -> dict:
+    # n_entries: how many distinct Entries (Places via place_pois + Entries via
+    # their mentions) reference each POI — the webapp's "used by N entries" count.
+    entries_per_poi: dict[str, set[str]] = {}
+    for link in place_links:
+        entries_per_poi.setdefault(link["poi_id"], set()).add(link["place_id"])
+    for link in entry_links:
+        entries_per_poi.setdefault(link["poi_id"], set()).add(link["entry_id"])
     features = [
         {
             "type": "Feature",
@@ -633,7 +681,7 @@ def to_geojson(pois: dict, links: list[dict]) -> dict:
                 "ele": p["ele"],
                 "osm": p["osm"],
                 "aliases": p["aliases"],
-                "n_routes": n_routes.get(p["poi_id"], 0),
+                "n_entries": len(entries_per_poi.get(p["poi_id"], ())),
             },
         }
         for p in pois.values()
@@ -642,21 +690,29 @@ def to_geojson(pois: dict, links: list[dict]) -> dict:
 
 
 def run_match(cfg: GuideConfig) -> dict:
-    """Full stage 3: load routes/gazetteer/decisions/verdicts for the guide,
+    """Full stage 3: load entries/gazetteer/decisions/verdicts for the guide,
     run the cascade, and write every artifact. Returns the funnel report."""
-    routes = load_jsonl(cfg.routes_jsonl)
+    entries = load_jsonl(cfg.routes_jsonl)
     gazetteer = load_jsonl(cfg.gazetteer)
     decisions, notes = load_decisions(cfg)
     verdicts = load_verdicts(cfg)
-    pois, links, review, unmatched, queue, funnel, with_parts = match_mentions(
-        routes, gazetteer, cfg, decisions, notes, verdicts
-    )
-    report = funnel_report(funnel, len(routes), with_parts)
+    (
+        pois,
+        place_links,
+        entry_links,
+        review,
+        unmatched,
+        queue,
+        funnel,
+        with_parts,
+    ) = match_mentions(entries, gazetteer, cfg, decisions, notes, verdicts)
+    report = funnel_report(funnel, len(entries), with_parts)
 
     cfg.match_dir.mkdir(parents=True, exist_ok=True)
     cfg.final_dir.mkdir(parents=True, exist_ok=True)
-    # review.jsonl + unmatched.jsonl supersede the old anchor-only artifact.
+    # Legacy artifacts the Entry model supersedes (peak-anchor era).
     (cfg.match_dir / "anchor_open.jsonl").unlink(missing_ok=True)
+    (cfg.final_dir / "route_pois.jsonl").unlink(missing_ok=True)
     write_jsonl(cfg.review, review)
     write_jsonl(cfg.unmatched, unmatched)
     write_jsonl(cfg.adjudication_queue, queue)
@@ -664,22 +720,25 @@ def run_match(cfg: GuideConfig) -> dict:
         json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8"
     )
     write_jsonl(cfg.pois_jsonl, list(pois.values()))
-    write_jsonl(cfg.route_pois_jsonl, links)
+    write_jsonl(cfg.place_pois_jsonl, place_links)
+    write_jsonl(cfg.entry_pois_jsonl, entry_links)
     cfg.pois_geojson.write_text(
-        json.dumps(to_geojson(pois, links), ensure_ascii=False), encoding="utf-8"
+        json.dumps(to_geojson(pois, place_links, entry_links), ensure_ascii=False),
+        encoding="utf-8",
     )
 
     totals = report["totals"]
     print(
-        f"[match] routes: {len(routes)} ({with_parts} with extracted mentions) -> "
-        f"mentions: {totals['mentions']}, exact: {totals['exact']}, "
+        f"[match] entries: {len(entries)} ({with_parts} with extracted mentions) -> "
+        f"items: {totals['mentions']}, exact: {totals['exact']}, "
         f"fuzzy: {totals['fuzzy']}, llm: {totals['llm']}, "
         f"review: {totals['review']}, "
         f"ties: {totals['tie']} open (-> {cfg.review}), "
         f"skipped: {totals['skipped']}, "
         f"unmatched: {totals['unmatched']} (-> {cfg.unmatched}, "
         f"{len(queue)} queued for adjudication); "
-        f"{len(pois)} unique POIs, {len(links)} links",
+        f"{len(pois)} unique POIs, "
+        f"{len(place_links)} place links, {len(entry_links)} mention links",
         file=sys.stderr,
     )
     return report
