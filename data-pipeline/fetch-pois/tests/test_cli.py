@@ -59,3 +59,16 @@ def test_happy_path_gazetteer_then_match(fixture_guide):
     assert match.returncode == 0, match.stderr
     assert (fetch_data / "04_final" / "pois.geojson").exists()
     assert (fetch_data / "03_matched" / "funnel.json").exists()
+
+    # The validation gate reads the matcher's artifacts and prints both tables.
+    audit = run_cli("audit", "--guide", guide_id)
+    assert audit.returncode == 0, audit.stderr
+    assert "## Place → POI anchors" in audit.stdout
+    assert "## Entry mentions → POI" in audit.stdout
+    assert "without a match" in audit.stderr
+
+
+def test_audit_before_match_errors():
+    result = run_cli("audit", "--guide", "no-such-guide")
+    assert result.returncode != 0
+    assert "no guide config" in result.stderr
