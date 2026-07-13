@@ -34,6 +34,7 @@ import argparse
 import random
 import sys
 from dataclasses import dataclass
+from pathlib import Path
 
 from .config import GuideConfig, load_guide
 from .match import (
@@ -49,9 +50,13 @@ from .match import (
 # sample size and seed make the gate reproducible — byte-identical on reruns.
 SAMPLE_SIZE = 30
 SEED = 0
-# The methods where matching errors hide — oversampled into every sample ahead
-# of the trusted exact/review matches used only to fill it.
-OVERSAMPLED = frozenset({"fuzzy", "llm"})
+# Sampling priority (lower = kept first). The two non-deterministic methods
+# where errors hide — fuzzy and the LLM adjudicator — are oversampled ahead of
+# everything; `review` (a human/LLM-adjudicated tie) is nearly as fallible so
+# it outranks the deterministic `exact`, which fills the sample only when the
+# rest cannot reach SAMPLE_SIZE ("falling back to exact only to fill", #7).
+_FILL_PRIORITY = 2
+_METHOD_PRIORITY = {"fuzzy": 0, "llm": 0, "review": 1}
 
 # Excerpt widths (characters) for the prose columns.
 UEBERSICHT_WIDTH = 90  # a Place's Übersicht, from the top
@@ -68,6 +73,22 @@ class Row:
     key: tuple[str, ...]
     method: str
     cells: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class MatchContext:
+    """Everything the row builders and the per-match method recompute read: the
+    entries and POIs to join against, plus the matcher's own lookup index and
+    decision/verdict state so `classify_method` can replay the cascade. Built
+    once in `run_audit` and threaded through both builders as one value."""
+
+    entries: dict[str, dict]
+    pois: dict[str, dict]
+    index: dict[str, list[dict]]
+    keys: list[str]
+    decisions: dict[tuple, str]
+    verdicts: dict[str, dict]
+    cfg: GuideConfig
 
 
 def _norm_ws(text: str) -> str:
@@ -134,36 +155,35 @@ def _poi_cells(
     return _cell(poi["name"]), _elev_delta(book_ele, poi.get("ele"))
 
 
-def build_place_rows(
-    links: list[dict],
-    entries: dict[str, dict],
-    pois: dict[str, dict],
-    index: dict[str, list[dict]],
-    keys: list[str],
-    decisions: dict[tuple, str],
-    verdicts: dict[str, dict],
-    cfg: GuideConfig,
-) -> list[Row]:
+def _classify(item: dict, eid: str, ctx: MatchContext) -> str:
+    return classify_method(
+        item, eid, ctx.index, ctx.keys, ctx.decisions, ctx.verdicts, ctx.cfg
+    )
+
+
+def build_place_rows(links: list[dict], ctx: MatchContext) -> list[Row]:
     """One row per Place -> POI anchor (place_pois.jsonl)."""
     rows: list[Row] = []
     for link in links:
         eid = link["place_id"]
-        entry = entries.get(eid)
+        entry = ctx.entries.get(eid)
         if entry is None:
             _warn(f"place link {eid!r} has no entry in the routes index")
             continue
-        items, _ = entry_items(entry, cfg)
+        items, _ = entry_items(entry, ctx.cfg)
         item = next((i for i in items if i["kind"] == "place"), None)
         if item is None:
             _warn(f"entry {eid!r} is linked as a Place but is not kind=place")
             continue
-        method = classify_method(item, eid, index, keys, decisions, verdicts, cfg)
+        method = _classify(item, eid, ctx)
         book_ele = item["elevation_m"]
         name = entry.get("name") or item["name"]
         name_cell = _cell(
             f"{name}, {_fmt_m(book_ele)}" if book_ele is not None else name
         )
-        osm_name, delta = _poi_cells(pois.get(link["poi_id"]), link["poi_id"], book_ele)
+        osm_name, delta = _poi_cells(
+            ctx.pois.get(link["poi_id"]), link["poi_id"], book_ele
+        )
         rows.append(
             Row(
                 key=(eid,),
@@ -180,25 +200,16 @@ def build_place_rows(
     return rows
 
 
-def build_mention_rows(
-    links: list[dict],
-    entries: dict[str, dict],
-    pois: dict[str, dict],
-    index: dict[str, list[dict]],
-    keys: list[str],
-    decisions: dict[tuple, str],
-    verdicts: dict[str, dict],
-    cfg: GuideConfig,
-) -> list[Row]:
+def build_mention_rows(links: list[dict], ctx: MatchContext) -> list[Row]:
     """One row per Entry mention -> POI link (entry_pois.jsonl)."""
     rows: list[Row] = []
     for link in links:
         eid, surface = link["entry_id"], link["surface"]
-        entry = entries.get(eid)
+        entry = ctx.entries.get(eid)
         if entry is None:
             _warn(f"mention link {eid!r} has no entry in the routes index")
             continue
-        items, _ = entry_items(entry, cfg)
+        items, _ = entry_items(entry, ctx.cfg)
         item = next(
             (i for i in items if i["kind"] == "mention" and i["surface"] == surface),
             None,
@@ -209,9 +220,11 @@ def build_mention_rows(
             _warn(f"entry {eid!r} no longer extracts the mention {surface!r}")
             method, book_ele = "?", None
         else:
-            method = classify_method(item, eid, index, keys, decisions, verdicts, cfg)
+            method = _classify(item, eid, ctx)
             book_ele = item["elevation_m"]
-        osm_name, delta = _poi_cells(pois.get(link["poi_id"]), link["poi_id"], book_ele)
+        osm_name, delta = _poi_cells(
+            ctx.pois.get(link["poi_id"]), link["poi_id"], book_ele
+        )
         rows.append(
             Row(
                 key=(eid, surface, link["poi_id"]),
@@ -230,13 +243,15 @@ def build_mention_rows(
 
 def sample(rows: list[Row], size: int = SAMPLE_SIZE, seed: int = SEED) -> list[Row]:
     """A seeded sample of `size` rows, oversampling the fuzzy/LLM methods where
-    errors hide and filling with the rest only as needed. Deterministic: the
-    random key is drawn once per row over a canonically sorted list, so an
-    unchanged input yields the identical sample, displayed in stable order."""
+    errors hide (then review), and filling with exact only as needed. Within a
+    priority tier the pick is uniform-random but deterministic: the random key
+    is drawn once per row over a canonically sorted list, so an unchanged input
+    yields the identical sample, displayed in stable order."""
     ordered = sorted(rows, key=lambda r: r.key)
     rng = random.Random(seed)
     decorated = [
-        ((0 if r.method in OVERSAMPLED else 1, rng.random()), r) for r in ordered
+        ((_METHOD_PRIORITY.get(r.method, _FILL_PRIORITY), rng.random()), r)
+        for r in ordered
     ]
     decorated.sort(key=lambda d: d[0])
     return sorted((r for _, r in decorated[:size]), key=lambda r: r.key)
@@ -261,7 +276,7 @@ PLACE_HEADERS = (
 MENTION_HEADERS = ("Mention", "Prose context", "OSM name", "Δ elev.", "method")
 
 
-def _require(path, what: str) -> None:
+def _require(path: Path, what: str) -> None:
     if not path.exists():
         sys.exit(f"missing {path} — {what}")
 
@@ -281,17 +296,19 @@ def run_audit(cfg: GuideConfig) -> str:
     for path in (cfg.pois_jsonl, cfg.place_pois_jsonl, cfg.entry_pois_jsonl):
         _require(path, "run the matcher first.")
 
-    entries = {e["id"]: e for e in load_jsonl(cfg.routes_jsonl)}
-    pois = {p["poi_id"]: p for p in load_jsonl(cfg.pois_jsonl)}
     index, keys = build_index(load_jsonl(cfg.gazetteer))
     decisions, _notes = load_decisions(cfg)
-    verdicts = load_verdicts(cfg)
-
-    place_links = load_jsonl(cfg.place_pois_jsonl)
-    entry_links = load_jsonl(cfg.entry_pois_jsonl)
-    ctx = (entries, pois, index, keys, decisions, verdicts, cfg)
-    place_rows = build_place_rows(place_links, *ctx)
-    mention_rows = build_mention_rows(entry_links, *ctx)
+    ctx = MatchContext(
+        entries={e["id"]: e for e in load_jsonl(cfg.routes_jsonl)},
+        pois={p["poi_id"]: p for p in load_jsonl(cfg.pois_jsonl)},
+        index=index,
+        keys=keys,
+        decisions=decisions,
+        verdicts=load_verdicts(cfg),
+        cfg=cfg,
+    )
+    place_rows = build_place_rows(load_jsonl(cfg.place_pois_jsonl), ctx)
+    mention_rows = build_mention_rows(load_jsonl(cfg.entry_pois_jsonl), ctx)
     place_sample = sample(place_rows)
     mention_sample = sample(mention_rows)
 
