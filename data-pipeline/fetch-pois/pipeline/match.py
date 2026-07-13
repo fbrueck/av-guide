@@ -232,6 +232,17 @@ def passes_guards(item: dict, candidate: dict) -> bool:
     return type_ok and ele_ok
 
 
+def build_index(
+    gazetteer: list[dict],
+) -> tuple[dict[str, list[dict]], list[str]]:
+    """Group gazetteer entries by normalized name — the cascade's lookup index
+    and its key list, shared by the matcher and the audit's method recompute."""
+    index: dict[str, list[dict]] = {}
+    for candidate in gazetteer:
+        index.setdefault(norm_key(candidate["name"]), []).append(candidate)
+    return index, list(index)
+
+
 def resolve(
     item: dict, index: dict[str, list[dict]], keys: list[str]
 ) -> tuple[str, list]:
@@ -418,6 +429,62 @@ def _candidate_rows(survivors: list[tuple[dict, float]]) -> list[dict]:
     ]
 
 
+def classify_method(
+    item: dict,
+    eid: str,
+    index: dict[str, list[dict]],
+    keys: list[str],
+    decisions: dict[tuple, str],
+    verdicts: dict[str, dict],
+    cfg: GuideConfig,
+) -> str:
+    """The true resolution method for a single item, recomputed by replaying
+    the matcher's per-item decision — the cascade (`resolve`), then a human
+    review decision, then an LLM verdict — in the same precedence
+    match_mentions applies (#7). Returns one of exact / fuzzy / review / llm /
+    tie / skipped / unmatched.
+
+    This is the per-match method the audit gate weights its sample by. It
+    deliberately does *not* read pois.jsonl's `match` provenance: that records
+    a POI's single best method across every item that reached it, so a POI
+    resolved exactly by one Place and fuzzily by a mention would mislabel the
+    mention. The method is recomputed from the item itself instead.
+
+    It mirrors — rather than shares — match_mentions' branch logic: that
+    function builds the funnel, review cases, the queue and the link tables in
+    one interleaved pass, so a per-item projection is cleaner as its own read.
+    test_audit's funnel-agreement test rebuilds the whole funnel from this
+    function and asserts it byte-matches the matcher's, guarding the two
+    against drift."""
+    method, survivors = resolve(item, index, keys)
+    if method in ("exact", "fuzzy"):
+        return method
+    key = _case_key(eid, item)
+    decision = decisions.get(key)
+    if method == "tie":
+        refs = {e["osm"] for e, _ in survivors}
+        if decision == "skip":
+            return "skipped"
+        return "review" if decision in refs else "tie"
+    # Cascade found nothing: a documented out-of-scope class is a skip; a
+    # leftover with shortlist candidates is an adjudication case where a human
+    # decision wins over the LLM verdict; anything else stays unmatched.
+    if out_of_scope_reason(item["name"], cfg.out_of_scope):
+        return "skipped"
+    candidates = shortlist(item, index, keys)
+    if not candidates:
+        return "unmatched"
+    refs = {e["osm"] for e, _ in candidates}
+    if decision == "skip":
+        return "skipped"
+    if decision in refs:
+        return "review"
+    verdict = verdicts.get(case_id(eid, item))
+    if verdict and verdict["pick"] in refs:
+        return "llm"
+    return "unmatched"
+
+
 def match_mentions(
     entries: list[dict],
     gazetteer: list[dict],
@@ -434,10 +501,7 @@ def match_mentions(
     decisions = decisions or {}
     notes = notes or {}
     verdicts = verdicts or {}
-    index: dict[str, list[dict]] = {}
-    for candidate in gazetteer:
-        index.setdefault(norm_key(candidate["name"]), []).append(candidate)
-    keys = list(index)
+    index, keys = build_index(gazetteer)
 
     pois: dict[str, dict] = {}
     place_links: dict[str, dict] = {}

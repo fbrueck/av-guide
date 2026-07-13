@@ -72,6 +72,7 @@ Data paths below are under `guides/<id>/data/fetch-pois/`.
 | 2. Mention extraction (LLM) | `uv run python -m pipeline.plan extract --guide <id> [--batch 10]` plans; `mention-extractor` subagents execute | `02_mentions/parts/<entry_id>.json` (one part per Entry — the resumability unit) |
 | 3. Matching | `uv run python -m pipeline.match --guide <id>` | `04_final/{pois.jsonl,place_pois.jsonl,entry_pois.jsonl,pois.geojson}`; `03_matched/{review.jsonl,unmatched.jsonl,adjudication_queue.jsonl,funnel.json}` (`uv run python -m pipeline.plan funnel --guide <id>` renders the funnel) |
 | 4. Adjudication (LLM) | `uv run python -m pipeline.plan adjudicate --guide <id> [--batch 10]` plans; `match-adjudicator` subagents execute; rerun `pipeline.match` to consume | `03_matched/verdicts/<case_id>.json` (one verdict per case — the resumability unit) |
+| 5. Validation gate | `uv run python -m pipeline.audit --guide <id>` | two seeded audit tables (Markdown) to stdout for operator sign-off; no artifact written |
 
 The whole pipeline is driven by the `/fetch-pois` slash command (see
 `.claude/commands/fetch-pois.md`): it runs the deterministic stages and fans the
@@ -204,6 +205,33 @@ are refreshed. Undecided cases are re-emitted unchanged. Two guard rails:
 A decision applies for as long as the case stays a tie or an adjudication
 case; if a gazetteer refresh makes the cascade resolve the mention
 deterministically, the case (and its decision) drops out of `review.jsonl`.
+
+## Validation gate
+
+The export is not final until the operator has signed off on match quality.
+`uv run python -m pipeline.audit --guide <id>` prints **two audit tables as
+GitHub-flavored Markdown to stdout** — one over `place_pois.jsonl` (Place → POI
+anchors, the destination pins), one over `entry_pois.jsonl` (Entry mentions →
+POI, the waypoints) — so they can be pasted into an issue comment for sign-off.
+Each table is a **seeded sample of 30** matches (Place name + book elevation /
+Übersicht (or prose) excerpt / matched OSM name / elevation Δ / method),
+**oversampling fuzzy and LLM matches** where errors hide and filling with
+exact/review only to reach 30.
+
+The **method column is recomputed per match** by replaying the matcher's
+cascade against the item (`match.classify_method`) — the true per-match method,
+*not* `pois.jsonl`'s deduped best-method provenance, because a POI reached by
+several mentions records only its single best method. Places and mentions with
+no match are not in the tables; they are surfaced honestly in the one-line
+stderr summary, which reports the miss counts and points at `unmatched.jsonl`
+and `plan funnel`, so nothing the operator signs off on is silently dropped.
+The tool is pure and offline (no `gh`, no network): re-running it on unchanged
+pipeline outputs prints byte-identical tables.
+
+(The original spec's throwaway type-colored QA map is dropped — the `route-map`
+webapp already plots every matched POI on real topographic tiles, styled by
+type with Anchor-vs-Mention distinction, so it *is* the visual mislocation
+check now.)
 
 ## Configuration and data locations
 
