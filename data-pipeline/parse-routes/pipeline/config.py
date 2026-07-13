@@ -43,7 +43,7 @@ class GuideConfig:
         return self.data_root / "02_clean"
 
     @property
-    def struct_dir(self) -> Path:  # parsed route records
+    def struct_dir(self) -> Path:  # parsed Entry records (Places + Routes)
         return self.data_root / "03_structured"
 
     @property
@@ -57,15 +57,15 @@ class GuideConfig:
     @property
     def struct_parts(
         self,
-    ) -> Path:  # one <stem>.json per structured page (resumability unit)
+    ) -> Path:  # one <stem>.json of Entries per page (resumability unit)
         return self.struct_dir / "parts"
 
     @property
-    def routes_dir(self) -> Path:  # one JSON file per route (final artifact)
-        return self.struct_dir / "routes"
+    def entries_dir(self) -> Path:  # one JSON file per Entry (final artifact)
+        return self.struct_dir / "entries"
 
     @property
-    def routes_jsonl(self) -> Path:  # combined index of all routes
+    def routes_jsonl(self) -> Path:  # combined index of all entries
         return self.struct_dir / "routes.jsonl"
 
     @property

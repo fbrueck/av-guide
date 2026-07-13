@@ -1,45 +1,70 @@
 import json
 
-from pipeline.export import CONTRACT_FIELDS, project_route, write_routes_json
+from pipeline.export import CONTRACT_FIELDS, project_entry, write_routes_json
 
 
-def full_record(**overrides):
-    """A route record as merge produces it — contract fields plus internals."""
+def route_record(**overrides):
+    """A Route Entry record as merge produces it — contract fields plus internals."""
     base = {
-        "route_id": "p0051_01",
+        "id": "R56",
+        "id_source": "book",  # internal, not part of the contract
+        "kind": "route",
         "source_page": 51,  # internal bookkeeping, not part of the contract
-        "name": "Route A",
+        "name": "Von Hammersbach",
         "peak": "Zugspitze",
         "grade": "II",
         "time": "3 Std.",
         "height_m": "800 mH",
         "first_ascent": None,
+        "anchor_ids": ["R55"],
+        "references": [{"ref_id": "R43", "surface": "R 43"}],
         "summary": "Kurzfassung.",
         "description": "Volltext.",
     }
     return {**base, **overrides}
 
 
-def test_project_route_keeps_only_contract_fields():
-    projected = project_route(full_record())
+def test_project_entry_keeps_only_contract_fields():
+    projected = project_entry(route_record())
     assert set(projected) == set(CONTRACT_FIELDS)
     # Internal fields are dropped from the contract.
     assert "source_page" not in projected
-    assert projected["route_id"] == "p0051_01"
-    assert projected["peak"] == "Zugspitze"
+    assert "id_source" not in projected
+    assert projected["id"] == "R56"
+    assert projected["kind"] == "route"
+    assert projected["anchor_ids"] == ["R55"]
 
 
-def test_project_route_fills_missing_fields_with_none():
-    # A record lacking several contract fields still yields the uniform shape.
-    projected = project_route({"route_id": "p0001_01", "name": "Sparse"})
-    assert set(projected) == set(CONTRACT_FIELDS)
+def test_project_entry_places_carry_place_fields():
+    place = {
+        "id": "R55",
+        "kind": "place",
+        "name": "Kreuzeckhaus",
+        "place_type": "hut",
+        "elevation": "1652 m",
+        "description": "Übersicht…",
+    }
+    projected = project_entry(place)
+    assert projected["place_type"] == "hut"
+    assert projected["elevation"] == "1652 m"
+    # A Place leaves the Route-only fields null but keeps the uniform shape.
     assert projected["grade"] is None
+    assert set(projected) == set(CONTRACT_FIELDS)
+
+
+def test_project_entry_link_fields_default_to_empty_list():
+    # An Entry lacking anchor_ids/references still yields [] (never null),
+    # so a consumer can iterate without a null check.
+    projected = project_entry({"id": "R1", "kind": "route", "name": "Sparse"})
+    assert projected["anchor_ids"] == []
+    assert projected["references"] == []
     assert projected["description"] is None
+    assert set(projected) == set(CONTRACT_FIELDS)
 
 
 def test_write_routes_json_reads_jsonl_and_emits_array(cfg):
     cfg.struct_dir.mkdir(parents=True, exist_ok=True)
-    records = [full_record(route_id="p0051_01"), full_record(route_id="p0052_01")]
+    records = [route_record(id="R56"), route_record(id="R57")]
     with cfg.routes_jsonl.open("w", encoding="utf-8") as f:
         for r in records:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
@@ -49,16 +74,17 @@ def test_write_routes_json_reads_jsonl_and_emits_array(cfg):
     assert n == 2
     data = json.loads(cfg.routes_json.read_text(encoding="utf-8"))
     assert isinstance(data, list)
-    assert [r["route_id"] for r in data] == ["p0051_01", "p0052_01"]
+    assert [r["id"] for r in data] == ["R56", "R57"]
     assert all(set(r) == set(CONTRACT_FIELDS) for r in data)
 
 
 def test_write_routes_json_prefers_passed_records_over_file(cfg):
     # merge passes its in-memory list; no routes.jsonl needed in that path.
     cfg.struct_dir.mkdir(parents=True, exist_ok=True)
-    n = write_routes_json(cfg, [full_record()])
+    n = write_routes_json(cfg, [route_record()])
     assert n == 1
     assert not cfg.routes_jsonl.exists()
     assert (
-        json.loads(cfg.routes_json.read_text(encoding="utf-8"))[0]["name"] == "Route A"
+        json.loads(cfg.routes_json.read_text(encoding="utf-8"))[0]["name"]
+        == "Von Hammersbach"
     )

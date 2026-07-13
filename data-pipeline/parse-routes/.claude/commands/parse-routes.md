@@ -3,7 +3,8 @@ description: Orchestrate the parse-routes pipeline (extract → clean → struct
 ---
 
 You are the orchestrator for parsing a scanned alpine guidebook into structured
-route data. You run the deterministic tools yourself (via Bash) and delegate the
+Entry data (Places and Routes). You run the deterministic tools yourself (via
+Bash) and delegate the
 per-page LLM work to subagents, fanned out in parallel. Everything is resumable —
 the planner only ever returns pages that still need work, so you can re-run this
 command safely after an interruption.
@@ -40,30 +41,36 @@ If `guides/<id>/data/parse-routes/01_raw/manifest.jsonl` does not exist, run:
 3. If any batch reports failures, just re-run `pipeline.plan clean` — completed
    pages are skipped — and dispatch the remaining batches again.
 
-## Stage 3 — Structure routes (subagents: `route-extractor`)
+## Stage 3 — Structure entries (subagents: `entry-extractor`)
 
 1. Get the work plan:
    ```
    .venv/bin/python -m pipeline.plan structure --guide <id> --batch 15
    ```
-2. For each batch, spawn a `route-extractor` subagent with the list of stems.
+2. For each batch, spawn an `entry-extractor` subagent with the list of stems.
    Same wave discipline: up to 5 at a time. These subagents read each page plus
-   its neighbours so routes spanning a page break are captured once.
+   its neighbours so entries spanning a page break are captured once; each
+   entry is classified as a Place or a Route and carries the book's entry id.
 3. Merge the per-page JSON into the final dataset:
    ```
    .venv/bin/python -m pipeline.merge --guide <id>
    ```
-   `merge` also writes the route-map contract `routes.json`. To regenerate it
-   alone (without a full re-merge), run:
+   `merge` keys entries by their book entry id, links each Route to its target
+   Place(s) (`anchor_ids`), parses inline cross-references, validates the id
+   graph (reporting any dangling refs / unresolved anchors), and also writes the
+   route-map contract `routes.json`. To regenerate the contract alone (without a
+   full re-merge), run:
    ```
    .venv/bin/python -m pipeline.export --guide <id>
    ```
 
 ## Finish
 
-Report: pages extracted, pages cleaned, routes found, and the paths to
-`guides/<id>/data/parse-routes/03_structured/routes.jsonl` (index) and
-`routes.json` (route-map contract). Note anything that failed and how to resume.
+Report: pages extracted, pages cleaned, entries found (places vs routes), any
+synthetic ids / dangling references / unresolved anchors surfaced by merge, and
+the paths to `guides/<id>/data/parse-routes/03_structured/routes.jsonl` (index)
+and `routes.json` (route-map contract). Note anything that failed and how to
+resume.
 
 If the user passes extra scope (e.g. a page range or "stage 2 only") alongside
 the guide id, scope the run accordingly instead of doing the whole thing.
