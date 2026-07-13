@@ -4,8 +4,11 @@
 
 The Alpenvereinsführer is organised place-first: a **target place** (summit,
 hut, pass) is described in its own right, and the **routes** that reach it are
-filed under it. Both kinds of item carry the book's own **entry id** (e.g.
-`R43`) and cross-reference each other by that id in prose (`Wie R 43`).
+filed under it. Both kinds of item carry the book's own **entry id** — printed
+as a bulleted bare number in the margin (a *Randziffer*, `•43`) and reprinted
+with an `R` sigil in prose cross-references (`Wie R 43`); we normalize both to
+one canonical key (`R43`). Places and routes interleave in a single running
+number sequence.
 
 The pipeline originally modelled *everything* as a `Route` with a synthetic,
 page-derived id (`p0051_01`). Place descriptions were forced into the Route
@@ -58,5 +61,8 @@ to each), matching the book's structure.
 - The change spans all three modules and is sequenced in pipeline order
   (`parse-routes` → `fetch-pois` → `route-map`), one issue/PR each.
 - Extraction must classify Place vs Route and read the entry-id format. The
-  exact classification signal and id scheme are **not yet fixed** — they need a
-  verbatim book sample and gate the `parse-routes` ticket.
+  classification signal and id scheme were fixed from a verbatim book sample in
+  #41: classify by heading shape (`name, <elev> m` ⇒ Place vs itinerary phrase
+  ⇒ Route) plus body opening (Übersicht vs metadata block), via LLM judgment on
+  those cues rather than a strict regex; the id is the bulleted *Randziffer*
+  normalized to `R43`.

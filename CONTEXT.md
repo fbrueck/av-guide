@@ -2,12 +2,16 @@
 
 ## Entry
 A single numbered item in the Alpenvereinsführer, identified by the book's own
-**entry id** (e.g. `R43`). Every Entry is either a [[Place]] or a [[Route]] —
-that is its `kind`. The entry id is the Entry's identity across the whole
-pipeline; when the book prints none (OCR loss, unnumbered heading) a
-deterministic synthetic id is assigned and flagged (`id_source: book |
-synthetic`). Places and Routes share one id namespace, so a [[Reference]]
-resolves to whichever kind carries that id.
+**entry id**. The book prints this as a bulleted bare number in the margin
+(a *Randziffer*, e.g. `•43`), optionally with a lowercase suffix (`•376 A`);
+prose cross-references reprint it with an `R` sigil (`R 43`). We normalize both
+to one canonical key — `R43`, `R376A` (strip the inter-token space, uppercase
+the suffix) — so a [[Reference]] parsed from `Wie R 43` maps straight to the
+Entry. Every Entry is either a [[Place]] or a [[Route]] — that is its `kind`.
+The entry id is the Entry's identity across the whole pipeline; when the number
+is unrecoverable (OCR loss, unnumbered heading) a deterministic synthetic id is
+assigned and flagged (`id_source: book | synthetic`). Places and Routes share
+one id namespace, so a [[Reference]] resolves to whichever kind carries that id.
 _Avoid_: record, item.
 
 ## Place
