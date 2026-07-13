@@ -1,6 +1,7 @@
 ---
 name: ocr-cleaner
 description: Repairs OCR artifacts in raw scanned pages of the German Wetterstein alpine guide. Invoked by the digitalize orchestrator with a list of page stems; reads each raw page and writes a cleaned version.
+model: sonnet
 tools: Read, Write
 ---
 

@@ -1,6 +1,7 @@
 ---
 name: entry-extractor
 description: Extracts structured Entry records (Places and Routes) from cleaned pages of an Alpenvereinsführer. Invoked by the parse-routes orchestrator with a list of page stems; classifies each entry as place or route, captures the book entry id, and writes one JSON file per page. Handles entries that span a page break.
+model: sonnet
 tools: Read, Write
 ---
 
