@@ -1,40 +1,45 @@
 """Deterministic planner for the agent-orchestrated LLM stages.
 
 Claude Code (the orchestrator) calls this to get the work that still needs
-an LLM — routes awaiting mention extraction, adjudication cases awaiting a
+an LLM — entries awaiting mention extraction, adjudication cases awaiting a
 verdict — grouped into batches it can hand to subagents. No LLM here — just
 filesystem bookkeeping, so reruns skip whatever is already done.
 
   python -m pipeline.plan extract --guide <id> [--batch 10]
 
-Batches are formed over the *full* route list sorted by route_id, so batch
-numbers and membership are stable across runs. A route is done once its part
-file `02_mentions/parts/<route_id>.json` exists; a batch is emitted (with only
-its missing routes) until every route in it is done, so an interrupted batch
-resumes without redoing completed routes.
+Batches are formed over the *full* entry list sorted by entry id, so batch
+numbers and membership are stable across runs. Mention extraction runs over
+**any** Entry's prose (a Route description or a Place Übersicht), so every
+entry is batched. An entry is done once its part file
+`02_mentions/parts/<entry_id>.json` exists; a batch is emitted (with only its
+missing entries) until every entry in it is done, so an interrupted batch
+resumes without redoing completed entries.
 
 Output: one JSON object per line on stdout, e.g.
-  {"batch": 1, "routes": [{"route_id": ..., "peak": ..., "description": ...}]}
+  {"batch": 1, "entries": [{"entry_id": ..., "kind": ..., "name": ...,
+   "description": ...}]}
 A human-readable summary goes to stderr.
 
   python -m pipeline.plan adjudicate --guide <id> [--batch 10]
 
 does the same for the LLM adjudication stage: the matcher's open cases
 (03_matched/adjudication_queue.jsonl) are batched for `match-adjudicator`
-subagents, each case carrying its candidate shortlist plus the route's peak
-and description as context. A case is done once its verdict file
+subagents, each case carrying its candidate shortlist plus the owning entry's
+name/kind/peak and description as context. A case is done once its verdict file
 `03_matched/verdicts/<case_id>.json` exists, so interrupted runs resume
 without re-adjudicating. Output: one JSON object per line, e.g.
-  {"batch": 1, "cases": [{"case_id": ..., "route_id": ..., "mention": ...,
-   "candidates": [...], "route": {"peak": ..., "description": ...}}]}
+  {"batch": 1, "cases": [{"case_id": ..., "entry_id": ..., "mention": ...,
+   "candidates": [...], "entry": {"name": ..., "kind": ..., "peak": ...,
+   "description": ...}}]}
 
   python -m pipeline.plan funnel --guide <id>
 
 prints the matcher's funnel (03_matched/funnel.json) as a per-type table —
 mentions -> exact / fuzzy / llm / review / tie / skipped / unmatched — with a
-totals row on stdout and the usual one-line summary on stderr. `llm` counts
-adjudicator picks (cascade matches stay under exact/fuzzy); `review` counts
-human-accepted decisions; `tie` counts only still-open cases.
+totals row on stdout and the usual one-line summary on stderr. The `place` row
+counts Place->POI resolution; the other rows count mentions by type. `llm`
+counts adjudicator picks (cascade matches stay under exact/fuzzy); `review`
+counts human-accepted decisions; `tie` counts only still-open cases.
 """
 
 from __future__ import annotations
@@ -46,12 +51,12 @@ import sys
 from .config import GuideConfig, load_guide
 
 
-def _load_routes(cfg: GuideConfig) -> list[dict]:
+def _load_entries(cfg: GuideConfig) -> list[dict]:
     if not cfg.routes_jsonl.exists():
         sys.exit(f"missing {cfg.routes_jsonl} — run the parse-routes pipeline first.")
     with cfg.routes_jsonl.open(encoding="utf-8") as f:
-        routes = [json.loads(line) for line in f]
-    return sorted(routes, key=lambda r: r["route_id"])
+        entries = [json.loads(line) for line in f]
+    return sorted(entries, key=lambda e: e["id"])
 
 
 def _print_funnel(cfg: GuideConfig) -> None:
@@ -76,9 +81,9 @@ def _print_funnel(cfg: GuideConfig) -> None:
     totals = report["totals"]
     print("total".ljust(width) + "".join(str(totals[c]).rjust(11) for c in cols))
 
-    routes = report["routes"]
+    entries = report["entries"]
     print(
-        f"[plan funnel] {routes['with_mentions']}/{routes['total']} routes have "
+        f"[plan funnel] {entries['with_mentions']}/{entries['total']} entries have "
         f"extracted mentions; {totals['tie']} open ties in {cfg.review}, "
         f"{totals['unmatched']} unmatched in {cfg.unmatched}.",
         file=sys.stderr,
@@ -90,14 +95,14 @@ def _plan_adjudicate(cfg: GuideConfig, batch_size: int) -> None:
         sys.exit(f"missing {cfg.adjudication_queue} — run the matcher first.")
     with cfg.adjudication_queue.open(encoding="utf-8") as f:
         cases = [json.loads(line) for line in f]
-    routes = {r["route_id"]: r for r in _load_routes(cfg)}
+    entries = {e["id"]: e for e in _load_entries(cfg)}
     cfg.verdicts_dir.mkdir(parents=True, exist_ok=True)
 
-    missing_routes = {c["route_id"] for c in cases} - routes.keys()
-    if missing_routes:
+    missing_entries = {c["entry_id"] for c in cases} - entries.keys()
+    if missing_entries:
         sys.exit(
-            f"{cfg.adjudication_queue}: routes {', '.join(sorted(missing_routes))} "
-            "are queued but no longer in the route index — rerun the matcher first."
+            f"{cfg.adjudication_queue}: entries {', '.join(sorted(missing_entries))} "
+            "are queued but no longer in the entry index — rerun the matcher first."
         )
 
     remaining = 0
@@ -106,9 +111,11 @@ def _plan_adjudicate(cfg: GuideConfig, batch_size: int) -> None:
         missing = [
             {
                 **case,
-                "route": {
-                    "peak": routes[case["route_id"]].get("peak"),
-                    "description": routes[case["route_id"]]["description"],
+                "entry": {
+                    "name": entries[case["entry_id"]].get("name"),
+                    "kind": entries[case["entry_id"]]["kind"],
+                    "peak": entries[case["entry_id"]].get("peak"),
+                    "description": entries[case["entry_id"]]["description"],
                 },
             }
             for case in cases[i : i + batch_size]
@@ -144,41 +151,42 @@ def _plan_adjudicate(cfg: GuideConfig, batch_size: int) -> None:
 
 
 def _plan_extract(cfg: GuideConfig, batch_size: int) -> None:
-    routes = _load_routes(cfg)
+    entries = _load_entries(cfg)
     cfg.mention_parts.mkdir(parents=True, exist_ok=True)
 
     remaining = 0
     batches = 0
-    for i in range(0, len(routes), batch_size):
+    for i in range(0, len(entries), batch_size):
         missing = [
             {
-                "route_id": r["route_id"],
-                "peak": r.get("peak"),
-                "description": r["description"],
+                "entry_id": e["id"],
+                "kind": e["kind"],
+                "name": e.get("name"),
+                "description": e["description"],
             }
-            for r in routes[i : i + batch_size]
-            if not (cfg.mention_parts / f"{r['route_id']}.json").exists()
+            for e in entries[i : i + batch_size]
+            if not (cfg.mention_parts / f"{e['id']}.json").exists()
         ]
         if missing:
             print(
                 json.dumps(
-                    {"batch": i // batch_size + 1, "routes": missing},
+                    {"batch": i // batch_size + 1, "entries": missing},
                     ensure_ascii=False,
                 )
             )
             remaining += len(missing)
             batches += 1
 
-    done = len(routes) - remaining
+    done = len(entries) - remaining
     if remaining:
         print(
-            f"[plan extract] {done}/{len(routes)} routes extracted; "
+            f"[plan extract] {done}/{len(entries)} entries extracted; "
             f"{remaining} remaining in {batches} batches.",
             file=sys.stderr,
         )
     else:
         print(
-            f"[plan extract] nothing to do — all {len(routes)} routes extracted.",
+            f"[plan extract] nothing to do — all {len(entries)} entries extracted.",
             file=sys.stderr,
         )
 

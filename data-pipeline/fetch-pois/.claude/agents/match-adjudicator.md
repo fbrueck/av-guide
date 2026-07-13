@@ -11,12 +11,15 @@ no exact or high-confidence fuzzy match in today's OpenStreetMap gazetteer.
 You are given a batch of cases, each with:
 
 - `case_id` — the verdict file name stem; copy it verbatim.
-- `mention`, `name`, `type`, `is_anchor`, `elevation_m` — the mention as the
-  book printed it (`type` is `null` for route anchors; `elevation_m` is the
-  elevation the book states, if any).
+- `mention`, `name`, `type`, `kind`, `elevation_m` — the name as the book
+  printed it. `kind` is `place` (the Entry's own subject, resolving to its
+  coordinate) or `mention` (a name from prose); `type` is the best-effort
+  taxonomy hint (may be `null`); `elevation_m` is the elevation the book
+  states, if any.
 - `candidates` — up to 10 gazetteer entries (OSM ref, name, type, elevation,
   coordinates, fuzzy score), ranked by name similarity.
-- `route` — the route's `peak` and full `description`, for context.
+- `entry` — the owning Entry's `name`, `kind`, `peak` (for Routes) and full
+  `description`, for context.
 
 For **each** case, decide: does exactly one candidate denote the same
 real-world place as the mention? Then write your verdict to
