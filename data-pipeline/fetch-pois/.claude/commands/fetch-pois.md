@@ -31,20 +31,23 @@ for fresh OSM data.)
 
 ## Stage 2 — Extract mentions (subagents: `mention-extractor`)
 
+Mention extraction runs over **every Entry's** prose — a Route's description
+*and* a Place's Übersicht.
+
 1. Get the work plan:
    ```
    uv run python -m pipeline.plan extract --guide <id> --batch 10
    ```
-   Each stdout line is a batch: `{"batch": N, "routes": [{"route_id": ...,
-   "peak": ..., "description": ...}, ...]}`. Batch numbers are stable across
-   runs; already-extracted routes never reappear.
+   Each stdout line is a batch: `{"batch": N, "entries": [{"entry_id": ...,
+   "kind": ..., "name": ..., "description": ...}, ...]}`. Batch numbers are
+   stable across runs; already-extracted entries never reappear.
 2. For each batch, spawn a `mention-extractor` subagent, passing it the batch's
-   routes (route_id, peak, description) verbatim and telling it to extract
-   mentions for those routes. Launch up to **5 subagents at a time** (multiple
-   Task calls in one message), wait for the wave to finish, then launch the
-   next wave, until all batches are done.
-3. Re-run `pipeline.plan extract` — completed routes are skipped — and dispatch
-   whatever remains, until the planner reports nothing to do.
+   entries (entry_id, kind, name, description) verbatim and telling it to
+   extract mentions for those entries. Launch up to **5 subagents at a time**
+   (multiple Task calls in one message), wait for the wave to finish, then
+   launch the next wave, until all batches are done.
+3. Re-run `pipeline.plan extract` — completed entries are skipped — and
+   dispatch whatever remains, until the planner reports nothing to do.
 
 ## Stage 3 — Match (deterministic, no subagents)
 
@@ -62,8 +65,8 @@ The matcher queues unresolved mentions that still have candidates in
    uv run python -m pipeline.plan adjudicate --guide <id> --batch 10
    ```
    Each stdout line is a batch: `{"batch": N, "cases": [{"case_id": ...,
-   "mention": ..., "candidates": [...], "route": {...}}, ...]}`. Cases with an
-   existing verdict file never reappear.
+   "entry_id": ..., "mention": ..., "candidates": [...], "entry": {...}}, ...]}`.
+   Cases with an existing verdict file never reappear.
 2. For each batch, spawn a `match-adjudicator` subagent, passing it the
    batch's cases verbatim and telling it to write one verdict file per case.
    Launch up to **5 subagents at a time**, wave by wave, until all batches are
@@ -79,10 +82,11 @@ The matcher queues unresolved mentions that still have candidates in
 
 ## Finish
 
-Report: gazetteer entries, routes extracted, mentions found, the match funnel
-from the final matcher summary (including the `llm` column and remaining open
-ties), and the paths to `guides/<id>/data/fetch-pois/04_final/`. Note anything
-that failed and how to resume.
+Report: gazetteer entries, entries extracted, mentions found, the match funnel
+from the final matcher summary (including the `place` row, the `llm` column and
+remaining open ties), and the paths to `guides/<id>/data/fetch-pois/04_final/`
+(`pois.jsonl`, `place_pois.jsonl`, `entry_pois.jsonl`, `pois.geojson`). Note
+anything that failed and how to resume.
 
 If the user passes extra scope (e.g. "stage 2 only" or a batch limit) alongside
 the guide id, scope the run accordingly instead of doing the whole thing.

@@ -4,15 +4,33 @@
 // so the join must narrow them explicitly. Each pipeline owns its contract;
 // a format change is a one-file edit here plus the join.
 
-// --- parse-routes: 03_structured/routes.json (JSON array) ---
-export interface RawRoute {
-	route_id: string;
+// A book-internal cross-reference as parse-routes emits it (CONTEXT.md:
+// Reference): the canonical `ref_id` (null for anaphora) + the verbatim span.
+export interface RawReference {
+	ref_id: string | null;
+	surface: string;
+}
+
+// --- parse-routes: 03_structured/routes.json (JSON array of Entries, #42) ---
+// One record per Entry (Place or Route), discriminated by `kind`. Each kind
+// leaves the other's fields null; the link fields default to [] (never null).
+export interface RawEntry {
+	id: string;
+	kind: "place" | "route";
 	name: string;
+	// Place fields.
+	place_type: string | null;
+	elevation: string | null;
+	// Route fields.
 	peak: string | null;
 	grade: string | null;
 	time: string | null;
 	height_m: string | null;
 	first_ascent: string | null;
+	// Link fields (zero-or-many).
+	anchor_ids: string[];
+	references: RawReference[];
+	// Shared prose.
 	summary: string | null;
 	description: string | null;
 }
@@ -25,7 +43,8 @@ export interface RawPoiProperties {
 	ele: number | null;
 	osm: string;
 	aliases: string[];
-	n_routes: number;
+	/** How many distinct Entries reference this POI (place link + mentions). */
+	n_entries: number;
 }
 
 export interface RawPoiFeature {
@@ -42,17 +61,26 @@ export interface RawPoiCollection {
 	features: RawPoiFeature[];
 }
 
-// --- fetch-pois: 04_final/route_pois.jsonl (one JSON object per line) ---
-export interface RawRoutePoiLink {
-	route_id: string;
+// --- fetch-pois: 04_final/place_pois.jsonl (one JSON object per line) ---
+// A Place's single resolved POI — its coordinate (CONTEXT.md: Place → POI).
+export interface RawPlacePoiLink {
+	place_id: string;
 	poi_id: string;
-	surface: string;
-	is_anchor: boolean;
 }
 
-// The three artifacts as loaded (parsed) but not yet joined.
+// --- fetch-pois: 04_final/entry_pois.jsonl (one JSON object per line) ---
+// An Entry-general Mention → POI link (mentions only; no is_anchor — a Route's
+// anchor coordinate is transitive via its Place, resolved here at join time).
+export interface RawEntryPoiLink {
+	entry_id: string;
+	poi_id: string;
+	surface: string;
+}
+
+// The artifacts as loaded (parsed) but not yet joined.
 export interface RawArtifacts {
-	routes: RawRoute[];
+	entries: RawEntry[];
 	pois: RawPoiCollection;
-	links: RawRoutePoiLink[];
+	placeLinks: RawPlacePoiLink[];
+	entryLinks: RawEntryPoiLink[];
 }
