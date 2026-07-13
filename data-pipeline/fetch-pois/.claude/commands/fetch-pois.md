@@ -80,6 +80,21 @@ The matcher queues unresolved mentions that still have candidates in
    `unmatched.jsonl` with the reason. Every verdict is recorded in
    `review.jsonl` (`source: "llm"`), where a human can override it later.
 
+## Stage 5 — Validation gate (deterministic, no subagents)
+
+Once matching (and any adjudication) is settled, print the audit tables for the
+operator to sign off on:
+
+```
+uv run python -m pipeline.audit --guide <id>
+```
+
+Two seeded Markdown tables go to stdout — Place → POI anchors and Entry
+mentions → POI, each a sample of 30 oversampling the fuzzy/LLM matches, with the
+match method recomputed per row. Surface both tables to the operator (they are
+meant to be pasted into an issue comment for sign-off) along with the stderr
+summary's miss counts. The export is not final until the operator signs off.
+
 ## Finish
 
 Report: gazetteer entries, entries extracted, mentions found, the match funnel
