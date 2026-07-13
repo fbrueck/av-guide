@@ -16,10 +16,11 @@ const GUIDE_ID = process.env.VITE_GUIDE_ID ?? "wetterstein";
 const REPO_ROOT = fileURLToPath(new URL("..", import.meta.url));
 const GUIDE_DATA_ROOT = resolve(REPO_ROOT, "guides", GUIDE_ID, "data");
 
-// URL scheme (stable — later tickets' src/data adapter fetches these):
+// URL scheme (stable — the src/data adapter fetches these):
 //   /guide-data/parse-routes/03_structured/routes.json
 //   /guide-data/fetch-pois/04_final/pois.geojson
-//   /guide-data/fetch-pois/04_final/route_pois.jsonl
+//   /guide-data/fetch-pois/04_final/place_pois.jsonl
+//   /guide-data/fetch-pois/04_final/entry_pois.jsonl
 // i.e. `/guide-data/` maps onto `guides/<id>/data/`, mirroring the on-disk
 // layout minus the guide prefix. Only the two owned stage dirs are exposed.
 const DATA_URL_PREFIX = "/guide-data/";
