@@ -1,7 +1,7 @@
-// Domain types the rest of the app speaks — Route, Poi, Anchor, Mention
-// (root CONTEXT.md). The src/data adapter is the one place that builds these
-// from the raw artifacts; every component depends on these types, never on
-// file layout (route-map/CLAUDE.md rule 2).
+// Domain types the rest of the app speaks — Entry (Place | Route), Poi, Anchor,
+// Mention, Reference (root CONTEXT.md). The src/data adapter is the one place
+// that builds these from the raw artifacts; every component depends on these
+// types, never on file layout (route-map/CLAUDE.md rule 2).
 
 // A named alpine feature resolved to a single OpenStreetMap coordinate — always
 // a point, even for linear features like paths (CONTEXT.md: POI).
@@ -21,31 +21,84 @@ export interface Poi {
 	coordinates: [number, number];
 }
 
-// A single numbered guidebook itinerary. A Route has NO geometry of its own
-// (CONTEXT.md): it is prose + verbatim-German metadata plus links to POIs.
-// Rendering a Route means highlighting its linked POI set.
-export interface Route {
+// A book-internal pointer from one Entry to another by entry id, found inline in
+// prose ("Wie R 43", "(R 43, 243)") — CONTEXT.md: Reference. Resolved to the
+// target Entry at join time; an unresolvable ref_id is surfaced honestly (a
+// console.warn + a null target), never invented. `refId` is null for anaphora
+// ("wie dort") — inherently unresolvable, so its null target is expected, not
+// drift.
+export interface Reference {
+	/** Normalized canonical key (e.g. "R43"), or null for anaphora. */
+	refId: string | null;
+	/** The verbatim span as printed in the prose. */
+	surface: string;
+	/** The Entry this points to, or null when it cannot be resolved. */
+	target: Entry | null;
+}
+
+// Fields common to every Entry (CONTEXT.md: Entry). Mentions and References are
+// Entry-general — extracted from any Entry's prose (a Route's description or a
+// Place's Übersicht), matched to a POI / another Entry respectively.
+interface EntryBase {
+	/** The book's own entry id (normalized Randziffer), e.g. "R43", "R376A". */
 	id: string;
 	name: string;
-	/** The `peak` field the guidebook files the route under (may be null). */
+	/** The book's prose blurb (Übersicht for a Place), if any. */
+	summary: string | null;
+	description: string | null;
+	/** Place-names in this Entry's prose matched to POIs (CONTEXT.md: Mention). */
+	mentions: Poi[];
+	/** Book-internal cross-references, resolved to Entries (CONTEXT.md: Reference). */
+	references: Reference[];
+}
+
+// An Entry whose subject is a target feature — a summit, hut, pass, … that the
+// guidebook describes in its own right and files Routes under (CONTEXT.md:
+// Place). A Place resolves to at most one POI (its coordinate).
+export interface Place extends EntryBase {
+	kind: "place";
+	/** Best-effort Gazetteer taxonomy hint (peak, hut, pass, …), or null. */
+	placeType: string | null;
+	/** Elevation exactly as the book prints it (e.g. "1652 m"), verbatim. */
+	elevation: string | null;
+	/** The single POI this Place resolves to, or null — an honest absence. */
+	poi: Poi | null;
+	/** Routes whose anchor_ids name this Place — the routes leading here. */
+	routes: Route[];
+}
+
+// An Entry describing an itinerary — how to reach a target (CONTEXT.md: Route).
+// A Route has NO geometry of its own: it is prose + verbatim-German metadata
+// plus links. Its anchor coordinate is transitive — its Anchor Place's POI,
+// never a direct route→POI link.
+export interface Route extends EntryBase {
+	kind: "route";
+	/** The `peak` string the book files the route under (verbatim, may be null). */
 	peak: string | null;
 	grade: string | null;
 	time: string | null;
 	heightM: string | null;
 	firstAscent: string | null;
-	summary: string | null;
-	description: string | null;
-	/** The POI matched from `peak` (link with is_anchor:true), if resolvable. */
-	anchor: Poi | null;
-	/** POIs matched from the description prose (links with is_anchor:false). */
-	mentions: Poi[];
+	/** Target Places (anchor_ids resolved). A Route's anchor coordinate is each
+	 *  Anchor's `poi` — transitive via the Place, never a direct link. */
+	anchors: Place[];
 }
+
+// Every Entry is either a Place or a Route — that is its `kind` (CONTEXT.md).
+export type Entry = Place | Route;
 
 // The whole guide, loaded + joined once at startup by loadGuideData().
 export interface GuideData {
+	/** Every Entry (Places + Routes), in artifact order. */
+	entries: Entry[];
+	/** The Places — the sidebar's primary, place-first list. */
+	places: Place[];
+	/** The Routes. */
 	routes: Route[];
+	/** Routes with no Anchors — the "Unfiled routes" bucket, always visible. */
+	unfiledRoutes: Route[];
 	pois: Poi[];
-	/** poi_id -> Routes that reference that POI (anchor or mention). Powers the
-	 *  popup's "which routes reference this POI" cross-links in a later ticket. */
-	routesByPoiId: Map<string, Route[]>;
+	/** poi_id -> Entries that reference that POI (a Place via its coordinate, or
+	 *  any Entry via a Mention). Powers the map popup's cross-links. */
+	entriesByPoiId: Map<string, Entry[]>;
 }

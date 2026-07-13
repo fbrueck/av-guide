@@ -5,7 +5,7 @@ body,
 	margin: 0;
 }
 
-/* Two-column shell: the map pane is the main surface, the Route panel docks on
+/* Two-column shell: the map pane is the main surface, the Entry panel docks on
  * the right. A real flex layout (not an overlay) keeps the map's own controls —
  * navigation, scale, attribution — inside the map pane and always visible. */
 .app {
@@ -24,8 +24,8 @@ body,
 	inset: 0;
 }
 
-/* The Route panel: the sidebar fills it; the detail panel overlays it (inset 0,
- * opaque) when a Route is selected, so the map controls are never covered. */
+/* The Entry panel: the sidebar fills it; a detail panel overlays it (inset 0,
+ * opaque) when an Entry is selected, so the map controls are never covered. */
 .route-panel {
 	position: relative;
 	flex: none;
@@ -34,8 +34,9 @@ body,
 	background: #fff;
 }
 
-/* Route sidebar (#22): search box + scrollable list of all Routes. */
-.route-sidebar {
+/* Place-first sidebar (#44): search box + a Place list above the Unfiled-routes
+ * bucket, both scrolling together. */
+.sidebar {
 	position: absolute;
 	inset: 0;
 	display: flex;
@@ -45,13 +46,13 @@ body,
 		sans-serif;
 }
 
-.route-sidebar__search {
+.sidebar__search {
 	flex: none;
 	padding: 0.75rem;
 	border-bottom: 1px solid #ddd;
 }
 
-.route-sidebar__input {
+.sidebar__input {
 	box-sizing: border-box;
 	width: 100%;
 	padding: 0.4rem 0.55rem;
@@ -60,21 +61,46 @@ body,
 	border-radius: 5px;
 }
 
-.route-sidebar__count {
+.sidebar__count {
 	margin: 0.5rem 0 0;
 	font-size: 0.75rem;
 	color: #666;
 }
 
-.route-sidebar__list {
+.sidebar__scroll {
 	flex: 1;
-	list-style: none;
-	margin: 0;
-	padding: 0;
 	overflow-y: auto;
 }
 
-.route-row {
+.sidebar__list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.sidebar__section {
+	border-top: 2px solid #e2e2e2;
+}
+
+.sidebar__section-title {
+	margin: 0;
+	padding: 0.6rem 0.75rem 0.4rem;
+	font-size: 0.72rem;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: #555;
+	background: #f7f7f7;
+}
+
+.sidebar__empty {
+	margin: 0;
+	padding: 0.4rem 0.75rem 0.75rem;
+	font-size: 0.78rem;
+	font-style: italic;
+	color: #999;
+}
+
+.entry-row {
 	display: flex;
 	flex-direction: column;
 	gap: 0.15rem;
@@ -88,20 +114,20 @@ body,
 	cursor: pointer;
 }
 
-.route-row:hover {
+.entry-row:hover {
 	background: #f0f4f8;
 }
 
-.route-row--selected {
+.entry-row--selected {
 	background: #dbeafe;
 }
 
-.route-row__name {
+.entry-row__name {
 	font-weight: 600;
 	color: #1a1a1a;
 }
 
-.route-row__meta {
+.entry-row__meta {
 	display: flex;
 	justify-content: space-between;
 	gap: 0.5rem;
@@ -109,13 +135,19 @@ body,
 	color: #555;
 }
 
-.route-row__grade {
+.entry-row__count {
+	flex: none;
+	color: #2563eb;
+}
+
+.entry-row__grade {
 	flex: none;
 	color: #884422;
 }
 
-/* Route detail panel (#22): verbatim metadata + full German description. */
-.route-detail {
+/* Detail panel (#44): shared by Place detail and Route detail. Verbatim
+ * metadata + prose + cross-links into the surrounding Entry graph. */
+.detail {
 	position: absolute;
 	inset: 0;
 	z-index: 2;
@@ -129,7 +161,7 @@ body,
 		sans-serif;
 }
 
-.route-detail__header {
+.detail__header {
 	position: sticky;
 	top: 0;
 	display: flex;
@@ -141,12 +173,34 @@ body,
 	background: #fff;
 }
 
-.route-detail__title {
-	margin: 0;
+.detail__header-titles {
+	min-width: 0;
+}
+
+.detail__back {
+	padding: 0;
+	border: none;
+	background: none;
+	font: inherit;
+	font-size: 0.8rem;
+	color: #2563eb;
+	cursor: pointer;
+}
+
+.detail__title {
+	margin: 0.1rem 0 0;
 	font-size: 1.05rem;
 }
 
-.route-detail__close {
+.detail__kind {
+	margin: 0.1rem 0 0;
+	font-size: 0.72rem;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: #888;
+}
+
+.detail__close {
 	flex: none;
 	padding: 0 0.25rem;
 	border: none;
@@ -157,66 +211,141 @@ body,
 	cursor: pointer;
 }
 
-.route-detail__close:hover {
+.detail__close:hover {
 	color: #000;
 }
 
-.route-detail__meta {
+.detail__meta {
 	display: grid;
 	gap: 0.4rem;
 	margin: 1rem 0;
 }
 
-.route-detail__row {
+.detail__row {
 	display: flex;
 	gap: 0.75rem;
 }
 
-.route-detail__row dt {
+.detail__row dt {
 	flex: none;
 	width: 7.5rem;
 	color: #666;
 }
 
-.route-detail__row dd {
+.detail__row dd {
 	margin: 0;
 	font-weight: 600;
 }
 
-/* Honest note on the highlighted POI set (#24): Anchor + Mention counts, with
- * the extraction gap ("Kein Anker …", "Keine Mentions …") de-emphasised so it
- * reads as intentional rather than an error. */
-.route-detail__pois {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 0.4rem 0.9rem;
+.detail__poi {
 	margin: 0 0 1rem;
-	font-size: 0.8rem;
+	font-size: 0.85rem;
+}
+
+.detail__osm {
+	font-size: 0.85rem;
+}
+
+/* Honest notes for the extraction gaps (route-map/CLAUDE.md rule 3): an
+ * unresolved POI, an anchor-less Route, no Mentions — de-emphasised so they read
+ * as intentional rather than an error. */
+.detail__note {
+	display: block;
+	font-size: 0.85rem;
 	color: #444;
 }
 
-.route-detail__poi--unlinked {
+.detail__note--unlinked {
 	font-style: italic;
 	color: #999;
 }
 
-.route-detail__summary {
+.detail__summary {
 	margin: 0 0 1rem;
 	font-style: italic;
 	color: #333;
 }
 
-.route-detail__subtitle {
-	margin: 0.5rem 0 0.3rem;
+.detail__subtitle {
+	margin: 1rem 0 0.4rem;
 	font-size: 0.8rem;
 	text-transform: uppercase;
 	letter-spacing: 0.04em;
 	color: #444;
 }
 
-.route-detail__description {
+.detail__description {
 	margin: 0;
 	white-space: pre-wrap;
+}
+
+/* Cross-link lists in a detail panel: Routes leading to a Place, a Route's
+ * Anchor Places, resolved References. Each row selects that Entry. */
+.detail__links {
+	list-style: none;
+	margin: 0 0 0.5rem;
+	padding: 0;
+}
+
+.detail__link {
+	display: flex;
+	flex-direction: column;
+	gap: 0.1rem;
+	width: 100%;
+	padding: 0.4rem 0.5rem;
+	border: 1px solid #eee;
+	border-radius: 5px;
+	margin-bottom: 0.3rem;
+	background: none;
+	font: inherit;
+	text-align: left;
+	cursor: pointer;
+}
+
+.detail__link:hover {
+	background: #f0f4f8;
+}
+
+.detail__link-name {
+	font-weight: 600;
+	color: #1a1a1a;
+}
+
+.detail__link-meta {
+	display: flex;
+	justify-content: space-between;
+	gap: 0.5rem;
+	font-size: 0.8rem;
+	color: #555;
+}
+
+.detail__link-grade {
+	flex: none;
+	color: #884422;
+}
+
+/* Non-navigable tokens: Mention POI names, dangling/anaphora References. */
+.detail__chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.3rem;
+	list-style: none;
+	margin: 0 0 0.5rem;
+	padding: 0;
+}
+
+.detail__chip {
+	padding: 0.15rem 0.45rem;
+	border-radius: 10px;
+	background: #eef2f7;
+	font-size: 0.78rem;
+	color: #334;
+}
+
+.detail__chip--unlinked {
+	background: #f3f3f3;
+	font-style: italic;
+	color: #999;
 }
 
 /* POI identity popup (#21): name, type, elevation, OSM verify link. */
@@ -250,16 +379,17 @@ body,
 	font-size: 0.85rem;
 }
 
-/* POI popup Route cross-links (#25): the Routes that reference this POI, each a
- * clickable entry that selects the Route (same as a sidebar click). The list is
- * capped and scrollable because some Anchor peaks are named by many Routes. */
-.poi-popup__routes {
+/* POI popup Entry cross-links (#44): the Entries that reference this POI — a
+ * Place whose coordinate it is, or an Entry that Mentions it. Each is a
+ * clickable entry that selects the Entry (same as a sidebar click). The list is
+ * capped and scrollable because some POIs are named by many Entries. */
+.poi-popup__entries {
 	margin-top: 0.6rem;
 	padding-top: 0.5rem;
 	border-top: 1px solid #e2e2e2;
 }
 
-.poi-popup__routes-title {
+.poi-popup__entries-title {
 	margin: 0 0 0.35rem;
 	font-size: 0.75rem;
 	text-transform: uppercase;
@@ -267,14 +397,14 @@ body,
 	color: #444;
 }
 
-.poi-popup__routes-empty {
+.poi-popup__entries-empty {
 	margin: 0;
 	font-size: 0.82rem;
 	font-style: italic;
 	color: #999;
 }
 
-.poi-popup__routes-list {
+.poi-popup__entries-list {
 	list-style: none;
 	margin: 0;
 	padding: 0;
@@ -282,7 +412,7 @@ body,
 	overflow-y: auto;
 }
 
-.poi-popup__route {
+.poi-popup__entry {
 	display: flex;
 	flex-direction: column;
 	gap: 0.1rem;
@@ -296,16 +426,16 @@ body,
 	cursor: pointer;
 }
 
-.poi-popup__route:hover {
+.poi-popup__entry:hover {
 	background: #f0f4f8;
 }
 
-.poi-popup__route-name {
+.poi-popup__entry-name {
 	font-weight: 600;
 	color: #1a1a1a;
 }
 
-.poi-popup__route-meta {
+.poi-popup__entry-meta {
 	display: flex;
 	justify-content: space-between;
 	gap: 0.5rem;
@@ -313,7 +443,7 @@ body,
 	color: #555;
 }
 
-.poi-popup__route-grade {
+.poi-popup__entry-grade {
 	flex: none;
 	color: #884422;
 }
