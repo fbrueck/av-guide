@@ -1,14 +1,17 @@
 """Export the route-map data contract: routes.jsonl -> routes.json.
 
-The `route-map` webapp loads Route metadata as a plain JSON array so the
-browser never parses JSONL (see route-map/CLAUDE.md, #17). This step reads the
-merged `03_structured/routes.jsonl` and writes `03_structured/routes.json`: the
-same routes, projected to a **stable, agreed set of contract fields**.
+The `route-map` webapp loads Entry metadata as a plain JSON array so the browser
+never parses JSONL (see route-map/CLAUDE.md, #17). This step reads the merged
+`03_structured/routes.jsonl` and writes `03_structured/routes.json`: the same
+Entries (Places and Routes), projected to a **stable, agreed set of contract
+fields**.
 
-The projection is deliberate — it is the boundary the webapp depends on. Only
-CONTRACT_FIELDS are emitted; internal bookkeeping (e.g. `source_page`) is not
-part of the contract and is dropped. A field missing from a record is emitted
-as null so the array shape is uniform.
+The projection is deliberate — it is the boundary the webapp (#44) and the
+downstream fetch-pois pipeline (#43) depend on. Only CONTRACT_FIELDS are
+emitted; internal bookkeeping (e.g. `source_page`, `id_source`) is not part of
+the contract and is dropped. A scalar field missing from a record is emitted as
+null, and the zero-or-many link fields (`anchor_ids`, `references`) default to
+an empty list, so the array shape is uniform across Places and Routes.
 
   python -m pipeline.export --guide <id>
 
@@ -24,32 +27,51 @@ import sys
 
 from .config import GuideConfig, load_guide
 
-# The route-map data contract. Order is preserved in the emitted objects.
+# The route-map/fetch-pois data contract (Entry model, #42). Order is preserved
+# in the emitted objects. `id` + `kind` head every Entry; `place_type`/
+# `elevation` carry for Places, the climbing metadata for Routes, and each kind
+# leaves the other's fields null. `anchor_ids`/`references` are the link fields.
 CONTRACT_FIELDS: tuple[str, ...] = (
-    "route_id",
+    "id",
+    "kind",
     "name",
+    "place_type",
+    "elevation",
     "peak",
     "grade",
     "time",
     "height_m",
     "first_ascent",
+    "anchor_ids",
+    "references",
     "summary",
     "description",
 )
 
+# Contract fields that are zero-or-many links: absent → [] (not null), so a
+# consumer can iterate without a null check.
+_LIST_FIELDS: frozenset[str] = frozenset({"anchor_ids", "references"})
 
-def project_route(record: dict) -> dict:
-    """Project one route record onto the contract fields.
 
-    Keeps only CONTRACT_FIELDS (dropping internal fields like source_page) and
-    fills any absent field with None, so every emitted object has the same keys.
+def project_entry(record: dict) -> dict:
+    """Project one Entry record onto the contract fields.
+
+    Keeps only CONTRACT_FIELDS (dropping internal fields like source_page).
+    Absent list fields default to [], other absent fields to None, so every
+    emitted object has the same uniform shape across Places and Routes.
     """
-    return {field: record.get(field) for field in CONTRACT_FIELDS}
+    out: dict = {}
+    for field in CONTRACT_FIELDS:
+        if field in _LIST_FIELDS:
+            out[field] = record.get(field) or []
+        else:
+            out[field] = record.get(field)
+    return out
 
 
-def project_routes(records: list[dict]) -> list[dict]:
-    """Project a list of route records onto the contract fields."""
-    return [project_route(r) for r in records]
+def project_entries(records: list[dict]) -> list[dict]:
+    """Project a list of Entry records onto the contract fields."""
+    return [project_entry(r) for r in records]
 
 
 def write_routes_json(cfg: GuideConfig, records: list[dict] | None = None) -> int:
@@ -64,7 +86,7 @@ def write_routes_json(cfg: GuideConfig, records: list[dict] | None = None) -> in
         with cfg.routes_jsonl.open(encoding="utf-8") as f:
             records = [json.loads(line) for line in f if line.strip()]
 
-    projected = project_routes(records)
+    projected = project_entries(records)
     cfg.routes_json.write_text(
         json.dumps(projected, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
@@ -80,7 +102,7 @@ def main() -> None:
     args = ap.parse_args()
     cfg = load_guide(args.guide)
     n = write_routes_json(cfg)
-    print(f"Wrote {n} routes -> {cfg.routes_json}")
+    print(f"Wrote {n} entries -> {cfg.routes_json}")
 
 
 if __name__ == "__main__":

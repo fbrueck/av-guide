@@ -57,10 +57,13 @@ pointer to another Entry).
 
 ## Reference
 A book-internal pointer from one [[Entry]] to another by entry id, found inline
-in prose (e.g. "Wie R 43", "(R 43, 243)"). Captured verbatim at parse as
-`{ref_id, surface}` and resolved to the target [[Entry]] at join time; an
-unresolvable ref_id is surfaced, not invented. Distinct from a [[Mention]]
-(which points at a [[POI]], not an Entry).
+in prose (e.g. "Wie R 43", "(R 43, 243)"). Derived deterministically from the
+Entry's verbatim description as `{ref_id, surface}` (the `surface` kept verbatim,
+the `ref_id` normalized to the canonical key) and resolved to the target
+[[Entry]] at join time; an unresolvable ref_id is surfaced, not invented.
+Reference parsing is a deterministic step, so it lives in the pipeline package
+(fed by the extractor's verbatim prose), not in the LLM extractor. Distinct from
+a [[Mention]] (which points at a [[POI]], not an Entry).
 _Avoid_: cross-link, link.
 
 ## Gazetteer

@@ -37,7 +37,19 @@ def fixture_guide():
         REPO_ROOT / "guides" / "wetterstein" / "config.yml", guide_dir / "config.yml"
     )
     (parts / "page_0051.json").write_text(
-        json.dumps({"routes": [{"name": "R", "description": "R", "summary": None}]}),
+        json.dumps(
+            {
+                "entries": [
+                    {
+                        "kind": "route",
+                        "entry_id_raw": "•56",
+                        "name": "R",
+                        "description": "R",
+                        "summary": None,
+                    }
+                ]
+            }
+        ),
         encoding="utf-8",
     )
     try:
@@ -51,5 +63,6 @@ def test_happy_path_merge(fixture_guide):
 
     result = run_cli("merge", "--guide", guide_id)
     assert result.returncode == 0, result.stderr
-    routes = [json.loads(l) for l in (struct / "routes.jsonl").read_text().splitlines()]
-    assert [r["route_id"] for r in routes] == ["p0051_01"]
+    lines = (struct / "routes.jsonl").read_text().splitlines()
+    entries = [json.loads(line) for line in lines]
+    assert [e["id"] for e in entries] == ["R56"]
