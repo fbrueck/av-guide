@@ -68,7 +68,7 @@ def test_happy_path_gazetteer_then_match(fixture_guide):
     assert "without a match" in audit.stderr
 
 
-def test_audit_before_match_errors():
+def test_audit_unknown_guide_errors():
     result = run_cli("audit", "--guide", "no-such-guide")
     assert result.returncode != 0
     assert "no guide config" in result.stderr
