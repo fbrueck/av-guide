@@ -1,63 +1,75 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+	type DetailNav,
+	PlaceDetail,
 	PoiLegend,
 	RouteDetail,
-	RouteSidebar,
+	Sidebar,
 	TerrainToggle,
 } from "./components";
 import { loadGuideData } from "./data";
-import type { GuideData, Route } from "./domain";
+import type { Entry, GuideData } from "./domain";
 import { createRouteMap, type RouteMap } from "./map";
 
 // Composition root and the app's minimal state (route-map/CLAUDE.md rule 5):
-// GuideData, the selected Route, and the search text all live here as plain
-// React state — no router, no state library. The map is created once behind its
+// GuideData, the selection, and the search text all live here as plain React
+// state — no router, no state library. The map is created once behind its
 // imperative API; React drives it through effects (rule 4).
 //
-// Selection seam for later tickets: handleSelectRoute is the single entry point
-// that sets selectedRoute. #24 will add an effect keying off selectedRoute to
-// drive map.highlightPois(...); #25 will call this same handler from the POI
-// popup. Keep this the one obvious door for both.
+// Selection is a small **stack** of Entries (#44): the sidebar (or a map popup)
+// starts a fresh selection; drilling from a Place into a Route leading there, or
+// following a Route's Anchor / Reference cross-link, pushes; a Back button pops.
+// This is still plain React state (one array) — no router — and gives honest
+// back-navigation through the place-first Entry graph.
 export function App() {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const mapRef = useRef<RouteMap | null>(null);
 	const [guideData, setGuideData] = useState<GuideData | null>(null);
-	const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
+	const [selection, setSelection] = useState<Entry[]>([]);
 	const [searchText, setSearchText] = useState("");
 	// The third state atom (route-map/CLAUDE.md rule 5): 2D vs 3D terrain.
 	const [terrainEnabled, setTerrainEnabled] = useState(false);
 
-	// The single selection entry point (route-map/CLAUDE.md): the sidebar, and the
-	// POI popup's Route cross-links (#25), both call this. Declared before the
-	// map-creation effect that passes it to createRouteMap. Stable useCallback so
-	// that effect does not re-create the map.
-	const handleSelectRoute = useCallback((route: Route) => {
-		setSelectedRoute(route);
+	const currentEntry = selection[selection.length - 1] ?? null;
+
+	// Start a fresh selection (sidebar click, or a map POI popup cross-link). A
+	// stable useCallback so the map-creation effect below does not re-create the
+	// map. The map calls this too, so a popup selection goes through the exact
+	// same door as a sidebar click — the map never owns selection (rule 4).
+	const handleSelectEntry = useCallback((entry: Entry) => {
+		setSelection([entry]);
 	}, []);
-	const handleClearSelection = useCallback(() => {
-		setSelectedRoute(null);
+	// Drill into a related Entry from within a detail panel (a Place's route,
+	// a Route's Anchor Place, a resolved Reference target): push onto the stack.
+	const handleNavigate = useCallback((entry: Entry) => {
+		setSelection((stack) => [...stack, entry]);
+	}, []);
+	const handleBack = useCallback(() => {
+		setSelection((stack) => stack.slice(0, -1));
+	}, []);
+	const handleClose = useCallback(() => {
+		setSelection([]);
 	}, []);
 
 	// Create the map instance once and keep it in a ref for effects to drive.
-	// Pass handleSelectRoute at construction so a Route clicked in a POI popup
-	// (#25) selects it through the exact same entry point as a sidebar click —
-	// the map calls back, it never owns selection (route-map/CLAUDE.md rule 4).
-	// handleSelectRoute is a stable useCallback, available before data loads.
+	// Pass handleSelectEntry at construction so an Entry clicked in a POI popup
+	// selects it through the exact same entry point as a sidebar click.
+	// handleSelectEntry is a stable useCallback, available before data loads.
 	useEffect(() => {
 		const container = containerRef.current;
 		if (!container) {
 			return;
 		}
-		const map = createRouteMap(container, { onSelectRoute: handleSelectRoute });
+		const map = createRouteMap(container, { onSelectEntry: handleSelectEntry });
 		mapRef.current = map;
 		return () => {
 			mapRef.current = null;
 			map.destroy();
 		};
-	}, [handleSelectRoute]);
+	}, [handleSelectEntry]);
 
 	// Load + join the guide's artifacts once through the src/data boundary, then
-	// hold the result in state so the sidebar, search, and detail panel all read
+	// hold the result in state so the sidebar, search, and detail panels all read
 	// from one source.
 	useEffect(() => {
 		let cancelled = false;
@@ -75,11 +87,21 @@ export function App() {
 		};
 	}, []);
 
-	// Push the loaded POIs into the imperative map API. showPois buffers until the
-	// style is ready, so ordering against map creation does not matter.
+	// Push the loaded POIs + the poi->Entries index + the set of Place-coordinate
+	// poi_ids (the primary markers) into the imperative map API. showPois buffers
+	// until the style is ready, so ordering does not matter.
 	useEffect(() => {
 		if (guideData) {
-			mapRef.current?.showPois(guideData.pois, guideData.routesByPoiId);
+			const placePoiIds = new Set(
+				guideData.places
+					.map((place) => place.poi?.id)
+					.filter((id): id is string => id !== undefined),
+			);
+			mapRef.current?.showPois(
+				guideData.pois,
+				guideData.entriesByPoiId,
+				placePoiIds,
+			);
 		}
 	}, [guideData]);
 
@@ -89,14 +111,25 @@ export function App() {
 		mapRef.current?.setTerrain(terrainEnabled);
 	}, [terrainEnabled]);
 
-	// Highlight the selected Route's POI set on the map and fit to it (#24).
-	// Passing null (deselect) clears the prior highlight; selecting another Route
-	// replaces it and re-fits. The base all-POIs layer stays visible underneath —
-	// this is an emphasis layer, not a redraw. highlightRoute buffers until the
-	// style is ready, so ordering against map creation does not matter.
+	// Highlight the selected Entry's POI set on the map and fit to it. Passing
+	// null (nothing selected) clears the prior highlight. The base all-POIs layer
+	// stays visible underneath — this is an emphasis layer, not a redraw.
+	// highlightEntry buffers until the style is ready.
 	useEffect(() => {
-		mapRef.current?.highlightRoute(selectedRoute);
-	}, [selectedRoute]);
+		mapRef.current?.highlightEntry(currentEntry);
+	}, [currentEntry]);
+
+	const canGoBack = selection.length > 1;
+	// The detail panels' navigation callbacks, bundled into one prop (Back is
+	// offered only when there is somewhere to go back to).
+	const detailNav: DetailNav = useMemo(
+		() => ({
+			onClose: handleClose,
+			onBack: canGoBack ? handleBack : undefined,
+			onNavigate: handleNavigate,
+		}),
+		[handleClose, canGoBack, handleBack, handleNavigate],
+	);
 
 	return (
 		<div className="app">
@@ -106,15 +139,19 @@ export function App() {
 				<TerrainToggle enabled={terrainEnabled} onToggle={setTerrainEnabled} />
 			</div>
 			<div className="route-panel">
-				<RouteSidebar
-					routes={guideData?.routes ?? []}
+				<Sidebar
+					places={guideData?.places ?? []}
+					unfiledRoutes={guideData?.unfiledRoutes ?? []}
 					searchText={searchText}
 					onSearchChange={setSearchText}
-					selectedRoute={selectedRoute}
-					onSelectRoute={handleSelectRoute}
+					selectedEntry={currentEntry}
+					onSelectEntry={handleSelectEntry}
 				/>
-				{selectedRoute ? (
-					<RouteDetail route={selectedRoute} onClose={handleClearSelection} />
+				{currentEntry?.kind === "place" ? (
+					<PlaceDetail place={currentEntry} nav={detailNav} />
+				) : null}
+				{currentEntry?.kind === "route" ? (
+					<RouteDetail route={currentEntry} nav={detailNav} />
 				) : null}
 			</div>
 		</div>

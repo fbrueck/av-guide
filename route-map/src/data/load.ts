@@ -1,19 +1,25 @@
 import type {
 	RawArtifacts,
+	RawEntry,
+	RawEntryPoiLink,
+	RawPlacePoiLink,
 	RawPoiCollection,
-	RawRoute,
-	RawRoutePoiLink,
 } from "./contracts";
 
-// Fetch + parse the three raw artifacts from the dev server's stable
-// `/guide-data/...` URLs (route-map/CLAUDE.md rule 6; scheme in vite.config.ts).
-// This is the impure I/O half of the boundary; the pure raw->domain join lives
-// in join.ts so it can be unit-tested. No guarding of record shapes here — that
-// belongs to the join, which turns misses into visible warn-and-skip.
+// Fetch + parse the raw artifacts from the dev server's stable `/guide-data/...`
+// URLs (route-map/CLAUDE.md rule 6; scheme in vite.config.ts). This is the
+// impure I/O half of the boundary; the pure raw->domain join lives in join.ts so
+// it can be unit-tested. No guarding of record shapes here — that belongs to the
+// join, which turns misses into visible warn-and-skip.
+//
+// The Entry model (#44): the browser loads the Entry array (routes.json), the
+// POI GeoJSON, and the two link tables — place_pois.jsonl (Place -> POI) and
+// entry_pois.jsonl (Entry Mentions -> POI). The old route_pois.jsonl is gone.
 
-const ROUTES_URL = "/guide-data/parse-routes/03_structured/routes.json";
+const ENTRIES_URL = "/guide-data/parse-routes/03_structured/routes.json";
 const POIS_URL = "/guide-data/fetch-pois/04_final/pois.geojson";
-const ROUTE_POIS_URL = "/guide-data/fetch-pois/04_final/route_pois.jsonl";
+const PLACE_POIS_URL = "/guide-data/fetch-pois/04_final/place_pois.jsonl";
+const ENTRY_POIS_URL = "/guide-data/fetch-pois/04_final/entry_pois.jsonl";
 
 async function fetchText(url: string): Promise<string> {
 	const res = await fetch(url);
@@ -25,8 +31,8 @@ async function fetchText(url: string): Promise<string> {
 
 // Parse JSONL line-by-line: one JSON object per non-empty line. A single bad
 // line is skipped with a warning rather than failing the whole load.
-export function parseJsonl(text: string): RawRoutePoiLink[] {
-	const links: RawRoutePoiLink[] = [];
+export function parseJsonl<T>(text: string, label: string): T[] {
+	const records: T[] = [];
 	const lines = text.split("\n");
 	for (let i = 0; i < lines.length; i++) {
 		const line = lines[i]?.trim();
@@ -34,23 +40,26 @@ export function parseJsonl(text: string): RawRoutePoiLink[] {
 			continue;
 		}
 		try {
-			links.push(JSON.parse(line) as RawRoutePoiLink);
+			records.push(JSON.parse(line) as T);
 		} catch {
-			console.warn(`[data] skipping unparseable route_pois line ${i + 1}`);
+			console.warn(`[data] skipping unparseable ${label} line ${i + 1}`);
 		}
 	}
-	return links;
+	return records;
 }
 
 export async function loadRawArtifacts(): Promise<RawArtifacts> {
-	const [routesText, poisText, linksText] = await Promise.all([
-		fetchText(ROUTES_URL),
-		fetchText(POIS_URL),
-		fetchText(ROUTE_POIS_URL),
-	]);
+	const [entriesText, poisText, placeLinksText, entryLinksText] =
+		await Promise.all([
+			fetchText(ENTRIES_URL),
+			fetchText(POIS_URL),
+			fetchText(PLACE_POIS_URL),
+			fetchText(ENTRY_POIS_URL),
+		]);
 	return {
-		routes: JSON.parse(routesText) as RawRoute[],
+		entries: JSON.parse(entriesText) as RawEntry[],
 		pois: JSON.parse(poisText) as RawPoiCollection,
-		links: parseJsonl(linksText),
+		placeLinks: parseJsonl<RawPlacePoiLink>(placeLinksText, "place_pois"),
+		entryLinks: parseJsonl<RawEntryPoiLink>(entryLinksText, "entry_pois"),
 	};
 }
