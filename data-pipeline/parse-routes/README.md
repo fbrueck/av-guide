@@ -59,7 +59,7 @@ Code subscription, no API key and no per-token billing.
    ├─ Task × N: ocr-cleaner            subagents — repair OCR per page
    ├─ Bash: pipeline.plan structure    deterministic — which pages need structuring
    ├─ Task × N: entry-extractor        subagents — classify + extract Entries (cross-page aware)
-   └─ Bash: pipeline.merge             deterministic — key by entry id, link anchors, build routes.jsonl
+   └─ Bash: pipeline.merge             deterministic — key by entry id, link destination/places, build routes.jsonl
 ```
 
 Everything is **resumable**: the planner only ever returns pages that still need
@@ -72,7 +72,7 @@ work, so a re-run skips whatever is already done.
 | `pipeline.plan`    | List/batch pages needing work | `pipeline/plan.py` |
 | `pipeline.ids`     | Canonical entry-id normalization (`R43`) + synthetic fallback | `pipeline/ids.py` |
 | `pipeline.references` | Parse inline cross-refs (`Wie R 43`) → `{ref_id, surface}` | `pipeline/references.py` |
-| `pipeline.merge`   | Key Entries by id, link anchors, validate → `routes.jsonl` | `pipeline/merge.py` |
+| `pipeline.merge`   | Key Entries by id, link destination/places, validate → `routes.jsonl` | `pipeline/merge.py` |
 | `pipeline.export`  | Project Entries onto the route-map contract → `routes.json` | `pipeline/export.py` |
 | `ocr-cleaner`      | Subagent: repair OCR for a batch of pages | `.claude/agents/ocr-cleaner.md` |
 | `entry-extractor`  | Subagent: classify + extract Entries (handles page-break spans) | `.claude/agents/entry-extractor.md` |
@@ -146,16 +146,18 @@ shared identity/link fields; Places and Routes then add their own kind's fields.
 | `references` | `[{ref_id, surface}]` — inline cross-refs parsed from the description; unresolvable ones surfaced, not dropped |
 | **Place:** `place_type`, `elevation` | best-effort category + verbatim elevation |
 | **Route:** `peak`, `grade`, `first_ascent`, `time`, `height_m` | **copied verbatim** from the book |
-| **Route:** `anchor_ids` | target Place ids — structural parent + traverse targets resolved by name (`[]` if orphan) |
+| **Route:** `destination_id` | primary target Place id — the structural parent Place (`null` if the Route has no preceding Place) |
+| **Route:** `place_ids` | additional target Place ids — traverse targets resolved by name, disjoint from `destination_id` (`[]` if none) |
 
 The full per-page prose is also preserved in `02_clean/pages/`.
 
 The `routes.json` contract is a projection of these onto a stable field set —
 `id`, `kind`, `name`, `place_type`, `elevation`, `peak`, `grade`, `time`,
-`height_m`, `first_ascent`, `anchor_ids`, `references`, `summary`, `description`
-— dropping internal bookkeeping like `source_page` and `id_source`. Scalar
-fields absent for a kind are `null`; the link fields (`anchor_ids`,
-`references`) default to `[]`. That projection is the boundary the **route-map**
+`height_m`, `first_ascent`, `destination_id`, `place_ids`, `references`,
+`summary`, `description` — dropping internal bookkeeping like `source_page` and
+`id_source`. Scalar fields absent for a kind are `null` (including the nullable
+`destination_id`); the zero-or-many link fields (`place_ids`, `references`)
+default to `[]`. That projection is the boundary the **route-map**
 webapp (#44) and the **fetch-pois** pipeline (#43) depend on; keep it in step
 with their contracts (`route-map/CLAUDE.md`) when any of them changes.
 

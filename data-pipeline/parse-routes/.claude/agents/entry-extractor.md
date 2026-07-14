@@ -83,7 +83,7 @@ entry has the shared fields plus the fields for its `kind`:
    "elevation": null, "description": "...", "summary": null},
   {"kind": "route", "entry_id_raw": "56", "name": "...", "peak": null,
    "grade": null, "first_ascent": null, "time": null, "height_m": null,
-   "anchor_names": [], "description": "...", "summary": null}
+   "place_names": [], "description": "...", "summary": null}
 ]}
 ```
 
@@ -116,10 +116,10 @@ paraphrase, infer, or invent; `null` if absent):
 - `first_ascent` — first-ascent party and/or date, as printed.
 - `time` — climbing time, e.g. `"4-5 Std."`.
 - `height_m` — route height, e.g. `"400 mH"`.
-- `anchor_names` — for a **traverse** whose heading/prose names further **target
+- `place_names` — for a **traverse** whose heading/prose names further **target
   Places** (em-dash-joined, `Unterleutasch — Riedbergscharte — Mittenwald`),
   list those place names verbatim so merge can resolve them to entry ids. The
-  route's *primary* target (the Place it is filed under) is captured
+  route's *Destination* (the primary Place it is filed under) is captured
   structurally by merge — do NOT put it here. Empty list if none.
 
 If no entry starts on the current page (front matter, an index, a photo caption,

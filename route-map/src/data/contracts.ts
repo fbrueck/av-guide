@@ -27,8 +27,11 @@ export interface RawEntry {
 	time: string | null;
 	height_m: string | null;
 	first_ascent: string | null;
-	// Link fields (zero-or-many).
-	anchor_ids: string[];
+	// Link fields. `destination_id` is the Route's primary target Place (nullable
+	// scalar, 0-or-1); `place_ids` are the additional target Places (traverse
+	// waypoints), disjoint from the Destination. Both null/absent for a Place.
+	destination_id: string | null;
+	place_ids: string[];
 	references: RawReference[];
 	// Shared prose.
 	summary: string | null;
@@ -69,8 +72,8 @@ export interface RawPlacePoiLink {
 }
 
 // --- fetch-pois: 04_final/entry_pois.jsonl (one JSON object per line) ---
-// An Entry-general Mention → POI link (mentions only; no is_anchor — a Route's
-// anchor coordinate is transitive via its Place, resolved here at join time).
+// An Entry-general Mention → POI link (mentions only; a Route's coordinate is
+// transitive via its Destination Place, resolved here at join time).
 export interface RawEntryPoiLink {
 	entry_id: string;
 	poi_id: string;

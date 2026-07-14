@@ -25,12 +25,13 @@ A human-readable summary goes to stderr.
 does the same for the LLM adjudication stage: the matcher's open cases
 (03_matched/adjudication_queue.jsonl) are batched for `match-adjudicator`
 subagents, each case carrying its candidate shortlist plus the owning entry's
-name/kind/peak and description as context. A case is done once its verdict file
+name/kind/peak, its resolved Destination (name + that Place's POI, a geographic
+prior), and description as context. A case is done once its verdict file
 `03_matched/verdicts/<case_id>.json` exists, so interrupted runs resume
 without re-adjudicating. Output: one JSON object per line, e.g.
   {"batch": 1, "cases": [{"case_id": ..., "entry_id": ..., "mention": ...,
    "candidates": [...], "entry": {"name": ..., "kind": ..., "peak": ...,
-   "description": ...}}]}
+   "destination": {"name": ..., "poi": {...}} | null, "description": ...}}]}
 
   python -m pipeline.plan funnel --guide <id>
 
@@ -90,12 +91,63 @@ def _print_funnel(cfg: GuideConfig) -> None:
     )
 
 
+def _load_place_pois(cfg: GuideConfig) -> dict[str, dict]:
+    """Map a Place's entry id to its resolved POI record (name/type/ele/coords),
+    joining place_pois.jsonl through pois.jsonl. Empty when the matcher has not
+    yet produced its final artifacts — a Destination then carries a null POI."""
+    if not cfg.place_pois_jsonl.exists() or not cfg.pois_jsonl.exists():
+        return {}
+    poi_by_id = {}
+    with cfg.pois_jsonl.open(encoding="utf-8") as f:
+        for line in f:
+            poi = json.loads(line)
+            poi_by_id[poi["poi_id"]] = poi
+    place_poi: dict[str, dict] = {}
+    with cfg.place_pois_jsonl.open(encoding="utf-8") as f:
+        for line in f:
+            link = json.loads(line)
+            poi = poi_by_id.get(link["poi_id"])
+            if poi is not None:
+                place_poi[link["place_id"]] = poi
+    return place_poi
+
+
+def _destination_context(
+    entry: dict, entries: dict[str, dict], place_poi: dict[str, dict]
+) -> dict | None:
+    """The owning entry's resolved Destination as a geographic prior for the
+    adjudicator: the parent Place's name plus that Place's POI (a compact
+    coordinate/type/elevation projection, or null when the Place resolved to no
+    POI). None when the entry has no Destination (`destination_id` null, or a
+    Place, which never has one)."""
+    dest_id = entry.get("destination_id")
+    if dest_id is None:
+        return None
+    place = entries.get(dest_id)
+    poi = place_poi.get(dest_id)
+    return {
+        "name": place.get("name") if place else None,
+        "poi": (
+            {
+                "name": poi["name"],
+                "type": poi["type"],
+                "ele": poi["ele"],
+                "lat": poi["lat"],
+                "lon": poi["lon"],
+            }
+            if poi
+            else None
+        ),
+    }
+
+
 def _plan_adjudicate(cfg: GuideConfig, batch_size: int) -> None:
     if not cfg.adjudication_queue.exists():
         sys.exit(f"missing {cfg.adjudication_queue} — run the matcher first.")
     with cfg.adjudication_queue.open(encoding="utf-8") as f:
         cases = [json.loads(line) for line in f]
     entries = {e["id"]: e for e in _load_entries(cfg)}
+    place_poi = _load_place_pois(cfg)
     cfg.verdicts_dir.mkdir(parents=True, exist_ok=True)
 
     missing_entries = {c["entry_id"] for c in cases} - entries.keys()
@@ -115,6 +167,9 @@ def _plan_adjudicate(cfg: GuideConfig, batch_size: int) -> None:
                     "name": entries[case["entry_id"]].get("name"),
                     "kind": entries[case["entry_id"]]["kind"],
                     "peak": entries[case["entry_id"]].get("peak"),
+                    "destination": _destination_context(
+                        entries[case["entry_id"]], entries, place_poi
+                    ),
                     "description": entries[case["entry_id"]]["description"],
                 },
             }

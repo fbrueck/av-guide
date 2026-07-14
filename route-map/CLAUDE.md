@@ -72,14 +72,14 @@ Load-bearing. Breaking one needs a deliberate, called-out reason.
 
 3. **A Route has no geometry** (see root `CONTEXT.md`). Rendering an Entry means
    **highlighting its linked POI set** — never drawing an invented path, no
-   polylines. The target coordinate — a Route's **Anchor** Places' POIs
-   (transitive: `anchor_ids` → Place → `poi`, never a direct route→POI link), or
-   a Place's own **POI** — is styled distinctly from the **Mentions**. An Entry
-   whose POI set is empty (a Place with no resolved POI, an anchor-less Route) is
-   still selectable and rendered **honestly** — the detail panel notes what is
-   unlinked, and anchor-less Routes live in a visible "Unfiled routes" bucket.
-   Incomplete extraction must be *visible*, never papered over with fake
-   geometry.
+   polylines. The target coordinates — a Route's **Destination** + `places`'
+   POIs (transitive: `destination_id`/`place_ids` → Place → `poi`, never a direct
+   route→POI link), or a Place's own **POI** — are styled distinctly from the
+   **Mentions**. An Entry whose POI set is empty (a Place with no resolved POI, a
+   Route with no target Place) is still selectable and rendered **honestly** —
+   the detail panel notes what is unlinked, and Routes with no target at all live
+   in a visible "Unfiled routes" bucket. Incomplete extraction must be *visible*,
+   never papered over with fake geometry.
 
 4. **Raw `maplibre-gl`, imperative, behind one map module.** No `react-map-gl`
    or other wrapper. `src/map/` owns the `Map` instance (created once in a
@@ -112,8 +112,8 @@ Load-bearing. Breaking one needs a deliberate, called-out reason.
    `configureServer` middleware in `vite.config.ts` (path-traversal guarded).
 
 7. **Domain vocabulary in code and UI.** Use the root `CONTEXT.md` terms —
-   Entry, Place, Route, POI, Anchor, Mention, Reference, Gazetteer — in
-   identifiers, comments, and user-facing copy.
+   Entry, Place, Route, POI, Destination, Mention, Reference, Gazetteer — in
+   identifiers, comments, and user-facing copy. ("Anchor" is retired — ADR-0002.)
 
 ## Data contract
 
@@ -123,10 +123,10 @@ into Entry records).
 
 | Artifact | Owner / location | Shape |
 |---|---|---|
-| `routes.json` | `parse-routes` final stage (`03_structured/`) | array of **Entry** records: `id`, `kind` (`place`\|`route`), `name`, `place_type`, `elevation` (Places); `peak`, `grade`, `time`, `height_m`, `first_ascent` (Routes); `anchor_ids`, `references` (`{ref_id, surface}`); `summary`, `description` |
+| `routes.json` | `parse-routes` final stage (`03_structured/`) | array of **Entry** records: `id`, `kind` (`place`\|`route`), `name`, `place_type`, `elevation` (Places); `peak`, `grade`, `time`, `height_m`, `first_ascent`, `destination_id` (nullable), `place_ids` (Routes); `references` (`{ref_id, surface}`); `summary`, `description` |
 | `pois.geojson` | `fetch-pois` `04_final/` | GeoJSON FeatureCollection of POIs (point geometry, `poi_id`/name/type/`ele`/`osm`/`aliases`/`n_entries`) |
 | `place_pois.jsonl` | `fetch-pois` `04_final/` | link records `{place_id, poi_id}` — a Place's single resolved POI (its coordinate) |
-| `entry_pois.jsonl` | `fetch-pois` `04_final/` | link records `{entry_id, poi_id, surface}` — Entry-general **Mentions** (no `is_anchor`) |
+| `entry_pois.jsonl` | `fetch-pois` `04_final/` | link records `{entry_id, poi_id, surface}` — Entry-general **Mentions** |
 
 - **Entry metadata comes from `routes.json`, not browser-parsed JSONL.** The
   export step lives in and is tested by `parse-routes` (see
@@ -134,9 +134,9 @@ into Entry records).
   keeps its name for contract stability though each record is now an Entry, not
   only a route. (If you find a ticket that says otherwise, it is stale — the
   parent #17 and its export/test decision win.)
-- **A Route's anchor coordinate is transitive.** There is no route→POI link:
-  the join resolves `anchor_ids` → Anchor Place → the Place's `poi`. A Place
-  that resolved to no POI is an honest absence, rendered as such.
+- **A Route's coordinate is transitive.** There is no route→POI link: the join
+  resolves `destination_id`/`place_ids` → target Place → the Place's `poi`. A
+  Place that resolved to no POI is an honest absence, rendered as such.
 - **Validation: trust the types, guard the seams.** No schema library
   (zod/valibot). TypeScript types in `contracts.ts` describe the raw shapes; the
   adapter does cheap explicit guards where it matters (is it an array; does a
@@ -163,8 +163,8 @@ open the app in Chrome, and confirm with DevTools:
 - the **Network** tab shows the artifacts and tiles loading (correct
   attribution present);
 - the rendered map and DOM match the criteria — markers, highlighted POI set
-  (Anchor distinct from Mentions), detail panel, terrain toggle — inspected via
-  the Elements panel and screenshots.
+  (target Places distinct from Mentions), detail panel, terrain toggle —
+  inspected via the Elements panel and screenshots.
 
 State plainly in the PR what was checked this way and the result; "verified by
 eye" is not a pass unless it was actually done in DevTools.
@@ -172,7 +172,7 @@ eye" is not a pass unless it was actually done in DevTools.
 The one automated-test exception is the `src/data` adapter: its load/join logic
 is **pure, deterministic, and non-UI**, so it gets Vitest unit tests (node
 environment) covering the raw→domain join — Place→POI resolution, a Route's
-transitive anchor coordinate (via its Anchor Place), routes-leading-here,
+transitive coordinate (via its Destination + places), routes-leading-here,
 Entry-general Mentions, References (resolved and dangling), unfiled routes, and
 unresolvable links. This gives the deterministic join the same coverage the
 pipeline mandates for deterministic logic. **Keep

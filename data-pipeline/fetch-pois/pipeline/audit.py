@@ -4,7 +4,7 @@ The matcher's export is not final until the operator has eyeballed match
 quality. This prints **two audit tables as GitHub-flavored Markdown to stdout**
 so they can be pasted into an issue comment and signed off:
 
-  - **Place -> POI anchors** (place_pois.jsonl) — the destination pins. Columns:
+  - **Place -> POI matches** (place_pois.jsonl) — the coordinate pins. Columns:
     Place name + book elevation | Übersicht excerpt | matched OSM name |
     elevation Δ | method.
   - **Entry mentions -> POI** (entry_pois.jsonl) — the waypoints. Columns:
@@ -162,7 +162,7 @@ def _classify(item: dict, eid: str, ctx: MatchContext) -> str:
 
 
 def build_place_rows(links: list[dict], ctx: MatchContext) -> list[Row]:
-    """One row per Place -> POI anchor (place_pois.jsonl)."""
+    """One row per Place -> POI match (place_pois.jsonl)."""
     rows: list[Row] = []
     for link in links:
         eid = link["place_id"]
@@ -314,7 +314,7 @@ def run_audit(cfg: GuideConfig) -> str:
 
     out = "\n".join(
         [
-            f"## Place → POI anchors ({len(place_sample)} of {len(place_rows)} matches)",
+            f"## Place → POI matches ({len(place_sample)} of {len(place_rows)} matches)",
             "",
             render_table(PLACE_HEADERS, place_sample),
             "",
@@ -332,7 +332,7 @@ def run_audit(cfg: GuideConfig) -> str:
     unmatched_places = sum(u["kind"] == "place" for u in unmatched)
     unmatched_mentions = sum(u["kind"] == "mention" for u in unmatched)
     print(
-        f"[audit] place anchors: {len(place_rows)} matched "
+        f"[audit] place matches: {len(place_rows)} matched "
         f"(sample {len(place_sample)} — {_method_tally(place_sample)}), "
         f"{unmatched_places} without a match; "
         f"mention links: {len(mention_rows)} matched "

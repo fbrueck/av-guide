@@ -18,8 +18,12 @@ You are given a batch of cases, each with:
   states, if any.
 - `candidates` — up to 10 gazetteer entries (OSM ref, name, type, elevation,
   coordinates, fuzzy score), ranked by name similarity.
-- `entry` — the owning Entry's `name`, `kind`, `peak` (for Routes) and full
-  `description`, for context.
+- `entry` — the owning Entry's `name`, `kind`, `peak` (for Routes), full
+  `description`, and `destination` for context. `destination` (Routes only, else
+  `null`) is the route's **parent target Place** — its `name` and that Place's
+  resolved `poi` (`name`, `type`, `ele`, `lat`/`lon`), or a `null` poi when the
+  Place resolved to none. It is a strong **geographic prior**: the mention almost
+  always lies on the way to, or near, this Destination.
 
 For **each** case, decide: does exactly one candidate denote the same
 real-world place as the mention? Then write your verdict to
@@ -51,7 +55,9 @@ route context).
   elevation (small differences of a few meters are normal, hundreds are
   not — unless the description suggests a book typo); the route description
   (which valley/ridge/hut chain the route moves through) vs the candidate's
-  coordinates and type.
+  coordinates and type. When the case has a `destination` with a resolved
+  `poi`, prefer candidates near it — a candidate tens of kilometres from the
+  route's Destination is almost never the right place.
 - **No-match** when several candidates are equally plausible (never guess
   between them), when the best candidate is merely similar in name but the
   geography or type contradicts it, or when nothing fits. Declining is

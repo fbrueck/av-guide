@@ -18,7 +18,7 @@ import { createRouteMap, type RouteMap } from "./map";
 //
 // Selection is a small **stack** of Entries (#44): the sidebar (or a map popup)
 // starts a fresh selection; drilling from a Place into a Route leading there, or
-// following a Route's Anchor / Reference cross-link, pushes; a Back button pops.
+// following a Route's Destination / Reference cross-link, pushes; a Back button pops.
 // This is still plain React state (one array) — no router — and gives honest
 // back-navigation through the place-first Entry graph.
 export function App() {
@@ -40,7 +40,8 @@ export function App() {
 		setSelection([entry]);
 	}, []);
 	// Drill into a related Entry from within a detail panel (a Place's route,
-	// a Route's Anchor Place, a resolved Reference target): push onto the stack.
+	// a Route's Destination or a further target Place, a resolved Reference
+	// target): push onto the stack.
 	const handleNavigate = useCallback((entry: Entry) => {
 		setSelection((stack) => [...stack, entry]);
 	}, []);

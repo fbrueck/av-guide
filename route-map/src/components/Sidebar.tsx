@@ -13,8 +13,9 @@ interface SidebarProps {
 // Place-first navigation (#44): the guide is browsed by its target Places, not a
 // flat Route list. A searchable Place list (name, place_type, elevation, and how
 // many Routes lead here) sits above an **Unfiled routes** bucket — Routes with
-// no Anchor, kept visible and never hidden so incomplete anchor resolution is
-// honest rather than papered over (route-map/CLAUDE.md rule 3). Speaks domain
+// no target Place at all (no Destination, no places), kept visible and never
+// hidden so incomplete target resolution is honest rather than papered over
+// (route-map/CLAUDE.md rule 3). Speaks domain
 // types only; selection is delegated up through onSelectEntry, the single seam
 // the map highlight and the detail panels build on. A plain scrollable list: a
 // few hundred rows need no virtualization, and the filter is O(n).
@@ -103,7 +104,7 @@ export function Sidebar({
 					{filteredUnfiled.length === 0 ? (
 						<p className="sidebar__empty">
 							{unfiledRoutes.length === 0
-								? "Alle Routen haben einen Anker."
+								? "Alle Routen haben ein Ziel."
 								: "Keine Treffer in dieser Gruppe."}
 						</p>
 					) : (

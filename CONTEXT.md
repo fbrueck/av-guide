@@ -28,10 +28,12 @@ _Avoid_: target, feature, summit (as a general term).
 An Entry (`kind = route`) describing an **itinerary** — how to reach a target.
 A Route has **no geometry of its own**: it is prose plus verbatim-German
 metadata (grade, time, height gain, first ascent, the `peak` string) and links
-to other concepts. Its target Places are its [[Anchor]]s (`anchor_ids`,
-zero-or-many); place-names in its prose are [[Mention]]s. "Rendering a Route on
-the map" means highlighting its linked [[POI]] set (its Anchors' POIs plus its
-Mentions), never drawing a path.
+to other concepts. It leads to a single [[Destination]] (`destination_id`,
+zero-or-one) and may name further target Places along the way (`place_ids`,
+zero-or-many, disjoint from the Destination); its full target set is
+`[destination_id, *place_ids]`. Place-names in its prose are [[Mention]]s.
+"Rendering a Route on the map" means highlighting its linked [[POI]] set (its
+Destination's and `place_ids`' POIs plus its Mentions), never drawing a path.
 
 ## POI
 A named alpine feature (peak, hut, pass, …) resolved to a single OpenStreetMap
@@ -39,21 +41,24 @@ coordinate. Always a point, even for linear features like paths. Identified by
 `poi_id`. A [[Place]] resolves to a POI; a [[Mention]] resolves to a POI.
 _Avoid_: point, marker, location.
 
-## Anchor
-A [[Route]]'s **target [[Place]]** — the place the route leads to. A Route has
-zero or more Anchors (`anchor_ids`): the primary one is the Place the route is
-filed under in the book (resolved id-to-id at parse); a traverse may name
-further target Places (resolved by name at merge). A Route's *anchor
-coordinate* is transitive — it is its Anchor Place's [[POI]], never a direct
-route→POI link. Distinct from a [[Mention]].
-_Avoid_: peak (that is a verbatim string field on a Route, not the Anchor).
+## Destination
+A [[Route]]'s **primary target [[Place]]** — the parent Place the route is
+filed under in the book, captured **structurally** (nearest preceding Place,
+resolved id-to-id at merge) as `destination_id`. Zero-or-one: a Route with no
+structural parent has none, surfaced in the merge report rather than invented. A
+Route's *destination coordinate* is transitive — it is its Destination Place's
+[[POI]] (`places[destination_id].poi`), never a direct route→POI link. Further
+target Places a traverse names live in `place_ids` (zero-or-many, resolved by
+name at merge, disjoint from the Destination). Distinct from a [[Mention]].
+_Avoid_: anchor, peak (the latter is a verbatim string field on a Route, not the
+Destination).
 
 ## Mention
 A place-name extracted from **any [[Entry]]'s** description prose (a [[Route]]'s
 or a [[Place]]'s Übersicht) and matched to a [[POI]]. An Entry can have many
 Mentions. Their order in the prose is currently **not preserved** in the link
-table. Distinct from an [[Anchor]] (a target Place) and from a [[Reference]] (a
-pointer to another Entry).
+table. Distinct from a [[Destination]] (a Route's primary target Place) and from
+a [[Reference]] (a pointer to another Entry).
 
 ## Reference
 A book-internal pointer from one [[Entry]] to another by entry id, found inline

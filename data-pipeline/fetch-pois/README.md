@@ -6,10 +6,10 @@ pipeline that fetches all named alpine features in the guide's bounding box via
 Overpass, resolves each **Place** Entry to at most one POI (its coordinate),
 extracts typed place mentions from every Entry's prose (Route descriptions and
 Place Übersichten alike), matches them deterministically, and emits a
-deduplicated POI registry plus a webapp-ready GeoJSON export. A Route's anchor
-coordinate is not resolved here — it is transitive via the Route's Place
-(`anchor_ids` -> Place -> POI, resolved downstream in `route-map`), so a Route's
-`peak` string stays verbatim metadata.
+deduplicated POI registry plus a webapp-ready GeoJSON export. A Route's
+coordinate is not resolved here — it is transitive via the Route's Destination
+Place (`destination_id` -> Place -> POI, resolved downstream in `route-map`), so
+a Route's `peak` string stays verbatim metadata.
 
 The reference guide is the *Wetterstein* (Beulke, 1996), but the pipeline is
 guide-agnostic: everything guide-specific lives in external config and data (see
@@ -120,8 +120,8 @@ the type guard. Normalization also canonicalizes cable-car station naming drift
 never auto-resolved — they become open cases in `review.jsonl`
 (`decision: null`); no-candidate items land in `unmatched.jsonl`. A Place that
 resolves to nothing is an honest absence surfaced in the funnel's `place` row,
-never a dropped record. No route→POI anchor link is emitted: a Route's anchor
-coordinate is transitive via its Place.
+never a dropped record. No route→POI link is emitted: a Route's coordinate is
+transitive via its Destination Place.
 
 ## LLM adjudication of cascade leftovers
 
@@ -211,7 +211,7 @@ deterministically, the case (and its decision) drops out of `review.jsonl`.
 The export is not final until the operator has signed off on match quality.
 `uv run python -m pipeline.audit --guide <id>` prints **two audit tables as
 GitHub-flavored Markdown to stdout** — one over `place_pois.jsonl` (Place → POI
-anchors, the destination pins), one over `entry_pois.jsonl` (Entry mentions →
+matches, the coordinate pins), one over `entry_pois.jsonl` (Entry mentions →
 POI, the waypoints) — so they can be pasted into an issue comment for sign-off.
 Each table is a **seeded sample of 30** matches (Place name + book elevation /
 Übersicht (or prose) excerpt / matched OSM name / elevation Δ / method),
@@ -230,7 +230,7 @@ pipeline outputs prints byte-identical tables.
 
 (The original spec's throwaway type-colored QA map is dropped — the `route-map`
 webapp already plots every matched POI on real topographic tiles, styled by
-type with Anchor-vs-Mention distinction, so it *is* the visual mislocation
+type with a target-vs-Mention distinction, so it *is* the visual mislocation
 check now.)
 
 ## Configuration and data locations

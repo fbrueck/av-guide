@@ -55,9 +55,10 @@ If `guides/<id>/data/parse-routes/01_raw/manifest.jsonl` does not exist, run:
    ```
    .venv/bin/python -m pipeline.merge --guide <id>
    ```
-   `merge` keys entries by their book entry id, links each Route to its target
-   Place(s) (`anchor_ids`), parses inline cross-references, validates the id
-   graph (reporting any dangling refs / unresolved anchors), and also writes the
+   `merge` keys entries by their book entry id, links each Route to its
+   Destination (`destination_id`) and any additional target Places (`place_ids`),
+   parses inline cross-references, validates the id graph (reporting any dangling
+   refs / missing destinations / unresolved places), and also writes the
    route-map contract `routes.json`. To regenerate the contract alone (without a
    full re-merge), run:
    ```
@@ -67,7 +68,8 @@ If `guides/<id>/data/parse-routes/01_raw/manifest.jsonl` does not exist, run:
 ## Finish
 
 Report: pages extracted, pages cleaned, entries found (places vs routes), any
-synthetic ids / dangling references / unresolved anchors surfaced by merge, and
+synthetic ids / dangling references / missing destinations / unresolved places
+surfaced by merge, and
 the paths to `guides/<id>/data/parse-routes/03_structured/routes.jsonl` (index)
 and `routes.json` (route-map contract). Note anything that failed and how to
 resume.

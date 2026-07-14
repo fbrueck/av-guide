@@ -28,13 +28,13 @@ const POI_LAYER_ID = "poi-markers";
 // selected Entry's linked POI set stands out without redrawing the base
 // (route-map/CLAUDE.md rule 3: rendering a Route = highlighting its POI set,
 // never a polyline). Feature `role` drives a data-driven paint so the target
-// coordinate (a Route's Anchor POIs, or a Place's own POI) is tell-apart-able
-// from Mentions at a glance.
+// coordinates (a Route's Destination + places' POIs, or a Place's own POI) are
+// tell-apart-able from Mentions at a glance.
 const HIGHLIGHT_SOURCE_ID = "entry-highlight";
 const HIGHLIGHT_LAYER_ID = "entry-highlight-markers";
 
-// Camera framing for the single-point case (most Entries — an Anchor-only Route
-// or a Place with just its own POI). A degenerate zero-area bounds would
+// Camera framing for the single-point case (most Entries — a Route with just its
+// Destination, or a Place with just its own POI). A degenerate zero-area bounds would
 // over-zoom, so we ease to the point at a sensible massif zoom.
 const SINGLE_POINT_ZOOM = 14;
 // Fit padding + a ceiling so a tight multi-POI cluster does not slam to max zoom.
@@ -62,8 +62,8 @@ export interface RouteMap {
 		entriesByPoiId: Map<string, Entry[]>,
 		placePoiIds: Set<string>,
 	): void;
-	/** Emphasize a selected Entry's linked POI set (#44): the target coordinate
-	 *  (a Route's Anchor POIs, or a Place's own POI) styled distinctly from the
+	/** Emphasize a selected Entry's linked POI set (#44): the target coordinates
+	 *  (a Route's Destination + places' POIs, or a Place's own POI) styled distinctly from the
 	 *  Mentions on top of the base markers, then fit the camera to the set.
 	 *  Passing `null` clears the highlight. Honest by design: an empty POI set
 	 *  draws nothing and leaves the camera put — a Route has no geometry, so
@@ -223,32 +223,34 @@ function toFeatureCollection(
 	};
 }
 
-// The Entry's POI set (route-map/CLAUDE.md rule 3): the target coordinate first
-// (role "anchor" — a Route's Anchor Places' POIs, or a Place's own POI), then
-// its Mentions (role "mention"). The paint uses `role` to tell the target apart
-// from the places the prose passes through. Anchor coordinates are transitive
-// via the Place — never a direct Entry->POI link.
-type PoiRole = "anchor" | "mention";
+// The Entry's POI set (route-map/CLAUDE.md rule 3): the target coordinates first
+// (role "target" — a Route's Destination + places' POIs, or a Place's own POI),
+// then its Mentions (role "mention"). The paint uses `role` to tell the targets
+// apart from the places the prose merely passes through. Target coordinates are
+// transitive via the Place — never a direct Entry->POI link.
+type PoiRole = "target" | "mention";
 
 interface HighlightSet {
-	anchors: Poi[];
+	targets: Poi[];
 	mentions: Poi[];
 }
 
 function highlightSetFor(entry: Entry): HighlightSet {
 	if (entry.kind === "route") {
-		const anchors: Poi[] = [];
-		for (const anchor of entry.anchors) {
-			if (anchor.poi) {
-				anchors.push(anchor.poi);
+		// A Route's target coordinates: its Destination's POI plus each of its
+		// additional target Places' POIs (transitive, skipping unresolved ones).
+		const targets: Poi[] = [];
+		for (const place of [entry.destination, ...entry.places]) {
+			if (place?.poi) {
+				targets.push(place.poi);
 			}
 		}
-		return { anchors, mentions: entry.mentions };
+		return { targets, mentions: entry.mentions };
 	}
 	// A Place's own POI is its target coordinate; its Übersicht Mentions ride
 	// along styled as mentions.
 	return {
-		anchors: entry.poi ? [entry.poi] : [],
+		targets: entry.poi ? [entry.poi] : [],
 		mentions: entry.mentions,
 	};
 }
@@ -263,8 +265,8 @@ function toHighlightFeatureCollection(set: HighlightSet): FeatureCollection {
 			properties: { role },
 		});
 	};
-	for (const poi of set.anchors) {
-		push(poi, "anchor");
+	for (const poi of set.targets) {
+		push(poi, "target");
 	}
 	for (const poi of set.mentions) {
 		push(poi, "mention");
@@ -419,7 +421,7 @@ export function createRouteMap(
 					"circle-radius": [
 						"match",
 						["get", "role"],
-						"anchor",
+						"target",
 						13,
 						/* mention */ 8,
 					] as unknown as ExpressionSpecification,
@@ -428,14 +430,14 @@ export function createRouteMap(
 					"circle-stroke-width": [
 						"match",
 						["get", "role"],
-						"anchor",
+						"target",
 						5,
 						/* mention */ 3,
 					] as unknown as ExpressionSpecification,
 					"circle-stroke-color": [
 						"match",
 						["get", "role"],
-						"anchor",
+						"target",
 						"#111827",
 						/* mention */ "#2563eb",
 					] as unknown as ExpressionSpecification,
@@ -445,7 +447,7 @@ export function createRouteMap(
 		// Only reframe when there is something to frame; a cleared or empty set
 		// must not yank the camera (route-map/CLAUDE.md rule 3 — honest rendering).
 		if (set) {
-			fitToPois([...set.anchors, ...set.mentions]);
+			fitToPois([...set.targets, ...set.mentions]);
 		}
 	}
 

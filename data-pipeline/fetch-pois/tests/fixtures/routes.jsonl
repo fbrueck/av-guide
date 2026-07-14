@@ -1,9 +1,9 @@
-{"id": "r1", "kind": "place", "name": "Zugspitze", "place_type": "peak", "elevation": "2962 m", "anchor_ids": [], "description": "..."}
-{"id": "r2", "kind": "route", "name": "Anstieg zur Zugspitze", "peak": "Zugspitze", "anchor_ids": ["r1"], "description": "..."}
-{"id": "r3", "kind": "place", "name": "Knorr-Hütte", "place_type": "hut", "elevation": "2051 m", "anchor_ids": [], "description": "..."}
-{"id": "r4", "kind": "place", "name": "Höllentorkopf", "place_type": "peak", "elevation": "2150 m", "anchor_ids": [], "description": "..."}
-{"id": "r5", "kind": "place", "name": "Wasserfall", "place_type": "peak", "elevation": null, "anchor_ids": [], "description": "..."}
-{"id": "r6", "kind": "place", "name": "Unbekanntspitze", "place_type": "peak", "elevation": null, "anchor_ids": [], "description": "..."}
-{"id": "r7", "kind": "route", "name": "Übergang zum Höllentorkopf", "peak": null, "anchor_ids": ["r4"], "description": "..."}
-{"id": "r8", "kind": "place", "name": "Bergstation der Kreuzeckbahn", "place_type": "station", "elevation": null, "anchor_ids": [], "description": "..."}
-{"id": "r9", "kind": "place", "name": "Wettersteingebirge", "place_type": null, "elevation": null, "anchor_ids": [], "description": "..."}
+{"id": "r1", "kind": "place", "name": "Zugspitze", "place_type": "peak", "elevation": "2962 m", "destination_id": null, "place_ids": [], "description": "..."}
+{"id": "r2", "kind": "route", "name": "Anstieg zur Zugspitze", "peak": "Zugspitze", "destination_id": "r1", "place_ids": [], "description": "..."}
+{"id": "r3", "kind": "place", "name": "Knorr-Hütte", "place_type": "hut", "elevation": "2051 m", "destination_id": null, "place_ids": [], "description": "..."}
+{"id": "r4", "kind": "place", "name": "Höllentorkopf", "place_type": "peak", "elevation": "2150 m", "destination_id": null, "place_ids": [], "description": "..."}
+{"id": "r5", "kind": "place", "name": "Wasserfall", "place_type": "peak", "elevation": null, "destination_id": null, "place_ids": [], "description": "..."}
+{"id": "r6", "kind": "place", "name": "Unbekanntspitze", "place_type": "peak", "elevation": null, "destination_id": null, "place_ids": [], "description": "..."}
+{"id": "r7", "kind": "route", "name": "Übergang zum Höllentorkopf", "peak": null, "destination_id": "r4", "place_ids": [], "description": "..."}
+{"id": "r8", "kind": "place", "name": "Bergstation der Kreuzeckbahn", "place_type": "station", "elevation": null, "destination_id": null, "place_ids": [], "description": "..."}
+{"id": "r9", "kind": "place", "name": "Wettersteingebirge", "place_type": null, "destination_id": null, "place_ids": [], "description": "..."}

@@ -17,7 +17,7 @@ data-pipeline/         # Python data pipelines (see data-pipeline/CLAUDE.md)
 route-map/             # TypeScript map webapp (Vite+React) — renders the pipeline's route/POI data (see route-map/CLAUDE.md)
 guides/<id>/config.yml # one committed config per guide (facts + per-pipeline settings)
 guides/<id>/data/<pipeline>/NN_stage/   # that guide's pipeline artifacts (gitignored)
-CONTEXT.md             # ubiquitous language (Route, POI, Anchor, Mention, …)
+CONTEXT.md             # ubiquitous language (Route, POI, Destination, Mention, …)
 ruff.toml / mypy.ini   # shared Python tool config (root; used by data-pipeline)
 .github/workflows/     # CI
 ```
@@ -29,8 +29,8 @@ top-level sibling directories, each with its own nested `CLAUDE.md`.
 ## Domain language
 
 Read `CONTEXT.md` before touching any module — it defines the shared vocabulary
-(Route, POI, Anchor, Mention, Gazetteer). Use those terms in code, comments, and
-commits. Keep it current when the model changes.
+(Route, POI, Destination, Mention, Gazetteer). Use those terms in code, comments,
+and commits. Keep it current when the model changes.
 
 ## Contribution workflow
 

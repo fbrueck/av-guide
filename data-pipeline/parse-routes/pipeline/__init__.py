@@ -9,6 +9,6 @@ Deterministic tools in this package:
   * plan       — list/batch the pages that still need cleaning or structuring
   * ids        — normalize book entry ids to the canonical key (`R43`)
   * references — parse inline cross-refs (`Wie R 43`) from Entry prose
-  * merge      — key Entries by id, link anchors, validate → routes.jsonl
+  * merge      — key Entries by id, link destination/places, validate → routes.jsonl
   * export     — project Entries onto the route-map contract → routes.json
 """

@@ -16,7 +16,8 @@ def route_record(**overrides):
         "time": "3 Std.",
         "height_m": "800 mH",
         "first_ascent": None,
-        "anchor_ids": ["R55"],
+        "destination_id": "R55",
+        "place_ids": [],
         "references": [{"ref_id": "R43", "surface": "R 43"}],
         "summary": "Kurzfassung.",
         "description": "Volltext.",
@@ -32,7 +33,8 @@ def test_project_entry_keeps_only_contract_fields():
     assert "id_source" not in projected
     assert projected["id"] == "R56"
     assert projected["kind"] == "route"
-    assert projected["anchor_ids"] == ["R55"]
+    assert projected["destination_id"] == "R55"
+    assert projected["place_ids"] == []
 
 
 def test_project_entry_places_carry_place_fields():
@@ -53,11 +55,13 @@ def test_project_entry_places_carry_place_fields():
 
 
 def test_project_entry_link_fields_default_to_empty_list():
-    # An Entry lacking anchor_ids/references still yields [] (never null),
-    # so a consumer can iterate without a null check.
+    # An Entry lacking place_ids/references still yields [] (never null), so a
+    # consumer can iterate without a null check; the nullable scalar
+    # destination_id defaults to None.
     projected = project_entry({"id": "R1", "kind": "route", "name": "Sparse"})
-    assert projected["anchor_ids"] == []
+    assert projected["place_ids"] == []
     assert projected["references"] == []
+    assert projected["destination_id"] is None
     assert projected["description"] is None
     assert set(projected) == set(CONTRACT_FIELDS)
 
