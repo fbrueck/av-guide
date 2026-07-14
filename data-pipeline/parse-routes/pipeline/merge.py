@@ -14,14 +14,16 @@ lives here (no LLM):
   canonical key (`R43`); fall back to a deterministic synthetic id when the
   Randziffer is unrecoverable, flagged `id_source: book | synthetic`. Places and
   Routes share one id namespace.
-- **Anchors.** A Route's *primary* anchor is its structural parent Place — the
-  nearest preceding Place in the book's running sequence (id-to-id from nesting).
-  Traverse Routes name *additional* target Places in prose; those are resolved
-  by name against a place-name index (best-effort; unresolved surfaced).
+- **Destination and places.** A Route's *Destination* is its structural parent
+  Place — the nearest preceding Place in the book's running sequence
+  (`destination_id`, id-to-id from nesting; null when there is none, surfaced in
+  the report rather than invented). Traverse Routes name *additional* target
+  Places in prose; those resolve by name against a place-name index into
+  `place_ids` (disjoint from the Destination; best-effort, unresolved surfaced).
 - **References.** Inline cross-refs (`Wie R 43`) are parsed from each Entry's
   verbatim description into `{ref_id, surface}` (see references.py).
-- **Validation.** Every reference `ref_id` and every `anchor_id` is checked
-  against the id set; dangling ids are reported, never dropped or invented.
+- **Validation.** Every reference `ref_id` is checked against the id set;
+  dangling ids are reported, never dropped or invented.
 
 The parts files are the source of truth, so this rebuilds the entries/ directory
 from scratch on every run (deterministic, no stale files).
@@ -59,12 +61,14 @@ def assemble_entries(
     `parts` is `[(page, entries)]` already sorted in book (page) order; each
     entry is the raw dict an extractor wrote. Returns `(records, report)` where
     records are in book order and report collects dangling refs / unresolved
-    anchor names / synthetic-id and collision counts for the caller to surface.
+    place names / destination gaps / synthetic-id and collision counts for the
+    caller to surface.
     """
     report: dict = {
         "synthetic": 0,  # book number unrecoverable from OCR (the spec's trigger)
         "id_collisions": [],  # book number recoverable but already taken
-        "unresolved_anchors": [],
+        "unresolved_places": [],
+        "missing_destination": [],  # Routes with no structural parent Place
         "dangling_refs": [],
     }
 
@@ -107,7 +111,7 @@ def assemble_entries(
             else:
                 for f in _ROUTE_FIELDS:
                     rec[f] = entry.get(f)
-                rec["_anchor_names"] = entry.get("anchor_names") or []
+                rec["_place_names"] = entry.get("place_names") or []
             records.append(rec)
 
     id_set = {r["id"] for r in records}
@@ -118,23 +122,26 @@ def assemble_entries(
         if r["kind"] == "place" and r.get("name"):
             place_index.setdefault(_norm_name(r["name"]), r["id"])
 
-    # Pass 3 — anchors. Primary = nearest preceding Place (structural nesting);
-    # additional = traverse target names resolved via the place-name index.
+    # Pass 3 — targets. Destination = nearest preceding Place (structural
+    # nesting), or None (a parent-less Route, surfaced not invented). place_ids =
+    # traverse target names resolved via the place-name index, disjoint from the
+    # Destination.
     current_place: str | None = None
     for r in records:
         if r["kind"] == "place":
             current_place = r["id"]
             continue
-        anchor_ids: list[str] = []
-        if current_place is not None:
-            anchor_ids.append(current_place)
-        for name in r.pop("_anchor_names"):
+        r["destination_id"] = current_place
+        if current_place is None:
+            report["missing_destination"].append(r["id"])
+        place_ids: list[str] = []
+        for name in r.pop("_place_names"):
             rid = place_index.get(_norm_name(name))
             if rid is None:
-                report["unresolved_anchors"].append({"route": r["id"], "name": name})
-            elif rid not in anchor_ids:
-                anchor_ids.append(rid)
-        r["anchor_ids"] = anchor_ids
+                report["unresolved_places"].append({"route": r["id"], "name": name})
+            elif rid != current_place and rid not in place_ids:
+                place_ids.append(rid)
+        r["place_ids"] = place_ids
 
     # Pass 4 — validate references against the id set (dangling surfaced).
     for r in records:
@@ -215,10 +222,16 @@ def _print_summary(
             f"{report['id_collisions']}",
             file=sys.stderr,
         )
-    if report["unresolved_anchors"]:
+    if report["missing_destination"]:
         print(
-            f"  WARN: {len(report['unresolved_anchors'])} unresolved traverse "
-            "anchor names (surfaced, not invented)",
+            f"  WARN: {len(report['missing_destination'])} routes with no "
+            "Destination (no structural parent Place; surfaced, not invented)",
+            file=sys.stderr,
+        )
+    if report["unresolved_places"]:
+        print(
+            f"  WARN: {len(report['unresolved_places'])} unresolved traverse "
+            "place names (surfaced, not invented)",
             file=sys.stderr,
         )
     if report["dangling_refs"]:

@@ -63,7 +63,7 @@ def test_happy_path_gazetteer_then_match(fixture_guide):
     # The validation gate reads the matcher's artifacts and prints both tables.
     audit = run_cli("audit", "--guide", guide_id)
     assert audit.returncode == 0, audit.stderr
-    assert "## Place → POI anchors" in audit.stdout
+    assert "## Place → POI matches" in audit.stdout
     assert "## Entry mentions → POI" in audit.stdout
     assert "without a match" in audit.stderr
 

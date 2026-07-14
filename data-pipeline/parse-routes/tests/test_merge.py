@@ -40,7 +40,7 @@ def route(entry_id_raw, name, **fields):
         "height_m": None,
         "description": name,
         "summary": None,
-        "anchor_names": [],
+        "place_names": [],
     }
     return {**base, **fields}
 
@@ -64,8 +64,8 @@ def test_synthetic_id_when_randziffer_unrecoverable():
     assert report["synthetic"] == 1
 
 
-def test_primary_anchor_is_structural_parent_place():
-    # Place then two routes filed under it → both anchor to the place.
+def test_destination_is_structural_parent_place():
+    # Place then two routes filed under it → both take the place as Destination.
     records, _ = assemble_entries(
         [
             (
@@ -79,22 +79,26 @@ def test_primary_anchor_is_structural_parent_place():
         ]
     )
     routes = [r for r in records if r["kind"] == "route"]
-    assert all(r["anchor_ids"] == ["R55"] for r in routes)
+    assert all(r["destination_id"] == "R55" for r in routes)
+    assert all(r["place_ids"] == [] for r in routes)
 
 
-def test_primary_anchor_carries_across_pages():
+def test_destination_carries_across_pages():
     records, _ = assemble_entries(
         [(51, [place("•55", "Haus")]), (52, [route("•56", "Zustieg")])]
     )
-    assert records[1]["anchor_ids"] == ["R55"]
+    assert records[1]["destination_id"] == "R55"
 
 
-def test_orphan_route_has_empty_anchor_ids():
-    records, _ = assemble_entries([(51, [route("•56", "Von Hammersbach")])])
-    assert records[0]["anchor_ids"] == []
+def test_orphan_route_has_null_destination_surfaced():
+    records, report = assemble_entries([(51, [route("•56", "Von Hammersbach")])])
+    assert records[0]["destination_id"] is None
+    assert records[0]["place_ids"] == []
+    # The gap is surfaced in the merge report, never invented.
+    assert report["missing_destination"] == ["R56"]
 
 
-def test_traverse_anchor_resolved_by_name():
+def test_traverse_place_resolved_by_name_disjoint_from_destination():
     records, report = assemble_entries(
         [
             (
@@ -102,24 +106,46 @@ def test_traverse_anchor_resolved_by_name():
                 [
                     place("•10", "Mittenwald"),
                     place("•55", "Kreuzeckhaus"),
-                    route("•56", "Überschreitung", anchor_names=["Mittenwald"]),
+                    route("•56", "Überschreitung", place_names=["Mittenwald"]),
                 ],
             )
         ]
     )
     r = next(r for r in records if r["kind"] == "route")
-    # Primary (structural parent Kreuzeckhaus) + resolved traverse target.
-    assert r["anchor_ids"] == ["R55", "R10"]
-    assert report["unresolved_anchors"] == []
+    # Destination is the structural parent Kreuzeckhaus; the traverse target
+    # Mittenwald lands in place_ids, disjoint from the Destination.
+    assert r["destination_id"] == "R55"
+    assert r["place_ids"] == ["R10"]
+    assert report["unresolved_places"] == []
 
 
-def test_unresolved_traverse_anchor_surfaced_not_invented():
-    records, report = assemble_entries(
-        [(51, [place("•55", "Haus"), route("•56", "Trav", anchor_names=["Nirgendwo"])])]
+def test_traverse_place_naming_the_destination_is_not_duplicated():
+    # A traverse whose prose names its own parent Place must not repeat it in
+    # place_ids — the two target roles stay disjoint.
+    records, _ = assemble_entries(
+        [
+            (
+                51,
+                [
+                    place("•55", "Kreuzeckhaus"),
+                    route("•56", "Rundtour", place_names=["Kreuzeckhaus"]),
+                ],
+            )
+        ]
     )
     r = next(r for r in records if r["kind"] == "route")
-    assert r["anchor_ids"] == ["R55"]  # only the resolvable one
-    assert report["unresolved_anchors"] == [{"route": "R56", "name": "Nirgendwo"}]
+    assert r["destination_id"] == "R55"
+    assert r["place_ids"] == []
+
+
+def test_unresolved_traverse_place_surfaced_not_invented():
+    records, report = assemble_entries(
+        [(51, [place("•55", "Haus"), route("•56", "Trav", place_names=["Nirgendwo"])])]
+    )
+    r = next(r for r in records if r["kind"] == "route")
+    assert r["destination_id"] == "R55"
+    assert r["place_ids"] == []  # nothing resolvable
+    assert report["unresolved_places"] == [{"route": "R56", "name": "Nirgendwo"}]
 
 
 def test_references_parsed_and_dangling_reported():

@@ -10,11 +10,12 @@ data-pipeline/
   fetch-pois/     # stage B: Entry place-names -> OpenStreetMap POIs + GeoJSON
 ```
 
-`parse-routes` follows the **Entry model** (`CONTEXT.md`, ADR 0001): each
+`parse-routes` follows the **Entry model** (`CONTEXT.md`, ADR 0001/0002): each
 extracted item is classified `kind: place | route`, keyed by the book's own
 **entry id** (normalized `R43`, deterministic synthetic fallback flagged
-`id_source`), with Routes linked to their target Places via `anchor_ids` and
-inline cross-refs captured as `references`. The `routes.jsonl` / `routes.json`
+`id_source`), with Routes linked to their primary target Place via
+`destination_id` and any further target Places via `place_ids`, and inline
+cross-refs captured as `references`. The `routes.jsonl` / `routes.json`
 filenames are kept for contract stability even though each record is now an
 Entry, not only a route.
 

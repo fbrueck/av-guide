@@ -14,11 +14,12 @@ import type {
 // render or an opaque crash, and handle misses HONESTLY — skip + console.warn
 // so pipeline drift is visible. No schema library.
 //
-// The Entry model (#44, CONTEXT.md, ADR 0001): entries split into Places and
-// Routes by `kind`; a Place resolves to <=1 POI (place_pois); a Route's anchor
-// coordinate is transitive via its Anchor Place (anchor_ids -> Place -> POI);
-// mentions are Entry-general (entry_pois, over any Entry's prose); References
-// resolve id-to-id to Entries (dangling -> warn, honest drift).
+// The Entry model (#44, CONTEXT.md, ADR 0002): entries split into Places and
+// Routes by `kind`; a Place resolves to <=1 POI (place_pois); a Route's
+// coordinate is transitive via its Destination Place (destination_id -> Place ->
+// POI) and it may name further target Places (place_ids); mentions are
+// Entry-general (entry_pois, over any Entry's prose); References resolve
+// id-to-id to Entries (dangling -> warn, honest drift).
 
 // Build the openstreetmap.org deep link from the raw `osm` value. The value is
 // "<type>/<id>" (way/370669072, node/…, relation/…); openstreetmap.org uses the
@@ -92,7 +93,8 @@ function toEntry(raw: RawEntry): Entry | null {
 			time: raw.time,
 			heightM: raw.height_m,
 			firstAscent: raw.first_ascent,
-			anchors: [],
+			destination: null,
+			places: [],
 		};
 		return route;
 	}
@@ -119,9 +121,9 @@ function indexEntryByPoi(
 }
 
 // Join the artifacts into the domain graph: build POIs + Entries, then resolve
-// place_pois (Place -> POI), entry_pois (Entry Mentions -> POI), anchor_ids
-// (Route -> Anchor Places, transitive coordinate) and references (Entry ->
-// Entry). Misses are warned + skipped so pipeline drift stays visible.
+// place_pois (Place -> POI), entry_pois (Entry Mentions -> POI), destination_id
+// + place_ids (Route -> target Places, transitive coordinate) and references
+// (Entry -> Entry). Misses are warned + skipped so pipeline drift stays visible.
 export function joinGuideData(raw: RawArtifacts): GuideData {
 	const pois: Poi[] = [];
 	const poiById = new Map<string, Poi>();
@@ -213,9 +215,9 @@ export function joinGuideData(raw: RawArtifacts): GuideData {
 		indexEntryByPoi(entriesByPoiId, poi.id, entry);
 	}
 
-	// anchor_ids + references need every Entry present, so resolve them after the
-	// full entry index is built. A Route's anchor coordinate stays transitive:
-	// we link the Anchor Place, never a direct route->POI edge.
+	// destination_id + place_ids + references need every Entry present, so
+	// resolve them after the full entry index is built. A Route's coordinate stays
+	// transitive: we link the target Place, never a direct route->POI edge.
 	const routes: Route[] = [];
 	const places: Place[] = [];
 	for (const entry of entries) {
@@ -235,29 +237,54 @@ export function joinGuideData(raw: RawArtifacts): GuideData {
 		}
 	}
 
+	// Resolve one target Place id to a Place, recording the route on that Place's
+	// routes-leading-here list. Returns the Place, or null on a miss (warned).
+	// `role` labels the warning so destination/place drift is told apart.
+	function resolveTargetPlace(
+		route: Route,
+		placeId: string,
+		role: "destination_id" | "place_id",
+	): Place | null {
+		const target = entryById.get(placeId);
+		if (!target) {
+			console.warn(
+				`[data] route "${route.id}" ${role} "${placeId}" resolves to no Entry; skipping`,
+			);
+			return null;
+		}
+		if (target.kind !== "place") {
+			console.warn(
+				`[data] route "${route.id}" ${role} "${placeId}" is a ${target.kind}, not a Place; skipping`,
+			);
+			return null;
+		}
+		// The Place's routes-leading-here list (de-duplicated).
+		if (!target.routes.includes(route)) {
+			target.routes.push(route);
+		}
+		return target;
+	}
+
 	for (const route of routes) {
 		const rawEntry = rawById.get(route.id);
-		const anchorIds = Array.isArray(rawEntry?.anchor_ids)
-			? rawEntry.anchor_ids
+		const destinationId =
+			typeof rawEntry?.destination_id === "string"
+				? rawEntry.destination_id
+				: null;
+		if (destinationId !== null) {
+			route.destination = resolveTargetPlace(
+				route,
+				destinationId,
+				"destination_id",
+			);
+		}
+		const placeIds = Array.isArray(rawEntry?.place_ids)
+			? rawEntry.place_ids
 			: [];
-		for (const anchorId of anchorIds) {
-			const target = entryById.get(anchorId);
-			if (!target) {
-				console.warn(
-					`[data] route "${route.id}" anchor_id "${anchorId}" resolves to no Entry; skipping`,
-				);
-				continue;
-			}
-			if (target.kind !== "place") {
-				console.warn(
-					`[data] route "${route.id}" anchor_id "${anchorId}" is a ${target.kind}, not a Place; skipping`,
-				);
-				continue;
-			}
-			route.anchors.push(target);
-			// The Place's routes-leading-here list (de-duplicated).
-			if (!target.routes.includes(route)) {
-				target.routes.push(route);
+		for (const placeId of placeIds) {
+			const place = resolveTargetPlace(route, placeId, "place_id");
+			if (place) {
+				route.places.push(place);
 			}
 		}
 	}
@@ -289,7 +316,11 @@ export function joinGuideData(raw: RawArtifacts): GuideData {
 		}
 	}
 
-	const unfiledRoutes = routes.filter((route) => route.anchors.length === 0);
+	// A Route is unfiled only when it has no target Place at all — no Destination
+	// and no places (an honest "not linked to anywhere" bucket).
+	const unfiledRoutes = routes.filter(
+		(route) => route.destination === null && route.places.length === 0,
+	);
 
 	return { entries, places, routes, unfiledRoutes, pois, entriesByPoiId };
 }

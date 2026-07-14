@@ -1,4 +1,4 @@
-import type { Route } from "../domain";
+import type { Place, Route } from "../domain";
 import { DetailHeader, type DetailNav } from "./DetailHeader";
 
 interface RouteDetailProps {
@@ -11,18 +11,19 @@ interface MetaRow {
 	value: string | null;
 }
 
-// The detail panel for a selected Route (#44): its verbatim-German metadata and
-// the full original German description, plus the Entry graph around it — its
-// **Anchors** (target Places, each a cross-link; the Route's coordinate is
-// transitive through them), its **Mentions** (highlighted on the map), and its
-// resolved **References** to other Entries as cross-links. Everything renders
-// honestly (route-map/CLAUDE.md rule 3): an anchor-less Route, a Route with no
-// Mentions, and a dangling Reference each say so rather than being hidden. The
-// description keeps its line breaks (CSS white-space: pre-wrap over the raw "\n"
-// string).
+// The detail panel for a selected Route (#44, #61): its verbatim-German metadata
+// and the full original German description, plus the Entry graph around it — its
+// **Ziel** (Destination — the primary target Place, the Route's transitive
+// coordinate), its **Weitere Orte** (additional target Places), its **Mentions**
+// (highlighted on the map), and its resolved **References** to other Entries as
+// cross-links. Everything renders honestly (route-map/CLAUDE.md rule 3): a Route
+// with no Destination ("kein Ziel"), no places, no Mentions, and a dangling
+// Reference each say so rather than being hidden. The verbatim `peak` string is
+// deliberately not shown (ADR-0002 — provenance metadata, not a rendered target).
+// The description keeps its line breaks (CSS white-space: pre-wrap over the raw
+// "\n" string).
 export function RouteDetail({ route, nav }: RouteDetailProps) {
 	const rows: MetaRow[] = [
-		{ label: "Gipfel", value: route.peak },
 		{ label: "Schwierigkeit", value: route.grade },
 		{ label: "Zeit", value: route.time },
 		{ label: "Höhenmeter", value: route.heightM },
@@ -33,6 +34,27 @@ export function RouteDetail({ route, nav }: RouteDetailProps) {
 	// ref_id) or an anaphora (null ref_id) is shown honestly as unresolved.
 	const resolvedRefs = route.references.filter((ref) => ref.target !== null);
 	const danglingRefs = route.references.filter((ref) => ref.target === null);
+
+	// A target Place as a cross-link: name + its type qualifier and whether it
+	// resolved to a POI. Shared by the Destination ("Ziel") and the additional
+	// target Places ("Weitere Orte"), so both read identically.
+	const placeLink = (place: Place) => (
+		<li key={place.id}>
+			<button
+				type="button"
+				className="detail__link"
+				onClick={() => nav.onNavigate(place)}
+			>
+				<span className="detail__link-name">{place.name}</span>
+				<span className="detail__link-meta">
+					<span>{place.placeType ?? "—"}</span>
+					<span className={place.poi ? undefined : "detail__note--unlinked"}>
+						{place.poi ? place.poi.name : "kein POI"}
+					</span>
+				</span>
+			</button>
+		</li>
+	);
 
 	return (
 		<section className="detail" aria-label="Routendetails">
@@ -47,35 +69,22 @@ export function RouteDetail({ route, nav }: RouteDetailProps) {
 				))}
 			</dl>
 
-			<h3 className="detail__subtitle">Anker ({route.anchors.length})</h3>
-			{route.anchors.length === 0 ? (
+			<h3 className="detail__subtitle">Ziel</h3>
+			{route.destination === null ? (
 				<p className="detail__note detail__note--unlinked">
-					Kein Anker verknüpft — diese Route ist keinem Ort zugeordnet.
+					Kein Ziel — diese Route ist keinem Ort zugeordnet.
 				</p>
 			) : (
-				<ul className="detail__links">
-					{route.anchors.map((anchor) => (
-						<li key={anchor.id}>
-							<button
-								type="button"
-								className="detail__link"
-								onClick={() => nav.onNavigate(anchor)}
-							>
-								<span className="detail__link-name">{anchor.name}</span>
-								<span className="detail__link-meta">
-									<span>{anchor.placeType ?? "—"}</span>
-									<span
-										className={
-											anchor.poi ? undefined : "detail__note--unlinked"
-										}
-									>
-										{anchor.poi ? anchor.poi.name : "kein POI"}
-									</span>
-								</span>
-							</button>
-						</li>
-					))}
-				</ul>
+				<ul className="detail__links">{placeLink(route.destination)}</ul>
+			)}
+
+			<h3 className="detail__subtitle">Weitere Orte ({route.places.length})</h3>
+			{route.places.length === 0 ? (
+				<p className="detail__note detail__note--unlinked">
+					Keine weiteren Orte verknüpft.
+				</p>
+			) : (
+				<ul className="detail__links">{route.places.map(placeLink)}</ul>
 			)}
 
 			<h3 className="detail__subtitle">Mentions ({route.mentions.length})</h3>

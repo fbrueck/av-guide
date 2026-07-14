@@ -89,7 +89,7 @@ operator to sign off on:
 uv run python -m pipeline.audit --guide <id>
 ```
 
-Two seeded Markdown tables go to stdout — Place → POI anchors and Entry
+Two seeded Markdown tables go to stdout — Place → POI matches and Entry
 mentions → POI, each a sample of 30 oversampling the fuzzy/LLM matches, with the
 match method recomputed per row. Surface both tables to the operator (they are
 meant to be pasted into an issue comment for sign-off) along with the stderr

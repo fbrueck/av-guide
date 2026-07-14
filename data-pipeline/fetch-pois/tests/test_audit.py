@@ -235,7 +235,7 @@ def test_run_audit_renders_both_tables_with_five_columns(cfg, capsys):
     # Returned text is exactly what went to stdout.
     assert captured.out.rstrip("\n") == out
 
-    assert "## Place → POI anchors" in out
+    assert "## Place → POI matches" in out
     assert "## Entry mentions → POI" in out
     assert (
         "| Place (book elev.) | Übersicht excerpt | OSM name | Δ elev. | method |"
@@ -244,7 +244,7 @@ def test_run_audit_renders_both_tables_with_five_columns(cfg, capsys):
     assert "| Mention | Prose context | OSM name | Δ elev. | method |" in out
     assert "| --- | --- | --- | --- | --- |" in out
 
-    # A known exact Place anchor: 'Zugspitze, 2962 m' resolves to OSM Zugspitze.
+    # A known exact Place match: 'Zugspitze, 2962 m' resolves to OSM Zugspitze.
     place_line = next(ln for ln in out.splitlines() if ln.startswith("| Zugspitze, "))
     cells = [c.strip() for c in place_line.strip("|").split("|")]
     assert cells[0] == "Zugspitze, 2962 m"

@@ -1,7 +1,7 @@
-// Domain types the rest of the app speaks — Entry (Place | Route), Poi, Anchor,
-// Mention, Reference (root CONTEXT.md). The src/data adapter is the one place
-// that builds these from the raw artifacts; every component depends on these
-// types, never on file layout (route-map/CLAUDE.md rule 2).
+// Domain types the rest of the app speaks — Entry (Place | Route), Poi,
+// Destination, Mention, Reference (root CONTEXT.md). The src/data adapter is the
+// one place that builds these from the raw artifacts; every component depends on
+// these types, never on file layout (route-map/CLAUDE.md rule 2).
 
 // A named alpine feature resolved to a single OpenStreetMap coordinate — always
 // a point, even for linear features like paths (CONTEXT.md: POI).
@@ -63,14 +63,15 @@ export interface Place extends EntryBase {
 	elevation: string | null;
 	/** The single POI this Place resolves to, or null — an honest absence. */
 	poi: Poi | null;
-	/** Routes whose anchor_ids name this Place — the routes leading here. */
+	/** Routes that target this Place (its Destination or one of its place_ids)
+	 *  — the routes leading here. */
 	routes: Route[];
 }
 
 // An Entry describing an itinerary — how to reach a target (CONTEXT.md: Route).
 // A Route has NO geometry of its own: it is prose + verbatim-German metadata
-// plus links. Its anchor coordinate is transitive — its Anchor Place's POI,
-// never a direct route→POI link.
+// plus links. Its coordinate is transitive — its Destination Place's POI, never
+// a direct route→POI link. Its full target set is `[destination, ...places]`.
 export interface Route extends EntryBase {
 	kind: "route";
 	/** The `peak` string the book files the route under (verbatim, may be null). */
@@ -79,9 +80,14 @@ export interface Route extends EntryBase {
 	time: string | null;
 	heightM: string | null;
 	firstAscent: string | null;
-	/** Target Places (anchor_ids resolved). A Route's anchor coordinate is each
-	 *  Anchor's `poi` — transitive via the Place, never a direct link. */
-	anchors: Place[];
+	/** The primary target Place — the structural parent the route is filed under
+	 *  (destination_id resolved), or null when it has none. A Route's coordinate
+	 *  is this Place's `poi` — transitive, never a direct link (CONTEXT.md:
+	 *  Destination). */
+	destination: Place | null;
+	/** Additional target Places (place_ids resolved) — traverse waypoints,
+	 *  disjoint from the Destination. */
+	places: Place[];
 }
 
 // Every Entry is either a Place or a Route — that is its `kind` (CONTEXT.md).
@@ -95,7 +101,8 @@ export interface GuideData {
 	places: Place[];
 	/** The Routes. */
 	routes: Route[];
-	/** Routes with no Anchors — the "Unfiled routes" bucket, always visible. */
+	/** Routes with no target Place at all — no Destination and no places — the
+	 *  "Unfiled routes" bucket, always visible. */
 	unfiledRoutes: Route[];
 	pois: Poi[];
 	/** poi_id -> Entries that reference that POI (a Place via its coordinate, or

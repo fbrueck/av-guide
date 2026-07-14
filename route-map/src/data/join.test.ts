@@ -12,9 +12,10 @@ import { joinGuideData, osmUrlFor } from "./join";
 
 // Pure join tests (route-map/CLAUDE.md Testing): the deterministic raw->domain
 // logic is the one sanctioned automated-test point. No DOM, node env only. The
-// Entry model (#44): Places resolve to <=1 POI, a Route's anchor coordinate is
-// transitive via its Anchor Place, mentions are Entry-general, References
-// resolve to Entries (dangling ones warned, not crashed).
+// Entry model (#44, ADR-0002): Places resolve to <=1 POI, a Route's coordinate
+// is transitive via its Destination Place (with additional target Places in
+// `places`), mentions are Entry-general, References resolve to Entries (dangling
+// ones warned, not crashed).
 
 function poiFeature(
 	poi_id: string,
@@ -49,7 +50,8 @@ function place(id: string, overrides: Partial<RawEntry> = {}): RawEntry {
 		time: null,
 		height_m: null,
 		first_ascent: null,
-		anchor_ids: [],
+		destination_id: null,
+		place_ids: [],
 		references: [],
 		summary: null,
 		description: null,
@@ -69,7 +71,8 @@ function route(id: string, overrides: Partial<RawEntry> = {}): RawEntry {
 		time: null,
 		height_m: null,
 		first_ascent: null,
-		anchor_ids: [],
+		destination_id: null,
+		place_ids: [],
 		references: [],
 		summary: null,
 		description: null,
@@ -235,30 +238,63 @@ describe("joinGuideData — Places and their POI", () => {
 	});
 });
 
-describe("joinGuideData — Anchors (transitive coordinate) and unfiled routes", () => {
-	it("resolves a Route's anchors to Places, coordinate transitive via place.poi", () => {
+describe("joinGuideData — Destination + places (transitive coordinate) and unfiled routes", () => {
+	it("resolves a Route's Destination to a Place, coordinate transitive via place.poi", () => {
 		const data = joinGuideData(
 			artifacts(
 				[poiFeature("poi1", {}, [10.9, 47.3])],
-				[place("R1"), route("R2", { anchor_ids: ["R1"] })],
+				[place("R1"), route("R2", { destination_id: "R1" })],
 				[placeLink("R1", "poi1")],
 			),
 		);
 		const r = routeById(data, "R2");
-		expect(r.anchors.map((a) => a.id)).toEqual(["R1"]);
-		// The anchor coordinate is never a direct route->POI link; it is reached
-		// transitively through the Anchor Place's POI.
-		expect(r.anchors[0]?.poi?.coordinates).toEqual([10.9, 47.3]);
+		expect(r.destination?.id).toBe("R1");
+		expect(r.places).toEqual([]);
+		// The coordinate is never a direct route->POI link; it is reached
+		// transitively through the Destination Place's POI.
+		expect(r.destination?.poi?.coordinates).toEqual([10.9, 47.3]);
 	});
 
-	it("adds a route to its Anchor Place's routes-leading-here list", () => {
+	it("resolves place_ids into `places`, disjoint from the Destination", () => {
 		const data = joinGuideData(
 			artifacts(
 				[],
 				[
 					place("R1"),
-					route("R2", { anchor_ids: ["R1"] }),
-					route("R3", { anchor_ids: ["R1"] }),
+					place("R2"),
+					place("R3"),
+					route("R4", { destination_id: "R1", place_ids: ["R2", "R3"] }),
+				],
+			),
+		);
+		const r = routeById(data, "R4");
+		expect(r.destination?.id).toBe("R1");
+		expect(r.places.map((p) => p.id)).toEqual(["R2", "R3"]);
+	});
+
+	it("resolves a null destination_id to a null Destination", () => {
+		const data = joinGuideData(
+			artifacts(
+				[],
+				[place("R1"), route("R2", { destination_id: null, place_ids: ["R1"] })],
+			),
+		);
+		const r = routeById(data, "R2");
+		expect(r.destination).toBeNull();
+		// A Route with places but no Destination is still filed (not unfiled).
+		expect(r.places.map((p) => p.id)).toEqual(["R1"]);
+		expect(data.unfiledRoutes).toHaveLength(0);
+	});
+
+	it("adds a route to the routes-leading-here list of its Destination and its places", () => {
+		const data = joinGuideData(
+			artifacts(
+				[],
+				[
+					place("R1"),
+					place("R2"),
+					route("R3", { destination_id: "R1" }),
+					route("R4", { destination_id: "R1", place_ids: ["R2"] }),
 				],
 			),
 		);
@@ -266,50 +302,68 @@ describe("joinGuideData — Anchors (transitive coordinate) and unfiled routes",
 			placeById(data, "R1")
 				.routes.map((r) => r.id)
 				.sort(),
-		).toEqual(["R2", "R3"]);
+		).toEqual(["R3", "R4"]);
+		// A Place named only as a traverse waypoint still lists the route.
+		expect(placeById(data, "R2").routes.map((r) => r.id)).toEqual(["R4"]);
 	});
 
-	it("puts an anchor-less Route in the unfiled-routes bucket", () => {
+	it("puts a Route with no Destination and no places in the unfiled-routes bucket", () => {
 		const data = joinGuideData(
 			artifacts(
 				[],
-				[place("R1"), route("R2"), route("R3", { anchor_ids: ["R1"] })],
+				[place("R1"), route("R2"), route("R3", { destination_id: "R1" })],
 			),
 		);
 		expect(data.unfiledRoutes.map((r) => r.id)).toEqual(["R2"]);
 	});
 
-	it("keeps an anchored Route's Anchor Place resolvable even with no POI", () => {
+	it("keeps a filed Route's Destination Place resolvable even with no POI", () => {
 		const data = joinGuideData(
-			artifacts([], [place("R1"), route("R2", { anchor_ids: ["R1"] })]),
+			artifacts([], [place("R1"), route("R2", { destination_id: "R1" })]),
 		);
 		const r = routeById(data, "R2");
-		expect(r.anchors[0]?.id).toBe("R1");
-		expect(r.anchors[0]?.poi).toBeNull();
+		expect(r.destination?.id).toBe("R1");
+		expect(r.destination?.poi).toBeNull();
 		expect(data.unfiledRoutes).toHaveLength(0);
 	});
 
-	it("warns and skips an anchor_id that resolves to no Entry", () => {
+	it("warns and skips a destination_id that resolves to no Entry", () => {
 		const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
 		const data = joinGuideData(
-			artifacts([], [route("R2", { anchor_ids: ["ghost"] })]),
+			artifacts([], [route("R2", { destination_id: "ghost" })]),
 		);
 		const r = routeById(data, "R2");
-		expect(r.anchors).toHaveLength(0);
-		// no anchors resolved -> unfiled
+		expect(r.destination).toBeNull();
+		// destination unresolved and no places -> unfiled
 		expect(data.unfiledRoutes.map((x) => x.id)).toEqual(["R2"]);
 		expect(warn).toHaveBeenCalledWith(
-			expect.stringContaining('anchor_id "ghost"'),
+			expect.stringContaining('destination_id "ghost"'),
 		);
 	});
 
-	it("warns and skips an anchor_id that resolves to a Route, not a Place", () => {
+	it("warns and skips a destination_id that resolves to a Route, not a Place", () => {
 		const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
 		const data = joinGuideData(
-			artifacts([], [route("R1"), route("R2", { anchor_ids: ["R1"] })]),
+			artifacts([], [route("R1"), route("R2", { destination_id: "R1" })]),
 		);
-		expect(routeById(data, "R2").anchors).toHaveLength(0);
+		expect(routeById(data, "R2").destination).toBeNull();
 		expect(warn).toHaveBeenCalledWith(expect.stringContaining("R1"));
+	});
+
+	it("warns and skips a place_id that resolves to a Route, not a Place", () => {
+		const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+		const data = joinGuideData(
+			artifacts(
+				[],
+				[
+					place("R1"),
+					route("R2"),
+					route("R3", { destination_id: "R1", place_ids: ["R2"] }),
+				],
+			),
+		);
+		expect(routeById(data, "R3").places).toHaveLength(0);
+		expect(warn).toHaveBeenCalledWith(expect.stringContaining('place_id "R2"'));
 	});
 });
 

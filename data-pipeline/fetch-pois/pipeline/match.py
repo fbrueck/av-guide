@@ -12,9 +12,9 @@ ADR 0001):
     Entry's prose (a Route description or a Place Übersicht). Each resolves to a
     `{entry_id, poi_id, surface}` row in entry_pois.jsonl.
 
-A Route's `peak` string is **not** matched here: a Route's anchor coordinate is
-transitive via its Place (route-map resolves anchor_ids -> Place -> POI), so
-`peak` stays verbatim Route metadata. A Place and a Mention run the same
+A Route's `peak` string is **not** matched here: a Route's coordinate is
+transitive via its Destination Place (route-map resolves destination_id -> Place
+-> POI), so `peak` stays verbatim Route metadata. A Place and a Mention run the same
 cascade (in code both are a `kind`-tagged `item` dict — the humble unit the
 cascade takes):
 
@@ -186,7 +186,7 @@ def entry_items(entry: dict, cfg: GuideConfig) -> tuple[list[dict], bool]:
     hint with elevation parsed from the verbatim `elevation` string) when the
     Entry is a Place, followed by every **Mention** (`kind: mention`) stage 2
     extracted from its prose if a part file exists. A Route's `peak` is not an
-    item — its anchor coordinate is transitive via its Place. Returns
+    item — its coordinate is transitive via its Destination Place. Returns
     (items, part file exists)."""
     items = []
     if entry["kind"] == "place":

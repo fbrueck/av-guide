@@ -123,13 +123,26 @@ def test_plan_adjudicate_batches_with_entry_context_and_resumes(cfg, capsys):
     batches = [json.loads(line) for line in out.out.splitlines()]
     assert [b["batch"] for b in batches] == [1]
     [planned] = batches[0]["cases"]
-    # The queue record verbatim, plus the entry context the subagent needs.
+    # The queue record verbatim, plus the entry context the subagent needs —
+    # including the route's resolved Destination (its parent Place + that Place's
+    # POI) as a geographic prior. r7 is filed under r4 'Höllentorkopf', which
+    # resolves exactly to the OSM peak at 2150 m.
     assert planned == {
         **case,
         "entry": {
             "name": "Übergang zum Höllentorkopf",
             "kind": "route",
             "peak": None,
+            "destination": {
+                "name": "Höllentorkopf",
+                "poi": {
+                    "name": "Höllentorkopf",
+                    "type": "peak",
+                    "ele": 2150.0,
+                    "lat": 47.44,
+                    "lon": 11.05,
+                },
+            },
             "description": "...",
         },
     }

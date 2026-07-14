@@ -10,8 +10,9 @@ The projection is deliberate — it is the boundary the webapp (#44) and the
 downstream fetch-pois pipeline (#43) depend on. Only CONTRACT_FIELDS are
 emitted; internal bookkeeping (e.g. `source_page`, `id_source`) is not part of
 the contract and is dropped. A scalar field missing from a record is emitted as
-null, and the zero-or-many link fields (`anchor_ids`, `references`) default to
-an empty list, so the array shape is uniform across Places and Routes.
+null (including the nullable scalar `destination_id`), and the zero-or-many link
+fields (`place_ids`, `references`) default to an empty list, so the array shape
+is uniform across Places and Routes.
 
   python -m pipeline.export --guide <id>
 
@@ -30,7 +31,9 @@ from .config import GuideConfig, load_guide
 # The route-map/fetch-pois data contract (Entry model, #42). Order is preserved
 # in the emitted objects. `id` + `kind` head every Entry; `place_type`/
 # `elevation` carry for Places, the climbing metadata for Routes, and each kind
-# leaves the other's fields null. `anchor_ids`/`references` are the link fields.
+# leaves the other's fields null. `destination_id` (nullable scalar: a Route's
+# primary target Place), `place_ids` (additional target Places) and `references`
+# are the link fields.
 CONTRACT_FIELDS: tuple[str, ...] = (
     "id",
     "kind",
@@ -42,15 +45,17 @@ CONTRACT_FIELDS: tuple[str, ...] = (
     "time",
     "height_m",
     "first_ascent",
-    "anchor_ids",
+    "destination_id",
+    "place_ids",
     "references",
     "summary",
     "description",
 )
 
 # Contract fields that are zero-or-many links: absent → [] (not null), so a
-# consumer can iterate without a null check.
-_LIST_FIELDS: frozenset[str] = frozenset({"anchor_ids", "references"})
+# consumer can iterate without a null check. `destination_id` is a nullable
+# scalar, not a list, so it defaults to None like the other scalar fields.
+_LIST_FIELDS: frozenset[str] = frozenset({"place_ids", "references"})
 
 
 def project_entry(record: dict) -> dict:

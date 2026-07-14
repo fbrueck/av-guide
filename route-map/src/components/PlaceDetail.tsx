@@ -8,8 +8,8 @@ interface PlaceDetailProps {
 
 // The detail panel for a selected Place (#44): the book's data for the target
 // feature — name, elevation, place_type, Übersicht — with a link to verify its
-// resolved POI on OpenStreetMap, and the list of **Routes leading here** (its
-// Anchor's routes). Selecting one drills into that Route's detail. A Place that
+// resolved POI on OpenStreetMap, and the list of **Routes leading here** (routes
+// that target this Place). Selecting one drills into that Route's detail. A Place that
 // resolved to no POI renders honestly (route-map/CLAUDE.md rule 3): the OSM row
 // says so rather than hiding, so an unresolved Place is visible, not silent.
 export function PlaceDetail({ place, nav }: PlaceDetailProps) {
