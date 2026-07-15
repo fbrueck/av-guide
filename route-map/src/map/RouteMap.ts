@@ -2,6 +2,7 @@ import type { FeatureCollection } from "geojson";
 import {
 	AttributionControl,
 	type ExpressionSpecification,
+	type FilterSpecification,
 	type GeoJSONSource,
 	LngLatBounds,
 	Map as MapLibreMap,
@@ -19,6 +20,10 @@ import {
 	topoBasemapStyle,
 } from "./basemap";
 import { poiColorExpression } from "./poiStyle";
+import {
+	type PoiVisibilityFeature,
+	poiVisibilityFilter,
+} from "./poiVisibility";
 import { WETTERSTEIN_BOUNDS } from "./view";
 
 const POI_SOURCE_ID = "pois";
@@ -62,13 +67,18 @@ export interface RouteMap {
 		entriesByPoiId: Map<string, Entry[]>,
 		placePoiIds: Set<string>,
 	): void;
-	/** Emphasize a selected Entry's linked POI set (#44): the target coordinates
-	 *  (a Route's Destination + places' POIs, or a Place's own POI) styled distinctly from the
-	 *  Mentions on top of the base markers, then fit the camera to the set.
-	 *  Passing `null` clears the highlight. Honest by design: an empty POI set
-	 *  draws nothing and leaves the camera put — a Route has no geometry, so
-	 *  nothing is invented (route-map/CLAUDE.md rule 3). Idempotent and safe to
-	 *  call before the style loads. */
+	/** Emphasize a selected Entry's linked POI set (#44) AND reveal that Entry's
+	 *  Mentions on the base layer (#77) — one selection door drives both layers.
+	 *  The highlight overlay styles the target coordinates (a Route's Destination
+	 *  + places' POIs, or a Place's own POI) distinctly from the Mentions on top
+	 *  of the base markers, then fits the camera to the set. Simultaneously the
+	 *  base POI layer's filter switches to "Place POIs plus this Entry's Mentions"
+	 *  so the mention-only POIs the default view hides become visible while the
+	 *  Entry is selected. Passing `null` clears the highlight and returns the base
+	 *  layer to the default (Place POIs only). Honest by design: an empty POI set
+	 *  draws nothing, reveals nothing, and leaves the camera put — a Route has no
+	 *  geometry, so nothing is invented (route-map/CLAUDE.md rule 3). Idempotent
+	 *  and safe to call before the style loads. */
 	highlightEntry(entry: Entry | null): void;
 	/** Flip the map between the flat 2D basemap and 3D terrain (#23). On enable
 	 *  the Mapterhorn raster-dem source is draped under the basemap and the
@@ -80,14 +90,13 @@ export interface RouteMap {
 
 // The GeoJSON feature properties the POI layer + popup read. Kept flat and
 // primitive because maplibre only carries JSON-serialisable feature properties.
-interface PoiFeatureProps {
-	id: string;
+// Extends PoiVisibilityFeature (which owns `id` + `isPlace`) so the base-layer
+// feature shape the visibility rule reads has a single source of truth.
+interface PoiFeatureProps extends PoiVisibilityFeature {
 	name: string;
 	type: string;
 	ele: number | null;
 	osmUrl: string;
-	/** Whether this POI is a Place's resolved coordinate — a primary marker. */
-	isPlace: boolean;
 }
 
 function escapeHtml(value: string): string {
@@ -318,6 +327,12 @@ export function createRouteMap(
 	// buffered clear is distinguishable from "no request yet".
 	let pendingHighlight: Entry | null = null;
 	let hasPendingHighlight = false;
+	// The currently-applied selection, read by the base POI layer's visibility
+	// filter (#77): the default (null) shows only Place POIs; a selected Entry
+	// also reveals that Entry's Mentions. Kept here (not only in pendingHighlight)
+	// so renderPois can seed a freshly-created layer with the right filter when
+	// the POIs load after a selection is already active.
+	let selectedEntry: Entry | null = null;
 	// setTerrain has the same race; buffer the latest desired state and apply it
 	// on load. Track the applied state so re-adding the source stays idempotent.
 	let terrainEnabled = false;
@@ -403,6 +418,11 @@ export function createRouteMap(
 				] as unknown as ExpressionSpecification,
 			},
 		});
+		// Seed the base layer's visibility filter from the current selection (#77):
+		// the default hides mention-only POIs (Place POIs only), and if an Entry is
+		// already selected when the POIs load, its Mentions show too. Same call the
+		// highlight path uses, so there is one place the filter is built.
+		applyPoiVisibility();
 		wireInteractions();
 	}
 
@@ -425,7 +445,25 @@ export function createRouteMap(
 		map.fitBounds(bounds, { padding: FIT_PADDING, maxZoom: FIT_MAX_ZOOM });
 	}
 
+	// Switch the base POI layer's filter to the current selection (#77). A no-op
+	// until the layer exists — renderPois seeds the filter from `selectedEntry` on
+	// creation, so a selection made before the POIs load is not lost.
+	function applyPoiVisibility(): void {
+		if (!map.getLayer(POI_LAYER_ID)) {
+			return;
+		}
+		map.setFilter(
+			POI_LAYER_ID,
+			poiVisibilityFilter(selectedEntry) as unknown as FilterSpecification,
+		);
+	}
+
 	function renderHighlight(entry: Entry | null): void {
+		// The selection drives both layers through this one door (route-map/CLAUDE.md
+		// rule 4): the highlight overlay below, and the base layer's mention-reveal
+		// filter. Update the reveal first so it swaps atomically with the highlight.
+		selectedEntry = entry;
+		applyPoiVisibility();
 		const set = entry ? highlightSetFor(entry) : null;
 		const data = set
 			? toHighlightFeatureCollection(set)
