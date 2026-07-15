@@ -24,6 +24,15 @@ def test_umlaut_and_eszett_boundaries_join():
     assert dehyphenate("Wän-\nde") == "Wände"
 
 
+def test_word_split_across_two_line_breaks_is_fully_rejoined():
+    # A long word wrapped twice: both soft hyphens must go, not just the first.
+    assert dehyphenate("un-\nge-\nprüfter") == "ungeprüfter"
+
+
+def test_crlf_line_breaks_are_handled():
+    assert dehyphenate("Häufig be-\r\ngangen") == "Häufig begangen"
+
+
 def test_uppercase_before_hyphen_is_a_compound_and_is_kept():
     # `NW-Grat`, `S-Seite` etc. are genuine compounds — never fuse across the
     # hyphen; the newline stays so structure is preserved (a later LLM/reflow

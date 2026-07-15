@@ -36,16 +36,19 @@ from .config import GuideConfig, load_guide
 from .records import PageMeta
 
 # A lowercase word split by a hyphen at a line break: <lowercase>-\n[spaces]<lowercase>.
-# The continuation may be indented; the hyphen, newline and indent are dropped.
-# Both flanks are lowercase (incl. äöüß) so compounds (`NW-Grat`) and a blank-line
-# paragraph break are never fused. See module docstring for the guarantees.
-_SOFT_HYPHEN = re.compile(r"([a-zäöüß])-\n[^\S\r\n]*([a-zäöüß])")
+# The continuation may be indented (and the newline may be CRLF); the hyphen,
+# newline and indent are dropped. Both flanks are lowercase (incl. äöüß) so
+# compounds (`NW-Grat`) and a blank-line paragraph break are never fused. The
+# continuation letter is matched as a lookahead — not consumed — so a word
+# wrapped across two line breaks (`un-\nge-\nprüft`) is fully rejoined in one
+# pass. See the module docstring for the guarantees.
+_SOFT_HYPHEN = re.compile(r"([a-zäöüß])-\r?\n[^\S\r\n]*(?=[a-zäöüß])")
 
 
 def dehyphenate(text: str) -> str:
     """Rejoin words split by a soft hyphen at a line break; everything else is
     returned verbatim."""
-    return _SOFT_HYPHEN.sub(r"\1\2", text)
+    return _SOFT_HYPHEN.sub(r"\1", text)
 
 
 def _load_manifest(cfg: GuideConfig) -> list[PageMeta]:
