@@ -1,10 +1,12 @@
 # route-map — conventions
 
-The local-only web app that renders a guide's mapped route data on an
-interactive topographic map, so the digitizer can *see* and QA the pipeline's
-output (#17). Repo-wide rules (contribution workflow, module layout, domain
-language) live in the root `CLAUDE.md`; this file owns everything specific to
-the webapp.
+The web app that renders a guide's mapped route data on an interactive
+topographic map, so the digitizer can *see* and QA the pipeline's output (#17).
+It runs in two modes over one static frontend: a **local-live** QA tool (Vite
+dev server, live pipeline artifacts) and a **deployed read-only snapshot**
+published to GitHub Pages (ADR-0003) — see rules 1 and 6. Repo-wide rules
+(contribution workflow, module layout, domain language) live in the root
+`CLAUDE.md`; this file owns everything specific to the webapp.
 
 It is a **read-only consumer** of committed pipeline artifacts under
 `guides/<id>/data/`. It never reaches into another module's source and never
@@ -57,9 +59,15 @@ grandfather, unlike the pipeline's transitional `ruff`/`mypy`).
 
 Load-bearing. Breaking one needs a deliberate, called-out reason.
 
-1. **Local-only, no backend.** No server code, no API layer, no
-   deployment/hosting. The Vite dev server serves everything; data is read from
-   the local filesystem via the config in rule 6.
+1. **No backend; two delivery modes.** No server code and no API layer, ever.
+   The app runs in two modes over the *same* static frontend (ADR-0003):
+   **local-live** — the Vite dev server serves everything and reads the live
+   pipeline artifacts from the local filesystem (rule 6); and
+   **deployed-snapshot** — a static, read-only build published to GitHub Pages
+   (project site under `/av-guide/`), fed by a committed data snapshot baked
+   into the build (rule 6). Deployment is limited to that static snapshot — it
+   adds no runtime server, and publishing is a deliberate act (update the
+   snapshot, merge to `main`), never a side effect of a local pipeline run.
 
 2. **A single data boundary.** `src/data/` is the *only* place that knows the
    raw on-disk artifact shapes and file formats (`contracts.ts`). It loads
@@ -93,14 +101,27 @@ Load-bearing. Breaking one needs a deliberate, called-out reason.
    text, terrain on/off. Plain React state (lifted to `App`, or one context) —
    **no router, no global-state library** (Redux/Zustand/etc.).
 
-6. **Dev-time data access via Vite static-serve.** `vite.config.ts` serves the
-   guide's `parse-routes/03_structured` and `fetch-pois/04_final` directories
-   (under `guides/<id>/data/`) as static data, so the app always reflects the
-   latest pipeline run with **no copy step**. The guide is selected by the
-   `VITE_GUIDE_ID` env var, defaulting to the single existing guide
-   (`wetterstein`), so `npm run dev` is a genuine one-command start. (This
-   deliberately softens the pipeline's strict "no default `--guide`" rule — a
-   personal QA tool should start with one command.)
+6. **Data access: dev-live vs deployed-snapshot.** Two sources answer the same
+   `/guide-data/` URL scheme by design (ADR-0003); the `src/data` adapter's
+   contract is identical in both.
+   - **Dev (live):** `vite.config.ts`'s `configureServer` middleware serves the
+     guide's `parse-routes/03_structured` and `fetch-pois/04_final` directories
+     (under the gitignored `guides/<id>/data/`) as static data, so the app
+     always reflects the latest pipeline run with **no copy step**. The guide is
+     selected by the `VITE_GUIDE_ID` env var, defaulting to the single existing
+     guide (`wetterstein`), so `npm run dev` is a genuine one-command start.
+     (This deliberately softens the pipeline's strict "no default `--guide`"
+     rule — a personal QA tool should start with one command.)
+   - **Build/deploy (snapshot):** a committed copy of the four consumed
+     artifacts lives under Vite's static `public/` directory (mirroring the
+     `/guide-data/` scheme) and is copied into `dist/` verbatim, so the deployed
+     site renders from a **deliberately-updated snapshot**, kept separate from
+     the live gitignored tree so local pipeline reruns never dirty what is
+     published. ADR-0003 owns the full rationale and the gitignore mechanics.
+   - **Base path is conditional:** `base` is `'/'` in dev and `'/av-guide/'` in
+     build; the adapter prefixes its data URLs with `import.meta.env.BASE_URL`
+     so the same fetches resolve under the project-site base when deployed and
+     stay bare in dev.
 
    **URL scheme (stable — the `src/data` adapter fetches these):** `/guide-data/`
    maps onto `guides/<id>/data/`, mirroring the on-disk layout minus the guide
