@@ -1,8 +1,8 @@
-from pipeline.references import parse_references
+from pipeline.references import Reference, parse_references
 
 
 def ids(text):
-    return [r["ref_id"] for r in parse_references(text)]
+    return [r.ref_id for r in parse_references(text)]
 
 
 def test_single_ref_forms():
@@ -13,7 +13,7 @@ def test_single_ref_forms():
 
 def test_surface_is_the_verbatim_r_span():
     refs = parse_references("Abstieg (R 243) nach Osten.")
-    assert refs == [{"ref_id": "R243", "surface": "R 243"}]
+    assert refs == [Reference(ref_id="R243", surface="R 243")]
 
 
 def test_shared_r_list_comma_expands_under_one_surface():
@@ -21,8 +21,8 @@ def test_shared_r_list_comma_expands_under_one_surface():
     # all sharing the verbatim surface.
     refs = parse_references("Wie R 43, 243 zum Gipfel.")
     assert refs == [
-        {"ref_id": "R43", "surface": "R 43, 243"},
-        {"ref_id": "R243", "surface": "R 43, 243"},
+        Reference(ref_id="R43", surface="R 43, 243"),
+        Reference(ref_id="R243", surface="R 43, 243"),
     ]
 
 
@@ -37,9 +37,9 @@ def test_letter_suffixes_in_refs():
 
 def test_anaphora_surfaced_with_null_ref_id():
     refs = parse_references("Weiter wie dort.")
-    assert refs == [{"ref_id": None, "surface": "Weiter wie dort"}]
+    assert refs == [Reference(ref_id=None, surface="Weiter wie dort")]
     assert parse_references("Abstieg wie dort zurück.") == [
-        {"ref_id": None, "surface": "wie dort"}
+        Reference(ref_id=None, surface="wie dort")
     ]
 
 
@@ -53,8 +53,8 @@ def test_multiple_refs_in_order_deduped_by_pair():
     refs = parse_references(text)
     # R43 appears twice with the same surface → one entry; order preserved.
     assert refs == [
-        {"ref_id": "R43", "surface": "R 43"},
-        {"ref_id": "R243", "surface": "R 243"},
+        Reference(ref_id="R43", surface="R 43"),
+        Reference(ref_id="R243", surface="R 243"),
     ]
 
 

@@ -1,6 +1,7 @@
 import json
 
 from pipeline.export import CONTRACT_FIELDS, project_entry, write_routes_json
+from pipeline.records import Entry
 
 
 def route_record(**overrides):
@@ -26,7 +27,7 @@ def route_record(**overrides):
 
 
 def test_project_entry_keeps_only_contract_fields():
-    projected = project_entry(route_record())
+    projected = project_entry(Entry.from_dict(route_record()))
     assert set(projected) == set(CONTRACT_FIELDS)
     # Internal fields are dropped from the contract.
     assert "source_page" not in projected
@@ -46,7 +47,7 @@ def test_project_entry_places_carry_place_fields():
         "elevation": "1652 m",
         "description": "Übersicht…",
     }
-    projected = project_entry(place)
+    projected = project_entry(Entry.from_dict(place))
     assert projected["place_type"] == "hut"
     assert projected["elevation"] == "1652 m"
     # A Place leaves the Route-only fields null but keeps the uniform shape.
@@ -58,7 +59,9 @@ def test_project_entry_link_fields_default_to_empty_list():
     # An Entry lacking place_ids/references still yields [] (never null), so a
     # consumer can iterate without a null check; the nullable scalar
     # destination_id defaults to None.
-    projected = project_entry({"id": "R1", "kind": "route", "name": "Sparse"})
+    projected = project_entry(
+        Entry.from_dict({"id": "R1", "kind": "route", "name": "Sparse"})
+    )
     assert projected["place_ids"] == []
     assert projected["references"] == []
     assert projected["destination_id"] is None
@@ -85,7 +88,7 @@ def test_write_routes_json_reads_jsonl_and_emits_array(cfg):
 def test_write_routes_json_prefers_passed_records_over_file(cfg):
     # merge passes its in-memory list; no routes.jsonl needed in that path.
     cfg.struct_dir.mkdir(parents=True, exist_ok=True)
-    n = write_routes_json(cfg, [route_record()])
+    n = write_routes_json(cfg, [Entry.from_dict(route_record())])
     assert n == 1
     assert not cfg.routes_jsonl.exists()
     assert (
