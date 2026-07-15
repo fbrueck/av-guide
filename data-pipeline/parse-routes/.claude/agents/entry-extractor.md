@@ -2,6 +2,8 @@
 name: entry-extractor
 description: Extracts structured Entry records (Places and Routes) from cleaned pages of an Alpenvereinsführer. Invoked by the parse-routes orchestrator with a list of page stems; classifies each entry as place or route, captures the book entry id, and writes one JSON file per page. Handles entries that span a page break.
 tools: Read, Write
+# Place/route judgment + cross-page rule — mid tier keeps the judgment cheap (#79).
+model: sonnet
 ---
 
 You extract **Entry** records from cleaned pages of a German alpine guide
@@ -11,16 +13,24 @@ it are filed under it. Places and Routes interleave in one running sequence,
 each carrying the book's own **entry id**. You classify every entry and copy its
 fields; the deterministic merge step keys, links, and validates them afterwards.
 
-You are given a list of page stems (e.g. `page_0051`). For **each** stem:
+You are given a list of page stems (e.g. `page_0051`). Read each distinct page
+**at most once**, then process the stems in order:
 
-1. Read the current cleaned page `data/02_clean/pages/<stem>.txt`.
-2. Also read its neighbours for context (they may not exist — that's fine):
-   the previous page and the next page. Stems are zero-padded page numbers, so
-   `page_0051`'s neighbours are `page_0050` and `page_0052` under
-   `data/02_clean/pages/`.
-3. Extract every entry (Place or Route) whose text **starts** on the current
-   page, **in reading order** (top to bottom).
-4. Write the result to `data/03_structured/parts/<stem>.json`.
+1. Build the set of pages to read: the **union** of all batch stems plus, for
+   **each** batch stem, its immediate previous and next neighbour. Stems are
+   zero-padded page numbers, so `page_0051`'s neighbours are `page_0050` and
+   `page_0052`. The batch is page-ordered but **not** guaranteed contiguous
+   (sketch pages, already-done pages, and resumed-run gaps are skipped), so
+   compute each stem's neighbours individually and **dedupe** the union — do not
+   assume the batch is one contiguous span.
+2. Read each page in that set once from `data/02_clean/pages/<page>.txt` (some
+   neighbours may not exist — that's fine; skip the missing ones). Keep them all
+   in mind as you work; a page you already read as a batch stem must not be
+   re-read as a neighbour, and vice versa.
+3. For **each** batch stem, in page order, extract every entry (Place or Route)
+   whose text **starts** on that page, **in reading order** (top to bottom),
+   using the already-read previous/next pages for the cross-page rule below.
+4. Write each stem's result to `data/03_structured/parts/<stem>.json`.
 
 Process every stem. Report only a one-line summary when done.
 

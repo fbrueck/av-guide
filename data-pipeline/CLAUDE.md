@@ -34,6 +34,15 @@ Load-bearing. Breaking one needs a deliberate, called-out reason.
    each package's `.claude/commands` + `.claude/agents`). **Never bury an LLM
    call inside the Python** — the deterministic core stays offline and testable.
 
+   Each subagent is **pinned to the cheapest model tier that still does its job
+   well** via a `model:` field in its own `.claude/agents/*.md` frontmatter
+   (#79). The per-agent frontmatter is the source of truth for both the tier and
+   *why* that stage sits there — read it there rather than duplicating the table
+   here. The deliberate spread runs from Haiku for pure OCR repair up to Opus for
+   the low-volume, hardest-reasoning adjudication. Prefer the model *family*
+   alias so a stage tracks the latest model in its tier. If a down-tiered stage
+   regresses, bump that one agent up a tier — don't touch the others.
+
 2. **Everything is resumable.** A stage must be safe to re-run. Planners return
    only the work that is still outstanding; outputs are keyed per unit (e.g.
    one part/verdict file per route/case) so a re-run skips what's done. An
