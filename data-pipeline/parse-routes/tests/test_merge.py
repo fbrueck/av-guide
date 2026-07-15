@@ -1,4 +1,3 @@
-import dataclasses
 import json
 
 from pipeline.merge import DanglingRef, UnresolvedPlace, assemble_entries, merge
@@ -8,10 +7,7 @@ from pipeline.records import PartEntry
 def write_part(cfg, stem, entries):
     cfg.struct_parts.mkdir(parents=True, exist_ok=True)
     (cfg.struct_parts / f"{stem}.json").write_text(
-        json.dumps(
-            {"entries": [dataclasses.asdict(e) for e in entries]}, ensure_ascii=False
-        ),
-        encoding="utf-8",
+        json.dumps({"entries": entries}, ensure_ascii=False), encoding="utf-8"
     )
 
 
@@ -30,7 +26,7 @@ def place(entry_id_raw, name, **fields):
         "place_type": None,
         "elevation": None,
     }
-    return PartEntry.from_dict({**base, **fields})
+    return {**base, **fields}
 
 
 def route(entry_id_raw, name, **fields):
@@ -47,7 +43,15 @@ def route(entry_id_raw, name, **fields):
         "summary": None,
         "place_names": [],
     }
-    return PartEntry.from_dict({**base, **fields})
+    return {**base, **fields}
+
+
+def assemble(pages):
+    """Feed dict fixtures through the real parse boundary — as merge does — then
+    assemble. Pure tests build wire dicts; the dict->PartEntry step lives here."""
+    return assemble_entries(
+        [(page, [PartEntry.from_dict(e) for e in entries]) for page, entries in pages]
+    )
 
 
 def test_part_entry_from_dict_defaults_and_kind_fields():
@@ -68,7 +72,7 @@ def test_part_entry_from_dict_defaults_and_kind_fields():
 
 
 def test_book_id_normalized_and_flagged():
-    records, report = assemble_entries(
+    records, report = assemble(
         [(51, [place("•55", "Kreuzeckhaus"), route("•56 A", "Nordwestgrat")])]
     )
     assert [r.id for r in records] == ["R55", "R56A"]
@@ -77,7 +81,7 @@ def test_book_id_normalized_and_flagged():
 
 
 def test_synthetic_id_when_randziffer_unrecoverable():
-    records, report = assemble_entries([(51, [route(None, "Nameless")])])
+    records, report = assemble([(51, [route(None, "Nameless")])])
     assert records[0].id == "p0051_01"
     assert records[0].id_source == "synthetic"
     assert report.synthetic == 1
@@ -85,7 +89,7 @@ def test_synthetic_id_when_randziffer_unrecoverable():
 
 def test_destination_is_structural_parent_place():
     # Place then two routes filed under it → both take the place as Destination.
-    records, _ = assemble_entries(
+    records, _ = assemble(
         [
             (
                 51,
@@ -103,14 +107,14 @@ def test_destination_is_structural_parent_place():
 
 
 def test_destination_carries_across_pages():
-    records, _ = assemble_entries(
+    records, _ = assemble(
         [(51, [place("•55", "Haus")]), (52, [route("•56", "Zustieg")])]
     )
     assert records[1].destination_id == "R55"
 
 
 def test_orphan_route_has_null_destination_surfaced():
-    records, report = assemble_entries([(51, [route("•56", "Von Hammersbach")])])
+    records, report = assemble([(51, [route("•56", "Von Hammersbach")])])
     assert records[0].destination_id is None
     assert records[0].place_ids == []
     # The gap is surfaced in the merge report, never invented.
@@ -118,7 +122,7 @@ def test_orphan_route_has_null_destination_surfaced():
 
 
 def test_traverse_place_resolved_by_name_disjoint_from_destination():
-    records, report = assemble_entries(
+    records, report = assemble(
         [
             (
                 51,
@@ -141,7 +145,7 @@ def test_traverse_place_resolved_by_name_disjoint_from_destination():
 def test_traverse_place_naming_the_destination_is_not_duplicated():
     # A traverse whose prose names its own parent Place must not repeat it in
     # place_ids — the two target roles stay disjoint.
-    records, _ = assemble_entries(
+    records, _ = assemble(
         [
             (
                 51,
@@ -158,7 +162,7 @@ def test_traverse_place_naming_the_destination_is_not_duplicated():
 
 
 def test_unresolved_traverse_place_surfaced_not_invented():
-    records, report = assemble_entries(
+    records, report = assemble(
         [(51, [place("•55", "Haus"), route("•56", "Trav", place_names=["Nirgendwo"])])]
     )
     r = next(r for r in records if r.kind == "route")
@@ -168,7 +172,7 @@ def test_unresolved_traverse_place_surfaced_not_invented():
 
 
 def test_references_parsed_and_dangling_reported():
-    records, report = assemble_entries(
+    records, report = assemble(
         [
             (
                 51,
@@ -188,9 +192,7 @@ def test_references_parsed_and_dangling_reported():
 
 
 def test_book_id_collision_rekeyed_synthetic():
-    records, report = assemble_entries(
-        [(51, [route("•56", "First"), route("•56", "Dup")])]
-    )
+    records, report = assemble([(51, [route("•56", "First"), route("•56", "Dup")])])
     assert records[0].id == "R56"
     assert records[1].id == "p0051_02"  # collision → synthetic fallback
     assert records[1].id_source == "synthetic"

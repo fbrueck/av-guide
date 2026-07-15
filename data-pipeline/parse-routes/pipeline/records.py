@@ -18,9 +18,12 @@ between.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Literal
 
 from .references import Reference
+
+# Every Entry/PartEntry is one of these two kinds (CONTEXT.md).
+Kind = Literal["place", "route"]
 
 # Route-only and Place-only verbatim fields carried through from extraction.
 _ROUTE_FIELDS = ("peak", "grade", "first_ascent", "time", "height_m")
@@ -35,7 +38,7 @@ class Entry:
     and `place_ids` are a Route's resolved targets (empty/None on a Place)."""
 
     id: str
-    kind: str
+    kind: Kind
     name: str | None = None
     description: str | None = None
     summary: str | None = None
@@ -114,7 +117,7 @@ class PartEntry:
     final `Entry`. Place-only fields (place_type/elevation) and Route-only fields
     (peak/…/place_names) stay at their defaults on the other kind."""
 
-    kind: str = "route"
+    kind: Kind = "route"
     entry_id_raw: str | None = None
     name: str | None = None
     description: str | None = None
