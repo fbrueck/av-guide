@@ -55,8 +55,9 @@ Code subscription, no API key and no per-token billing.
 /parse-routes wetterstein  (Claude Code, orchestrator)
    │
    ├─ Bash: pipeline.extract           deterministic — read OCR text layer
+   ├─ Bash: pipeline.preclean          deterministic — soft-hyphen dehyphenation → 02_clean/prepared
    ├─ Bash: pipeline.plan clean        deterministic — which pages need cleaning
-   ├─ Task × N: ocr-cleaner            subagents — repair OCR per page
+   ├─ Task × N: ocr-cleaner            subagents — repair OCR per page (reads the pre-cleaned page)
    ├─ Bash: pipeline.plan structure    deterministic — which pages need structuring
    ├─ Task × N: entry-extractor        subagents — classify + extract Entries (cross-page aware)
    └─ Bash: pipeline.merge             deterministic — key by entry id, link destination/places, build routes.jsonl
@@ -69,12 +70,13 @@ work, so a re-run skips whatever is already done.
 |-------|-----------|-------|
 | `pipeline.config` | `GuideConfig`, `load_guide`, path helpers | `pipeline/config.py` |
 | `pipeline.extract` | Read text layer + page metadata → `01_raw/` | `pipeline/extract.py` |
+| `pipeline.preclean` | Soft-hyphen dehyphenation → `02_clean/prepared/` (LLM input) | `pipeline/preclean.py` |
 | `pipeline.plan`    | List/batch pages needing work | `pipeline/plan.py` |
 | `pipeline.ids`     | Canonical entry-id normalization (`R43`) + synthetic fallback | `pipeline/ids.py` |
 | `pipeline.references` | Parse inline cross-refs (`Wie R 43`) → `{ref_id, surface}` | `pipeline/references.py` |
 | `pipeline.merge`   | Key Entries by id, link destination/places, validate → `routes.jsonl` | `pipeline/merge.py` |
 | `pipeline.export`  | Project Entries onto the route-map contract → `routes.json` | `pipeline/export.py` |
-| `ocr-cleaner`      | Subagent: repair OCR for a batch of pages | `.claude/agents/ocr-cleaner.md` |
+| `ocr-cleaner`      | Subagent: repair OCR for a batch of pre-cleaned pages | `.claude/agents/ocr-cleaner.md` |
 | `entry-extractor`  | Subagent: classify + extract Entries (handles page-break spans) | `.claude/agents/entry-extractor.md` |
 | `/parse-routes`    | Orchestrator command | `.claude/commands/parse-routes.md` |
 
@@ -98,6 +100,7 @@ deterministic tools by hand (every command needs `--guide`):
 
 ```bash
 .venv/bin/python -m pipeline.extract   --guide wetterstein
+.venv/bin/python -m pipeline.preclean  --guide wetterstein
 .venv/bin/python -m pipeline.plan clean     --guide wetterstein --batch 15
 .venv/bin/python -m pipeline.plan structure --guide wetterstein --batch 15
 .venv/bin/python -m pipeline.merge     --guide wetterstein
@@ -113,7 +116,8 @@ Under `guides/<id>/data/parse-routes/` (gitignored):
   manifest.jsonl        # per-page metadata (char_count, rotation, is_sketch, ...)
   pages/page_0001.txt   # raw OCR text, one file per page
 02_clean/
-  pages/page_0001.txt   # OCR-repaired text (written by ocr-cleaner subagents)
+  prepared/page_0001.txt # deterministic soft-hyphen dehyphenation (pipeline.preclean) — LLM input
+  pages/page_0001.txt    # OCR-repaired text (ocr-cleaner subagents, reading prepared/)
 03_structured/
   parts/page_0051.json  # Entries starting on each page (written by entry-extractor)
   entries/R55.json      # FINAL: one self-contained file per Entry, keyed by entry id

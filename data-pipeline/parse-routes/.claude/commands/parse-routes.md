@@ -26,19 +26,25 @@ If `guides/<id>/data/parse-routes/01_raw/manifest.jsonl` does not exist, run:
 .venv/bin/python -m pipeline.extract --guide <id>
 ```
 
-## Stage 2 — Clean OCR (subagents: `ocr-cleaner`)
+## Stage 2 — Clean OCR (deterministic pre-pass + subagents: `ocr-cleaner`)
 
-1. Get the work plan:
+1. Run the deterministic pre-pass — it rejoins soft-hyphenated line breaks and
+   writes `02_clean/prepared/<stem>.txt`, the page each subagent will read:
+   ```
+   .venv/bin/python -m pipeline.preclean --guide <id>
+   ```
+   It's resumable and skips sketch pages, so it's safe to re-run.
+2. Get the work plan:
    ```
    .venv/bin/python -m pipeline.plan clean --guide <id> --batch 15
    ```
    Each stdout line is a batch: `{"batch": N, "pages": ["page_0006", ...]}`.
    (Sketch/image pages are passed through automatically and won't appear.)
-2. For each batch, spawn an `ocr-cleaner` subagent, passing it the exact list of
+3. For each batch, spawn an `ocr-cleaner` subagent, passing it the exact list of
    page stems for that batch and telling it to clean those pages. Launch up to
    **10 subagents at a time** (multiple Task calls in one message), wait for the
    wave to finish, then launch the next wave, until all batches are done.
-3. If any batch reports failures, just re-run `pipeline.plan clean` — completed
+4. If any batch reports failures, just re-run `pipeline.plan clean` — completed
    pages are skipped — and dispatch the remaining batches again.
 
 ## Stage 3 — Structure entries (subagents: `entry-extractor`)
