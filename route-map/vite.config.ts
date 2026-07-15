@@ -94,7 +94,16 @@ function serveGuideData(): PluginOption {
 	};
 }
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+	// Conditional base: root in dev, the GitHub Pages project-site path in build.
+	// It must be conditional — an unconditional `/av-guide/` would make the
+	// src/data adapter fetch `/av-guide/guide-data/…` in dev too, which the
+	// `configureServer` middleware below (matching the bare `/guide-data/`
+	// prefix) would not answer. By design, `/guide-data/` is served two ways:
+	// in dev by the live middleware over the gitignored working tree, and in the
+	// deployed build by a committed static snapshot (#46 part 2). Both answer the
+	// same URL; only the base prefix differs (`/` dev, `/av-guide/` deploy).
+	base: command === "build" ? "/av-guide/" : "/",
 	plugins: [react(), serveGuideData()],
 	server: {
 		// Allow Vite's own fs access to reach the repo-root guide data tree.
@@ -105,4 +114,4 @@ export default defineConfig({
 		// adapter's load/join logic — the one sanctioned automated-test point.
 		environment: "node",
 	},
-});
+}));
