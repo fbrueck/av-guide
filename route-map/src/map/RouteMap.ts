@@ -322,6 +322,33 @@ export function createRouteMap(
 	// on load. Track the applied state so re-adding the source stays idempotent.
 	let terrainEnabled = false;
 
+	// Run `task` once the style can accept sources/layers. maplibre's `load`
+	// event is one-shot, so a `map.once("load", …)` registered AFTER load has
+	// already fired never runs; and `isStyleLoaded()` can briefly report false in
+	// the window just after load while a style-diff settles. A late caller like
+	// showPois (which waits on async guide data) can land in exactly that window
+	// — isStyleLoaded() false yet load already gone — and its POIs would stay
+	// buffered forever (blank map on the deployed snapshot build, #64). So gate on
+	// the events that keep firing as the style settles (`styledata`/`idle`),
+	// re-checking readiness each time, instead of trusting one load event. Runs
+	// synchronously when the style is already ready.
+	function whenStyleReady(task: () => void): void {
+		if (map.isStyleLoaded()) {
+			task();
+			return;
+		}
+		const attempt = () => {
+			if (!map.isStyleLoaded()) {
+				return;
+			}
+			map.off("styledata", attempt);
+			map.off("idle", attempt);
+			task();
+		};
+		map.on("styledata", attempt);
+		map.on("idle", attempt);
+	}
+
 	function applyTerrain(enabled: boolean): void {
 		if (enabled) {
 			if (!map.getSource(TERRAIN_SOURCE_ID)) {
@@ -502,42 +529,30 @@ export function createRouteMap(
 		): void {
 			entriesByPoiId = index;
 			placePoiIds = placeIds;
-			if (map.isStyleLoaded()) {
-				renderPois(pois);
-			} else {
-				pendingPois = pois;
-				map.once("load", () => {
-					if (pendingPois) {
-						renderPois(pendingPois);
-						pendingPois = null;
-					}
-				});
-			}
+			pendingPois = pois;
+			whenStyleReady(() => {
+				if (pendingPois) {
+					renderPois(pendingPois);
+					pendingPois = null;
+				}
+			});
 		},
 		highlightEntry(entry: Entry | null): void {
-			if (map.isStyleLoaded()) {
-				renderHighlight(entry);
-			} else {
-				pendingHighlight = entry;
-				hasPendingHighlight = true;
-				map.once("load", () => {
-					if (hasPendingHighlight) {
-						renderHighlight(pendingHighlight);
-						pendingHighlight = null;
-						hasPendingHighlight = false;
-					}
-				});
-			}
+			pendingHighlight = entry;
+			hasPendingHighlight = true;
+			whenStyleReady(() => {
+				if (hasPendingHighlight) {
+					renderHighlight(pendingHighlight);
+					pendingHighlight = null;
+					hasPendingHighlight = false;
+				}
+			});
 		},
 		setTerrain(enabled: boolean): void {
 			terrainEnabled = enabled;
-			if (map.isStyleLoaded()) {
-				applyTerrain(enabled);
-			} else {
-				map.once("load", () => {
-					applyTerrain(terrainEnabled);
-				});
-			}
+			whenStyleReady(() => {
+				applyTerrain(terrainEnabled);
+			});
 		},
 		destroy() {
 			popup?.remove();
