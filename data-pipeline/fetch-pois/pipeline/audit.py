@@ -35,6 +35,7 @@ import random
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from .config import GuideConfig, load_guide
 from .match import (
@@ -42,9 +43,11 @@ from .match import (
     classify_method,
     entry_items,
     load_decisions,
+    load_gazetteer,
     load_jsonl,
     load_verdicts,
 )
+from .records import GazetteerEntry, Item, Verdict
 
 # Algorithm behaviour, not per-guide config (like match.py's cutoffs): a fixed
 # sample size and seed make the gate reproducible — byte-identical on reruns.
@@ -82,12 +85,12 @@ class MatchContext:
     decision/verdict state so `classify_method` can replay the cascade. Built
     once in `run_audit` and threaded through both builders as one value."""
 
-    entries: dict[str, dict]
-    pois: dict[str, dict]
-    index: dict[str, list[dict]]
+    entries: dict[str, dict[str, Any]]
+    pois: dict[str, dict[str, Any]]
+    index: dict[str, list[GazetteerEntry]]
     keys: list[str]
-    decisions: dict[tuple, str]
-    verdicts: dict[str, dict]
+    decisions: dict[tuple[str, str, str | None, str], str]
+    verdicts: dict[str, Verdict]
     cfg: GuideConfig
 
 
@@ -144,7 +147,7 @@ def _warn(message: str) -> None:
 
 
 def _poi_cells(
-    poi: dict | None, poi_id: str, book_ele: float | None
+    poi: dict[str, Any] | None, poi_id: str, book_ele: float | None
 ) -> tuple[str, str]:
     """The matched-OSM-name and elevation-Δ cells for a resolved POI. A link
     pointing at a POI absent from the registry is pipeline drift — surfaced
@@ -155,13 +158,13 @@ def _poi_cells(
     return _cell(poi["name"]), _elev_delta(book_ele, poi.get("ele"))
 
 
-def _classify(item: dict, eid: str, ctx: MatchContext) -> str:
+def _classify(item: Item, eid: str, ctx: MatchContext) -> str:
     return classify_method(
         item, eid, ctx.index, ctx.keys, ctx.decisions, ctx.verdicts, ctx.cfg
     )
 
 
-def build_place_rows(links: list[dict], ctx: MatchContext) -> list[Row]:
+def build_place_rows(links: list[dict[str, Any]], ctx: MatchContext) -> list[Row]:
     """One row per Place -> POI match (place_pois.jsonl)."""
     rows: list[Row] = []
     for link in links:
@@ -171,13 +174,13 @@ def build_place_rows(links: list[dict], ctx: MatchContext) -> list[Row]:
             _warn(f"place link {eid!r} has no entry in the routes index")
             continue
         items, _ = entry_items(entry, ctx.cfg)
-        item = next((i for i in items if i["kind"] == "place"), None)
+        item = next((i for i in items if i.kind == "place"), None)
         if item is None:
             _warn(f"entry {eid!r} is linked as a Place but is not kind=place")
             continue
         method = _classify(item, eid, ctx)
-        book_ele = item["elevation_m"]
-        name = entry.get("name") or item["name"]
+        book_ele = item.elevation_m
+        name = entry.get("name") or item.name
         name_cell = _cell(
             f"{name}, {_fmt_m(book_ele)}" if book_ele is not None else name
         )
@@ -200,7 +203,7 @@ def build_place_rows(links: list[dict], ctx: MatchContext) -> list[Row]:
     return rows
 
 
-def build_mention_rows(links: list[dict], ctx: MatchContext) -> list[Row]:
+def build_mention_rows(links: list[dict[str, Any]], ctx: MatchContext) -> list[Row]:
     """One row per Entry mention -> POI link (entry_pois.jsonl)."""
     rows: list[Row] = []
     for link in links:
@@ -211,7 +214,7 @@ def build_mention_rows(links: list[dict], ctx: MatchContext) -> list[Row]:
             continue
         items, _ = entry_items(entry, ctx.cfg)
         item = next(
-            (i for i in items if i["kind"] == "mention" and i["surface"] == surface),
+            (i for i in items if i.kind == "mention" and i.surface == surface),
             None,
         )
         if item is None:
@@ -221,7 +224,7 @@ def build_mention_rows(links: list[dict], ctx: MatchContext) -> list[Row]:
             method, book_ele = "?", None
         else:
             method = _classify(item, eid, ctx)
-            book_ele = item["elevation_m"]
+            book_ele = item.elevation_m
         osm_name, delta = _poi_cells(
             ctx.pois.get(link["poi_id"]), link["poi_id"], book_ele
         )
@@ -296,7 +299,7 @@ def run_audit(cfg: GuideConfig) -> str:
     for path in (cfg.pois_jsonl, cfg.place_pois_jsonl, cfg.entry_pois_jsonl):
         _require(path, "run the matcher first.")
 
-    index, keys = build_index(load_jsonl(cfg.gazetteer))
+    index, keys = build_index(load_gazetteer(cfg))
     decisions, _notes = load_decisions(cfg)
     ctx = MatchContext(
         entries={e["id"]: e for e in load_jsonl(cfg.routes_jsonl)},

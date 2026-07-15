@@ -17,6 +17,7 @@ from pipeline.match import (
     classify_method,
     entry_items,
     load_decisions,
+    load_gazetteer,
     load_verdicts,
 )
 from test_adjudicate import run_adj_pipeline, write_verdict
@@ -130,7 +131,7 @@ def test_sample_fills_with_review_ahead_of_exact():
 
 
 def _match_context(cfg) -> audit.MatchContext:
-    index, keys = build_index(load_jsonl(cfg.gazetteer))
+    index, keys = build_index(load_gazetteer(cfg))
     decisions, _notes = load_decisions(cfg)
     return audit.MatchContext(
         entries={e["id"]: e for e in load_jsonl(cfg.routes_jsonl)},
@@ -155,7 +156,7 @@ def _rebuild_funnel_via_classify(cfg) -> dict[str, dict[str, int]]:
             method = classify_method(
                 item, entry["id"], ctx.index, ctx.keys, ctx.decisions, ctx.verdicts, cfg
             )
-            t = "place" if item["kind"] == "place" else item["type"]
+            t = "place" if item.kind == "place" else item.type
             bucket = funnel.setdefault(t, dict.fromkeys(FUNNEL_COLS, 0))
             bucket["mentions"] += 1
             bucket[method] += 1

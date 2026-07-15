@@ -22,9 +22,11 @@ import re
 import sys
 import urllib.parse
 import urllib.request
+from typing import Any
 
 from .config import GuideConfig, load_guide
 from .match import norm_key
+from .records import GazetteerEntry
 
 _ELE_RE = re.compile(r"-?\d+(?:[.,]\d+)?")
 
@@ -39,7 +41,7 @@ def build_query(cfg: GuideConfig) -> str:
     return f"[out:json][timeout:180];\n(\n{body}\n);\nout center tags;\n"
 
 
-def fetch(cfg: GuideConfig, refresh: bool) -> dict:
+def fetch(cfg: GuideConfig, refresh: bool) -> dict[str, Any]:
     if cfg.overpass_raw.exists() and not refresh:
         print(f"[gazetteer] using cached response {cfg.overpass_raw}", file=sys.stderr)
         return json.loads(cfg.overpass_raw.read_text(encoding="utf-8"))
@@ -63,14 +65,16 @@ def fetch(cfg: GuideConfig, refresh: bool) -> dict:
     return json.loads(raw)
 
 
-def classify(tags: dict, tag_map: dict[str, list[tuple[str, str]]]) -> str | None:
+def classify(
+    tags: dict[str, str], tag_map: dict[str, list[tuple[str, str]]]
+) -> str | None:
     for poi_type, pairs in tag_map.items():
         if any(tags.get(key) == value for key, value in pairs):
             return poi_type
     return None
 
 
-def parse_ele(tags: dict) -> float | None:
+def parse_ele(tags: dict[str, str]) -> float | None:
     m = _ELE_RE.search(tags.get("ele", ""))
     return float(m.group().replace(",", ".")) if m else None
 
@@ -81,21 +85,23 @@ def parse_ele(tags: dict) -> float | None:
 _OSM_RANK = {"relation": 0, "way": 1, "node": 2}
 
 
-def dedupe_linear(entries: list[dict], cfg: GuideConfig) -> list[dict]:
+def dedupe_linear(
+    entries: list[GazetteerEntry], cfg: GuideConfig
+) -> list[GazetteerEntry]:
     """Collapse same-named entries of the guide's deduped_types (paths/streams
     arrive as many segments) to one representative each; other types pass
     through."""
-    best: dict[tuple[str, str], dict] = {}
+    best: dict[tuple[str, str], tuple[tuple[int, int], GazetteerEntry]] = {}
     for entry in entries:
-        if entry["type"] not in cfg.deduped_types:
+        if entry.type not in cfg.deduped_types:
             continue
-        key = (entry["type"], entry["name"])
-        kind, osm_id = entry["osm"].split("/")
+        key = (entry.type, entry.name)
+        kind, osm_id = entry.osm.split("/")
         rank = (_OSM_RANK[kind], int(osm_id))
         if key not in best or rank < best[key][0]:
             best[key] = (rank, entry)
     kept = {id(entry) for _, entry in best.values()}
-    return [e for e in entries if e["type"] not in cfg.deduped_types or id(e) in kept]
+    return [e for e in entries if e.type not in cfg.deduped_types or id(e) in kept]
 
 
 def dist_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -106,29 +112,28 @@ def dist_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
 
 
 def admit_guarded(
-    candidates: list[dict], entries: list[dict], cfg: GuideConfig
-) -> list[dict]:
+    candidates: list[GazetteerEntry], entries: list[GazetteerEntry], cfg: GuideConfig
+) -> list[GazetteerEntry]:
     """Precision guard for guarded_tag_map candidates (#14): admit only
     elements at least settlement_exclusion_km from every settlement entry and
     whose normalized name fills a gap in the (unguarded) gazetteer — so town
     restaurants and duplicates of already-covered features stay out."""
-    settlements = [e for e in entries if e["type"] == "settlement"]
-    covered = {norm_key(e["name"]) for e in entries}
+    settlements = [e for e in entries if e.type == "settlement"]
+    covered = {norm_key(e.name) for e in entries}
     return [
         c
         for c in candidates
-        if norm_key(c["name"]) not in covered
+        if norm_key(c.name) not in covered
         and all(
-            dist_km(c["lat"], c["lon"], s["lat"], s["lon"])
-            >= cfg.settlement_exclusion_km
+            dist_km(c.lat, c.lon, s.lat, s.lon) >= cfg.settlement_exclusion_km
             for s in settlements
         )
     ]
 
 
-def parse(raw: dict, cfg: GuideConfig) -> list[dict]:
-    entries = []
-    guarded = []
+def parse(raw: dict[str, Any], cfg: GuideConfig) -> list[GazetteerEntry]:
+    entries: list[GazetteerEntry] = []
+    guarded: list[GazetteerEntry] = []
     for el in raw.get("elements", []):
         tags = el.get("tags", {})
         name = tags.get("name")
@@ -140,33 +145,34 @@ def parse(raw: dict, cfg: GuideConfig) -> list[dict]:
         # plain hut; only elements covered solely by GUARDED_TAG_MAP are guarded.
         poi_type = classify(tags, cfg.tag_map)
         guarded_type = None if poi_type else classify(tags, cfg.guarded_tag_map)
-        if poi_type is None and guarded_type is None:
+        entry_type = poi_type or guarded_type
+        if entry_type is None:
             continue
         (entries if poi_type else guarded).append(
-            {
-                "name": name,
-                "type": poi_type or guarded_type,
-                "lat": lat,
-                "lon": lon,
-                "ele": parse_ele(tags),
-                "osm": f"{el['type']}/{el['id']}",
-            }
+            GazetteerEntry(
+                name=name,
+                type=entry_type,
+                lat=lat,
+                lon=lon,
+                ele=parse_ele(tags),
+                osm=f"{el['type']}/{el['id']}",
+            )
         )
     entries.extend(admit_guarded(guarded, entries, cfg))
     return dedupe_linear(entries, cfg)
 
 
-def build_gazetteer(cfg: GuideConfig, refresh: bool) -> list[dict]:
+def build_gazetteer(cfg: GuideConfig, refresh: bool) -> list[GazetteerEntry]:
     """Fetch (or reuse the cached response), parse, and write gazetteer.jsonl."""
     entries = parse(fetch(cfg, refresh), cfg)
     cfg.gazetteer_dir.mkdir(parents=True, exist_ok=True)
     with cfg.gazetteer.open("w", encoding="utf-8") as f:
         for entry in entries:
-            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+            f.write(json.dumps(entry.to_dict(), ensure_ascii=False) + "\n")
 
     by_type: dict[str, int] = {}
     for entry in entries:
-        by_type[entry["type"]] = by_type.get(entry["type"], 0) + 1
+        by_type[entry.type] = by_type.get(entry.type, 0) + 1
     summary = ", ".join(f"{t}: {n}" for t, n in sorted(by_type.items()))
     print(
         f"[gazetteer] {len(entries)} entries ({summary}) -> {cfg.gazetteer}",
