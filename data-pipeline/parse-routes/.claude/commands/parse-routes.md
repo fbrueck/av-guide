@@ -36,7 +36,7 @@ If `guides/<id>/data/parse-routes/01_raw/manifest.jsonl` does not exist, run:
    (Sketch/image pages are passed through automatically and won't appear.)
 2. For each batch, spawn an `ocr-cleaner` subagent, passing it the exact list of
    page stems for that batch and telling it to clean those pages. Launch up to
-   **5 subagents at a time** (multiple Task calls in one message), wait for the
+   **10 subagents at a time** (multiple Task calls in one message), wait for the
    wave to finish, then launch the next wave, until all batches are done.
 3. If any batch reports failures, just re-run `pipeline.plan clean` — completed
    pages are skipped — and dispatch the remaining batches again.
@@ -48,9 +48,10 @@ If `guides/<id>/data/parse-routes/01_raw/manifest.jsonl` does not exist, run:
    .venv/bin/python -m pipeline.plan structure --guide <id> --batch 15
    ```
 2. For each batch, spawn an `entry-extractor` subagent with the list of stems.
-   Same wave discipline: up to 5 at a time. These subagents read each page plus
-   its neighbours so entries spanning a page break are captured once; each
-   entry is classified as a Place or a Route and carries the book's entry id.
+   Same wave discipline: up to 10 at a time. These subagents read each batch
+   page plus its neighbours **once** so entries spanning a page break are
+   captured once; each entry is classified as a Place or a Route and carries the
+   book's entry id.
 3. Merge the per-page JSON into the final dataset:
    ```
    .venv/bin/python -m pipeline.merge --guide <id>

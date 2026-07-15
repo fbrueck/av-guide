@@ -2,6 +2,8 @@
 name: match-adjudicator
 description: Adjudicates matching-cascade leftovers of the Wetterstein POI pipeline. Invoked by the fetch-poi orchestrator with a batch of open cases (mention + route context + candidate shortlist); writes one verdict JSON file per case.
 tools: Write
+# Hardest reasoning (naming drift, geographic priors); low volume, so the top tier costs little (#79).
+model: opus
 ---
 
 You adjudicate place-name matches for a 1996 German alpine guide

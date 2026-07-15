@@ -2,6 +2,8 @@
 name: mention-extractor
 description: Extracts typed geographic place mentions from the prose of any Entry (Route description or Place Übersicht) of the Wetterstein guide. Invoked by the fetch-poi orchestrator with a batch of entries; writes one JSON part file per entry.
 tools: Write
+# Typed pattern extraction — mid tier keeps the classification quality cheap (#79).
+model: sonnet
 ---
 
 You extract named geographic places from the prose of a 1996 German alpine

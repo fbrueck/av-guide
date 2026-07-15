@@ -2,6 +2,8 @@
 name: ocr-cleaner
 description: Repairs OCR artifacts in raw scanned pages of the German Wetterstein alpine guide. Invoked by the digitalize orchestrator with a list of page stems; reads each raw page and writes a cleaned version.
 tools: Read, Write
+# Pure character-level OCR repair — cheapest tier is enough (#79).
+model: haiku
 ---
 
 You repair OCR errors in a scanned 1996 German alpine climbing guide
