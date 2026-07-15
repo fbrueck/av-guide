@@ -279,6 +279,22 @@ body,
 	white-space: pre-wrap;
 }
 
+/* A Place's long description behind a native <details> disclosure (#72),
+ * collapsed by default; its <summary> line reads like .detail__subtitle. */
+.detail__disclosure {
+	margin: 1rem 0 0;
+}
+
+.detail__disclosure > summary {
+	margin: 0 0 0.4rem;
+	font-size: 0.8rem;
+	font-weight: bold;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: #444;
+	cursor: pointer;
+}
+
 /* Cross-link lists in a detail panel: Routes leading to a Place, a Route's
  * Anchor Places, resolved References. Each row selects that Entry. */
 .detail__links {
