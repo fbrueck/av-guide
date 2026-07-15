@@ -279,14 +279,6 @@ body,
 	white-space: pre-wrap;
 }
 
-/* A Place's long description behind a native <details> disclosure (#72),
- * collapsed by default. Its <summary> carries .detail__subtitle so it reads
- * like the other section headings; only the disclosure affordances differ. */
-.detail__disclosure > summary.detail__subtitle {
-	font-weight: bold;
-	cursor: pointer;
-}
-
 /* Cross-link lists in a detail panel: Routes leading to a Place, a Route's
  * target Places, resolved References. Each row selects that Entry. */
 .detail__links {

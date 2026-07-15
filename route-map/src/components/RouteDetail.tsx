@@ -23,8 +23,9 @@ function hasValue(value: string | null): value is string {
 // **Ziel** (Destination — the primary target Place, the Route's transitive
 // coordinate), its **Weitere Orte** (additional target Places), its **Mentions**
 // (highlighted on the map), and its resolved **References** to other Entries as
-// cross-links, ordered so the narrative reads top-down: Ziel, prose, supporting
-// graph, cross-links (#71). Metadata rows without an extracted value are hidden
+// cross-links, ordered so the narrative reads top-down: key facts, prose
+// (summary + Beschreibung), Ziel, supporting graph, cross-links. Metadata rows
+// without an extracted value are hidden
 // (#71); the graph sections render honestly (route-map/CLAUDE.md rule 3): a Route
 // with no Destination ("kein Ziel"), no places, no Mentions, and a dangling
 // Reference each say so rather than being hidden. The verbatim `peak` string is
@@ -82,6 +83,12 @@ export function RouteDetail({ route, nav }: RouteDetailProps) {
 				</dl>
 			) : null}
 
+			{route.summary ? (
+				<p className="detail__summary">{route.summary}</p>
+			) : null}
+			<h3 className="detail__subtitle">Beschreibung</h3>
+			<p className="detail__description">{route.description ?? "—"}</p>
+
 			<h3 className="detail__subtitle">Ziel</h3>
 			{route.destination === null ? (
 				<p className="detail__note detail__note--unlinked">
@@ -90,12 +97,6 @@ export function RouteDetail({ route, nav }: RouteDetailProps) {
 			) : (
 				<ul className="detail__links">{placeLink(route.destination)}</ul>
 			)}
-
-			{route.summary ? (
-				<p className="detail__summary">{route.summary}</p>
-			) : null}
-			<h3 className="detail__subtitle">Beschreibung</h3>
-			<p className="detail__description">{route.description ?? "—"}</p>
 
 			<h3 className="detail__subtitle">Weitere Orte ({route.places.length})</h3>
 			{route.places.length === 0 ? (
