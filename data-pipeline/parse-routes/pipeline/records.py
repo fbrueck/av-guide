@@ -8,6 +8,9 @@ between.
   - `Entry` — a single numbered book item (Place or Route), the pipeline's unit
     of identity (`CONTEXT.md`). Places and Routes share one dataclass; a field
     that belongs to the other kind stays None.
+  - `PartEntry` — one entry as the extractor wrote it to a part file, before
+    merge assigns identity and resolves targets. Merge parses each part entry
+    into this record at the read boundary, then builds the final `Entry`.
   - `PageMeta` — one per-page metadata record produced by the extractor and read
     back by the planner.
 """
@@ -100,6 +103,53 @@ class Entry:
             rec["destination_id"] = self.destination_id
             rec["place_ids"] = list(self.place_ids)
         return rec
+
+
+@dataclass(frozen=True, slots=True)
+class PartEntry:
+    """One entry as an entry-extractor subagent wrote it to a part file
+    (`03_structured/parts/page_NNNN.json`), before merge assigns identity and
+    resolves targets. A `dict` is the wire format only; merge parses each part
+    entry into this record at its read boundary (`from_dict`), then builds the
+    final `Entry`. Place-only fields (place_type/elevation) and Route-only fields
+    (peak/…/place_names) stay at their defaults on the other kind."""
+
+    kind: str = "route"
+    entry_id_raw: str | None = None
+    name: str | None = None
+    description: str | None = None
+    summary: str | None = None
+    # Place-only verbatim metadata.
+    place_type: str | None = None
+    elevation: str | None = None
+    # Route-only verbatim metadata.
+    peak: str | None = None
+    grade: str | None = None
+    first_ascent: str | None = None
+    time: str | None = None
+    height_m: str | None = None
+    # Traverse target place-names for merge to resolve (route-only).
+    place_names: list[str] = field(default_factory=list)
+
+    @classmethod
+    def from_dict(cls, raw: dict[str, Any]) -> PartEntry:
+        """Parse a part-file entry dict into a record. Absent fields fall back to
+        the dataclass defaults, matching the extractor's omit/`null` contract."""
+        return cls(
+            kind=raw.get("kind", "route"),
+            entry_id_raw=raw.get("entry_id_raw"),
+            name=raw.get("name"),
+            description=raw.get("description"),
+            summary=raw.get("summary"),
+            place_type=raw.get("place_type"),
+            elevation=raw.get("elevation"),
+            peak=raw.get("peak"),
+            grade=raw.get("grade"),
+            first_ascent=raw.get("first_ascent"),
+            time=raw.get("time"),
+            height_m=raw.get("height_m"),
+            place_names=list(raw.get("place_names") or []),
+        )
 
 
 @dataclass(frozen=True, slots=True)

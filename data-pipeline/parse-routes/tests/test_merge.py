@@ -1,12 +1,17 @@
+import dataclasses
 import json
 
 from pipeline.merge import DanglingRef, UnresolvedPlace, assemble_entries, merge
+from pipeline.records import PartEntry
 
 
 def write_part(cfg, stem, entries):
     cfg.struct_parts.mkdir(parents=True, exist_ok=True)
     (cfg.struct_parts / f"{stem}.json").write_text(
-        json.dumps({"entries": entries}, ensure_ascii=False), encoding="utf-8"
+        json.dumps(
+            {"entries": [dataclasses.asdict(e) for e in entries]}, ensure_ascii=False
+        ),
+        encoding="utf-8",
     )
 
 
@@ -25,7 +30,7 @@ def place(entry_id_raw, name, **fields):
         "place_type": None,
         "elevation": None,
     }
-    return {**base, **fields}
+    return PartEntry.from_dict({**base, **fields})
 
 
 def route(entry_id_raw, name, **fields):
@@ -42,7 +47,21 @@ def route(entry_id_raw, name, **fields):
         "summary": None,
         "place_names": [],
     }
-    return {**base, **fields}
+    return PartEntry.from_dict({**base, **fields})
+
+
+def test_part_entry_from_dict_defaults_and_kind_fields():
+    # Absent fields fall back to defaults; place_names normalizes to [].
+    r = PartEntry.from_dict({"kind": "route", "entry_id_raw": "56", "name": "X"})
+    assert r.kind == "route"
+    assert r.entry_id_raw == "56"
+    assert r.description is None
+    assert r.place_names == []
+
+    p = PartEntry.from_dict({"kind": "place", "name": "Haus", "elevation": "1652 m"})
+    assert p.kind == "place"
+    assert p.elevation == "1652 m"
+    assert p.place_names == []
 
 
 # --- assemble_entries (pure) --------------------------------------------------

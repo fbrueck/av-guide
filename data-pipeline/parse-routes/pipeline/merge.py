@@ -38,12 +38,11 @@ import json
 import shutil
 import sys
 from dataclasses import dataclass, field, replace
-from typing import Any
 
 from .config import GuideConfig, load_guide
 from .export import write_routes_json
 from .ids import normalize_entry_id, synthetic_id
-from .records import Entry
+from .records import Entry, PartEntry
 from .references import parse_references
 
 
@@ -82,14 +81,14 @@ def _norm_name(name: str) -> str:
 
 
 def _assign_id(
-    raw: dict[str, Any], page: int, seq: int, used_ids: set[str], report: MergeReport
+    raw: PartEntry, page: int, seq: int, used_ids: set[str], report: MergeReport
 ) -> tuple[str, str]:
     """A recoverable, unique book number keys the Entry directly
     (`id_source: book`). Otherwise a deterministic synthetic id is assigned for
     one of two reasons, counted apart: the number was unrecoverable from OCR
     (the spec's trigger), or it collided with an earlier Entry (surfaced, not
     silently overwritten)."""
-    book_id = normalize_entry_id(raw.get("entry_id_raw"))
+    book_id = normalize_entry_id(raw.entry_id_raw)
     if book_id and book_id not in used_ids:
         return book_id, "book"
     if book_id in used_ids and book_id is not None:
@@ -99,30 +98,27 @@ def _assign_id(
     return synthetic_id(page, seq), "synthetic"
 
 
-def _build_entry(
-    raw: dict[str, Any], entry_id: str, id_source: str, page: int
-) -> Entry:
-    """One raw per-page entry dict -> an Entry, targets still unresolved. A
+def _build_entry(raw: PartEntry, entry_id: str, id_source: str, page: int) -> Entry:
+    """One parsed per-page part entry -> an Entry, targets still unresolved. A
     Place carries place_type/elevation; a Route the climbing metadata — each
     leaves the other kind's verbatim fields None."""
-    kind = raw.get("kind", "route")
-    is_place = kind == "place"
+    is_place = raw.kind == "place"
     return Entry(
         id=entry_id,
-        kind=kind,
+        kind=raw.kind,
         id_source=id_source,
         source_page=page,
-        name=raw.get("name"),
-        description=raw.get("description"),
-        summary=raw.get("summary"),
-        references=parse_references(raw.get("description")),
-        place_type=raw.get("place_type") if is_place else None,
-        elevation=raw.get("elevation") if is_place else None,
-        peak=None if is_place else raw.get("peak"),
-        grade=None if is_place else raw.get("grade"),
-        first_ascent=None if is_place else raw.get("first_ascent"),
-        time=None if is_place else raw.get("time"),
-        height_m=None if is_place else raw.get("height_m"),
+        name=raw.name,
+        description=raw.description,
+        summary=raw.summary,
+        references=parse_references(raw.description),
+        place_type=raw.place_type if is_place else None,
+        elevation=raw.elevation if is_place else None,
+        peak=None if is_place else raw.peak,
+        grade=None if is_place else raw.grade,
+        first_ascent=None if is_place else raw.first_ascent,
+        time=None if is_place else raw.time,
+        height_m=None if is_place else raw.height_m,
     )
 
 
@@ -169,15 +165,15 @@ def _report_dangling(records: list[Entry], report: MergeReport) -> None:
 
 
 def assemble_entries(
-    parts: list[tuple[int, list[dict[str, Any]]]],
+    parts: list[tuple[int, list[PartEntry]]],
 ) -> tuple[list[Entry], MergeReport]:
     """Turn per-page entry lists (in book order) into linked Entry records.
 
     `parts` is `[(page, entries)]` already sorted in book (page) order; each
-    entry is the raw wire dict an extractor wrote. Returns `(records, report)`
-    where records are Entries in book order and report collects dangling refs /
-    unresolved place names / destination gaps / synthetic-id and collision
-    counts for the caller to surface.
+    entry is a `PartEntry` parsed from what an extractor wrote. Returns
+    `(records, report)` where records are Entries in book order and report
+    collects dangling refs / unresolved place names / destination gaps /
+    synthetic-id and collision counts for the caller to surface.
     """
     report = MergeReport()
 
@@ -191,9 +187,7 @@ def assemble_entries(
             entry_id, id_source = _assign_id(raw, page, seq, used_ids, report)
             used_ids.add(entry_id)
             records.append(_build_entry(raw, entry_id, id_source, page))
-            place_names.append(
-                [] if raw.get("kind") == "place" else raw.get("place_names") or []
-            )
+            place_names.append([] if raw.kind == "place" else raw.place_names)
 
     # Pass 2 — place-name index.
     index = _place_index(records)
@@ -222,7 +216,7 @@ def merge(cfg: GuideConfig) -> None:
         shutil.rmtree(cfg.entries_dir)
     cfg.entries_dir.mkdir(parents=True, exist_ok=True)
 
-    parts: list[tuple[int, list[dict[str, Any]]]] = []
+    parts: list[tuple[int, list[PartEntry]]] = []
     bad = 0
     for part in sorted(cfg.struct_parts.glob("page_*.json")):
         page = int(part.stem.split("_")[1])
@@ -232,7 +226,9 @@ def merge(cfg: GuideConfig) -> None:
             bad += 1
             print(f"  WARN: {part.name} is not valid JSON — skipped", file=sys.stderr)
             continue
-        parts.append((page, data.get("entries", [])))
+        # Convert the wire dicts to typed records once, at the read boundary.
+        entries = [PartEntry.from_dict(e) for e in data.get("entries", [])]
+        parts.append((page, entries))
 
     records, report = assemble_entries(parts)
 
