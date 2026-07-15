@@ -61,3 +61,43 @@ def test_multiple_refs_in_order_deduped_by_pair():
 def test_no_refs():
     assert parse_references("Über den Grat zum Gipfel.") == []
     assert parse_references("") == []
+
+
+# --- Klier/Karwendel Randzahl-arrow sigil (#84) -----------------------------
+# The Karwendel book (Klier/Walter) reprints a cross-reference with the Randzahl
+# arrow `➤` — OCR'd as `>`, often trailed by the arrow's shaft `-` — where the
+# Beulke/Wetterstein book uses the `R` sigil. Both must parse to the same key.
+
+
+def test_arrow_sigil_single_ref():
+    assert ids(">273") == ["R273"]
+    assert ids("auf >273 umgek.") == ["R273"]
+
+
+def test_arrow_sigil_with_shaft_dash():
+    # The arrow OCRs as `>-`; the dash is part of the sigil, not the id.
+    assert ids(">-273") == ["R273"]
+    assert ids(">-2775") == ["R2775"]
+
+
+def test_arrow_sigil_parenthesised():
+    assert ids("(>446)") == ["R446"]
+    assert ids("(>325)") == ["R325"]
+
+
+def test_arrow_sigil_verbatim_page_prose():
+    # Verbatim span from the Karwendel Dammkarhütte access description.
+    text = "Zugang von Mittenwald, 1½ Std., >-273 (Karwendelsteig)."
+    assert parse_references(text) == [Reference(ref_id="R273", surface=">-273")]
+
+
+def test_arrow_and_r_sigils_coexist():
+    # A page may carry both forms; each resolves to the canonical key.
+    assert ids("Wie R 43, später >-273") == ["R43", "R273"]
+
+
+def test_bare_arrow_comparison_is_not_a_reference():
+    # The arrow sigil requires the id to abut it; a spaced `>` comparison
+    # (e.g. an elevation/height note) must not be read as a reference (#84).
+    assert ids("Anstieg bis > 2000 m Höhe") == []
+    assert ids("mehr als > 40 Kehren") == []
