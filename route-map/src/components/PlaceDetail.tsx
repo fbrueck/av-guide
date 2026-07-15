@@ -65,12 +65,11 @@ export function PlaceDetail({ place, nav }: PlaceDetailProps) {
 								onClick={() => nav.onNavigate(route)}
 							>
 								<span className="detail__link-name">{route.name}</span>
-								<span className="detail__link-meta">
-									<span>{route.peak ?? "—"}</span>
-									<span className="detail__link-grade">
-										{route.grade ?? "—"}
+								{route.grade ? (
+									<span className="detail__link-meta">
+										<span className="detail__link-grade">{route.grade}</span>
 									</span>
-								</span>
+								) : null}
 							</button>
 						</li>
 					))}
