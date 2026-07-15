@@ -8,7 +8,14 @@ interface RouteDetailProps {
 
 interface MetaRow {
 	label: string;
-	value: string | null;
+	value: string;
+}
+
+// A metadata value counts as empty when the pipeline extracted nothing: null,
+// whitespace-only, or a bare placeholder dash coming through as text (#71).
+function hasValue(value: string | null): value is string {
+	const trimmed = value?.trim() ?? "";
+	return trimmed !== "" && trimmed !== "—" && trimmed !== "-";
 }
 
 // The detail panel for a selected Route (#44, #61): its verbatim-German metadata
@@ -16,19 +23,23 @@ interface MetaRow {
 // **Ziel** (Destination — the primary target Place, the Route's transitive
 // coordinate), its **Weitere Orte** (additional target Places), its **Mentions**
 // (highlighted on the map), and its resolved **References** to other Entries as
-// cross-links. Everything renders honestly (route-map/CLAUDE.md rule 3): a Route
+// cross-links, ordered so the narrative reads top-down: Ziel, prose, supporting
+// graph, cross-links (#71). Metadata rows without an extracted value are hidden
+// (#71); the graph sections render honestly (route-map/CLAUDE.md rule 3): a Route
 // with no Destination ("kein Ziel"), no places, no Mentions, and a dangling
 // Reference each say so rather than being hidden. The verbatim `peak` string is
 // deliberately not shown (ADR-0002 — provenance metadata, not a rendered target).
 // The description keeps its line breaks (CSS white-space: pre-wrap over the raw
 // "\n" string).
 export function RouteDetail({ route, nav }: RouteDetailProps) {
+	// Only rows the pipeline actually extracted a value for are rendered; a
+	// Route with no metadata at all renders no table (#71).
 	const rows: MetaRow[] = [
 		{ label: "Schwierigkeit", value: route.grade },
 		{ label: "Zeit", value: route.time },
 		{ label: "Höhenmeter", value: route.heightM },
 		{ label: "Erstbegehung", value: route.firstAscent },
-	];
+	].filter((row): row is MetaRow => hasValue(row.value));
 
 	// References with a resolved target are cross-links; a dangling one (unknown
 	// ref_id) or an anaphora (null ref_id) is shown honestly as unresolved.
@@ -60,14 +71,16 @@ export function RouteDetail({ route, nav }: RouteDetailProps) {
 		<section className="detail" aria-label="Routendetails">
 			<DetailHeader title={route.name} kind="Route" nav={nav} />
 
-			<dl className="detail__meta">
-				{rows.map((row) => (
-					<div key={row.label} className="detail__row">
-						<dt>{row.label}</dt>
-						<dd>{row.value ?? "—"}</dd>
-					</div>
-				))}
-			</dl>
+			{rows.length > 0 ? (
+				<dl className="detail__meta">
+					{rows.map((row) => (
+						<div key={row.label} className="detail__row">
+							<dt>{row.label}</dt>
+							<dd>{row.value}</dd>
+						</div>
+					))}
+				</dl>
+			) : null}
 
 			<h3 className="detail__subtitle">Ziel</h3>
 			{route.destination === null ? (
@@ -77,6 +90,12 @@ export function RouteDetail({ route, nav }: RouteDetailProps) {
 			) : (
 				<ul className="detail__links">{placeLink(route.destination)}</ul>
 			)}
+
+			{route.summary ? (
+				<p className="detail__summary">{route.summary}</p>
+			) : null}
+			<h3 className="detail__subtitle">Beschreibung</h3>
+			<p className="detail__description">{route.description ?? "—"}</p>
 
 			<h3 className="detail__subtitle">Weitere Orte ({route.places.length})</h3>
 			{route.places.length === 0 ? (
@@ -155,12 +174,6 @@ export function RouteDetail({ route, nav }: RouteDetailProps) {
 					) : null}
 				</>
 			) : null}
-
-			{route.summary ? (
-				<p className="detail__summary">{route.summary}</p>
-			) : null}
-			<h3 className="detail__subtitle">Beschreibung</h3>
-			<p className="detail__description">{route.description ?? "—"}</p>
 		</section>
 	);
 }
