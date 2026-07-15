@@ -34,10 +34,15 @@ def test_batches_sorted_entries(cfg, capsys):
     assert ids == [["r1", "r2", "r3"], ["r4", "r5", "r6"], ["r7", "r8", "r9"]]
 
     # Each entry carries what the extractor subagent needs, nothing more —
-    # every Entry's prose is extracted, Places (r8) and Routes (r7) alike.
+    # every Entry's prose is extracted, Places (r8) and Routes (r7) alike. The
+    # bulk `description` never travels through the plan (#90): the descriptor
+    # carries a `source` path to the entry's on-disk file, which the extractor
+    # Reads itself.
     r7 = batches[2]["entries"][0]
-    assert set(r7) == {"entry_id", "kind", "name", "description"}
+    assert set(r7) == {"entry_id", "kind", "name", "source"}
+    assert "description" not in r7
     assert r7["kind"] == "route"
+    assert r7["source"] == str(cfg.parse_routes_entries_dir / "r7.json")
     r8 = batches[2]["entries"][1]
     assert r8["kind"] == "place"
 

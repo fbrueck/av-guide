@@ -42,6 +42,16 @@ class GuideConfig:
 
     # --- path helpers (fixed layout, derived from data_root) ---
     @property
+    def parse_routes_entries_dir(self) -> Path:
+        """parse-routes' per-Entry JSON files (one `<entry_id>.json` each),
+        sibling to the routes index this guide consumes. Stage 2's
+        mention-extractor Reads each entry's prose from here instead of
+        receiving it inline in the plan (#90). The `entries` segment mirrors
+        parse-routes' own `entries_dir` contract — derived off `routes_jsonl`
+        (the "by convention" index) so both stay anchored to one upstream dir."""
+        return self.routes_jsonl.parent / "entries"
+
+    @property
     def gazetteer_dir(self) -> Path:
         return self.data_root / "01_gazetteer"
 
