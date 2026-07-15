@@ -115,13 +115,20 @@ class PartEntry:
     resolves targets. A `dict` is the wire format only; merge parses each part
     entry into this record at its read boundary (`from_dict`), then builds the
     final `Entry`. Place-only fields (place_type/elevation) and Route-only fields
-    (peak/…/place_names) stay at their defaults on the other kind."""
+    (peak/…/place_names) stay at their defaults on the other kind.
+
+    The extractor emits only `start_quote`/`end_quote` boundary anchors, not the
+    verbatim text; merge slices the `Entry.description` between them from the
+    cleaned page (see slicing.py, #80)."""
 
     kind: Kind = "route"
     entry_id_raw: str | None = None
     name: str | None = None
-    description: str | None = None
     summary: str | None = None
+    # Boundary anchors: the entry's first and last words, for merge to slice its
+    # verbatim description out of the cleaned page text.
+    start_quote: str | None = None
+    end_quote: str | None = None
     # Place-only verbatim metadata.
     place_type: str | None = None
     elevation: str | None = None
@@ -142,8 +149,9 @@ class PartEntry:
             kind=raw.get("kind", "route"),
             entry_id_raw=raw.get("entry_id_raw"),
             name=raw.get("name"),
-            description=raw.get("description"),
             summary=raw.get("summary"),
+            start_quote=raw.get("start_quote"),
+            end_quote=raw.get("end_quote"),
             place_type=raw.get("place_type"),
             elevation=raw.get("elevation"),
             peak=raw.get("peak"),
