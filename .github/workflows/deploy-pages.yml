@@ -1,0 +1,68 @@
+name: Deploy to GitHub Pages
+
+# Standalone from ci.yml (the PR-checks green-bar). This publishes route-map as
+# a static, read-only snapshot to GitHub Pages (ADR-0003): merging to `main`
+# deploys, and `workflow_dispatch` lets the maintainer republish on demand
+# (e.g. after refreshing the committed data snapshot) without a new commit.
+#
+# BUILD-ONLY: it does not re-run check/typecheck/test — it trusts ci.yml, which
+# gates every PR into `main`. But `npm run build` still runs here, so a
+# non-building app fails the deploy and a broken app is never published.
+#
+# ZERO SECRETS: the basemap (OpenTopoMap raster) and terrain (Mapterhorn DEM)
+# tiles are public and keyless, so no secrets or API keys are referenced.
+#
+# One-time maintainer prerequisite: Settings -> Pages -> Build and deployment
+# -> Source: "GitHub Actions". The workflow cannot publish until this is set.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Least privilege: read the repo, write the Pages deployment, and mint the OIDC
+# token actions/deploy-pages needs. No other scopes.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deploy at a time; never cancel an in-progress publish (let it finish so a
+# half-published site can't result).
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: route-map/package-lock.json
+
+      - name: Install
+        working-directory: route-map
+        run: npm ci
+
+      # The build bakes in base=/av-guide/ and the committed data snapshot
+      # (route-map/CLAUDE.md rule 6). A failing build fails the job here.
+      - name: Build
+        working-directory: route-map
+        run: npm run build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: route-map/dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
