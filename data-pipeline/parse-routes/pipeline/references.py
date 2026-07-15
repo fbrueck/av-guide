@@ -17,8 +17,27 @@ Resolution against the id set happens later, at merge.
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
 
 from .ids import ENTRY_ID_TOKEN, normalize_entry_id
+
+
+@dataclass(frozen=True, slots=True)
+class Reference:
+    """A book-internal cross-reference parsed from prose (see CONTEXT.md): the
+    `ref_id` normalized to the canonical key (`R43`, or None for anaphora) and
+    the verbatim `surface` span as printed."""
+
+    ref_id: str | None
+    surface: str
+
+    @classmethod
+    def from_dict(cls, raw: dict[str, str | None]) -> Reference:
+        return cls(ref_id=raw.get("ref_id"), surface=raw["surface"] or "")
+
+    def to_dict(self) -> dict[str, str | None]:
+        return {"ref_id": self.ref_id, "surface": self.surface}
+
 
 # A single numbered id inside an R-group is one ENTRY_ID_TOKEN (digits + an
 # optional lone-letter suffix, defined once in ids.py so the token grammar
@@ -36,8 +55,8 @@ _NUM_RE = re.compile(ENTRY_ID_TOKEN)
 _ANAPHORA = re.compile(r"(?:[Ww]eiter\s+)?[Ww]ie\s+dort")
 
 
-def parse_references(text: str | None) -> list[dict]:
-    """Extract `{ref_id, surface}` references from prose, in order of appearance.
+def parse_references(text: str | None) -> list[Reference]:
+    """Extract `Reference`s from prose, in order of appearance.
 
     Shared-`R` lists expand to one ref per id (shared surface); `wie dort`
     anaphora yields `ref_id: None`. Duplicate `(ref_id, surface)` pairs are
@@ -46,23 +65,23 @@ def parse_references(text: str | None) -> list[dict]:
     if not text:
         return []
 
-    hits: list[tuple[int, dict]] = []
+    hits: list[tuple[int, Reference]] = []
 
     for m in _R_GROUP.finditer(text):
         surface = m.group(0)
         for num in _NUM_RE.findall(surface):
             ref_id = normalize_entry_id(num)
-            hits.append((m.start(), {"ref_id": ref_id, "surface": surface}))
+            hits.append((m.start(), Reference(ref_id=ref_id, surface=surface)))
 
     for m in _ANAPHORA.finditer(text):
-        hits.append((m.start(), {"ref_id": None, "surface": m.group(0)}))
+        hits.append((m.start(), Reference(ref_id=None, surface=m.group(0))))
 
     hits.sort(key=lambda h: h[0])
 
-    out: list[dict] = []
+    out: list[Reference] = []
     seen: set[tuple[str | None, str]] = set()
     for _, ref in hits:
-        key = (ref["ref_id"], ref["surface"])
+        key = (ref.ref_id, ref.surface)
         if key in seen:
             continue
         seen.add(key)

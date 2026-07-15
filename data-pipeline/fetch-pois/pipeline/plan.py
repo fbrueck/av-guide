@@ -48,11 +48,12 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from typing import Any
 
 from .config import GuideConfig, load_guide
 
 
-def _load_entries(cfg: GuideConfig) -> list[dict]:
+def _load_entries(cfg: GuideConfig) -> list[dict[str, Any]]:
     if not cfg.routes_jsonl.exists():
         sys.exit(f"missing {cfg.routes_jsonl} — run the parse-routes pipeline first.")
     with cfg.routes_jsonl.open(encoding="utf-8") as f:
@@ -91,18 +92,18 @@ def _print_funnel(cfg: GuideConfig) -> None:
     )
 
 
-def _load_place_pois(cfg: GuideConfig) -> dict[str, dict]:
+def _load_place_pois(cfg: GuideConfig) -> dict[str, dict[str, Any]]:
     """Map a Place's entry id to its resolved POI record (name/type/ele/coords),
     joining place_pois.jsonl through pois.jsonl. Empty when the matcher has not
     yet produced its final artifacts — a Destination then carries a null POI."""
     if not cfg.place_pois_jsonl.exists() or not cfg.pois_jsonl.exists():
         return {}
-    poi_by_id = {}
+    poi_by_id: dict[str, dict[str, Any]] = {}
     with cfg.pois_jsonl.open(encoding="utf-8") as f:
         for line in f:
             poi = json.loads(line)
             poi_by_id[poi["poi_id"]] = poi
-    place_poi: dict[str, dict] = {}
+    place_poi: dict[str, dict[str, Any]] = {}
     with cfg.place_pois_jsonl.open(encoding="utf-8") as f:
         for line in f:
             link = json.loads(line)
@@ -113,8 +114,10 @@ def _load_place_pois(cfg: GuideConfig) -> dict[str, dict]:
 
 
 def _destination_context(
-    entry: dict, entries: dict[str, dict], place_poi: dict[str, dict]
-) -> dict | None:
+    entry: dict[str, Any],
+    entries: dict[str, dict[str, Any]],
+    place_poi: dict[str, dict[str, Any]],
+) -> dict[str, Any] | None:
     """The owning entry's resolved Destination as a geographic prior for the
     adjudicator: the parent Place's name plus that Place's POI (a compact
     coordinate/type/elevation projection, or null when the Place resolved to no

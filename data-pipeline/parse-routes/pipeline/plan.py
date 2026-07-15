@@ -24,28 +24,30 @@ import shutil
 import sys
 
 from .config import GuideConfig, load_guide
+from .records import PageMeta
 
 
-def _load_manifest(cfg: GuideConfig) -> list[dict]:
+def _load_manifest(cfg: GuideConfig) -> list[PageMeta]:
     if not cfg.manifest.exists():
         sys.exit("Manifest not found — run `python -m pipeline.extract` first.")
     with cfg.manifest.open(encoding="utf-8") as f:
-        return [json.loads(line) for line in f]
+        return [PageMeta.from_dict(json.loads(line)) for line in f]
 
 
-def _todo_clean(records: list[dict], cfg: GuideConfig) -> list[str]:
+def _todo_clean(records: list[PageMeta], cfg: GuideConfig) -> list[str]:
     cfg.clean_pages.mkdir(parents=True, exist_ok=True)
-    todo, passthrough = [], 0
+    todo: list[str] = []
+    passthrough = 0
     for r in records:
-        out = cfg.clean_pages / f"{r['stem']}.txt"
+        out = cfg.clean_pages / f"{r.stem}.txt"
         if out.exists():
             continue
-        if r["is_sketch"]:
+        if r.is_sketch:
             # No text to clean — copy the raw page through verbatim.
-            shutil.copyfile(cfg.raw_pages / f"{r['stem']}.txt", out)
+            shutil.copyfile(cfg.raw_pages / f"{r.stem}.txt", out)
             passthrough += 1
             continue
-        todo.append(r["stem"])
+        todo.append(r.stem)
     print(
         f"[plan clean] {passthrough} sketch pages passed through; "
         f"{len(todo)} text pages need cleaning.",
@@ -54,17 +56,17 @@ def _todo_clean(records: list[dict], cfg: GuideConfig) -> list[str]:
     return todo
 
 
-def _todo_structure(records: list[dict], cfg: GuideConfig) -> list[str]:
+def _todo_structure(records: list[PageMeta], cfg: GuideConfig) -> list[str]:
     cfg.struct_parts.mkdir(parents=True, exist_ok=True)
-    todo = []
+    todo: list[str] = []
     for r in records:
-        if r["is_sketch"]:
+        if r.is_sketch:
             continue
-        if not (cfg.clean_pages / f"{r['stem']}.txt").exists():
+        if not (cfg.clean_pages / f"{r.stem}.txt").exists():
             continue  # not cleaned yet
-        if (cfg.struct_parts / f"{r['stem']}.json").exists():
+        if (cfg.struct_parts / f"{r.stem}.json").exists():
             continue  # already structured
-        todo.append(r["stem"])
+        todo.append(r.stem)
     print(
         f"[plan structure] {len(todo)} cleaned pages need route extraction.",
         file=sys.stderr,

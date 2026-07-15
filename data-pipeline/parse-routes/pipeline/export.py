@@ -25,8 +25,10 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from typing import Any
 
 from .config import GuideConfig, load_guide
+from .records import Entry
 
 # The route-map/fetch-pois data contract (Entry model, #42). Order is preserved
 # in the emitted objects. `id` + `kind` head every Entry; `place_type`/
@@ -52,44 +54,42 @@ CONTRACT_FIELDS: tuple[str, ...] = (
     "description",
 )
 
-# Contract fields that are zero-or-many links: absent → [] (not null), so a
-# consumer can iterate without a null check. `destination_id` is a nullable
-# scalar, not a list, so it defaults to None like the other scalar fields.
-_LIST_FIELDS: frozenset[str] = frozenset({"place_ids", "references"})
 
-
-def project_entry(record: dict) -> dict:
-    """Project one Entry record onto the contract fields.
+def project_entry(entry: Entry) -> dict[str, Any]:
+    """Project one Entry onto the contract fields.
 
     Keeps only CONTRACT_FIELDS (dropping internal fields like source_page).
-    Absent list fields default to [], other absent fields to None, so every
-    emitted object has the same uniform shape across Places and Routes.
+    The link fields (`place_ids`, `references`) are emitted as lists,
+    everything else as its scalar (None when the kind leaves it unset), so
+    every emitted object has the same uniform shape across Places and Routes.
     """
-    out: dict = {}
+    out: dict[str, Any] = {}
     for field in CONTRACT_FIELDS:
-        if field in _LIST_FIELDS:
-            out[field] = record.get(field) or []
+        if field == "references":
+            out[field] = [r.to_dict() for r in entry.references]
+        elif field == "place_ids":
+            out[field] = list(entry.place_ids)
         else:
-            out[field] = record.get(field)
+            out[field] = getattr(entry, field)
     return out
 
 
-def project_entries(records: list[dict]) -> list[dict]:
-    """Project a list of Entry records onto the contract fields."""
+def project_entries(records: list[Entry]) -> list[dict[str, Any]]:
+    """Project a list of Entries onto the contract fields."""
     return [project_entry(r) for r in records]
 
 
-def write_routes_json(cfg: GuideConfig, records: list[dict] | None = None) -> int:
+def write_routes_json(cfg: GuideConfig, records: list[Entry] | None = None) -> int:
     """Write routes.json for a guide and return the record count.
 
-    Reads records from routes.jsonl unless they are passed in (merge passes the
-    list it already has in memory, avoiding a needless re-read).
+    Reads and parses records from routes.jsonl unless they are passed in (merge
+    passes the Entries it already has in memory, avoiding a needless re-read).
     """
     if records is None:
         if not cfg.routes_jsonl.exists():
             sys.exit("No routes.jsonl — run `python -m pipeline.merge` first.")
         with cfg.routes_jsonl.open(encoding="utf-8") as f:
-            records = [json.loads(line) for line in f if line.strip()]
+            records = [Entry.from_dict(json.loads(line)) for line in f if line.strip()]
 
     projected = project_entries(records)
     cfg.routes_json.write_text(
