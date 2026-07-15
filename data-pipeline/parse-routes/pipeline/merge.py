@@ -63,7 +63,7 @@ class DanglingRef:
     ref_id: str
 
 
-@dataclass
+@dataclass(slots=True)
 class MergeReport:
     """What the assembly passes surface for the caller to warn about. Mutable
     on purpose: it is an accumulator built up across the passes (unlike the
