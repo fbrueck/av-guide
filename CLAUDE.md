@@ -39,7 +39,9 @@ Applies to every module.
 1. One **GitHub Issue** per ticket (the spec lives in the tracker).
 2. Branch off `main` named `ticket-<n>-<slug>` (e.g. `ticket-14-hut-class-gap`).
 3. **Conventional Commits** (`feat:`, `fix:`, `refactor:`, `docs:`, `chore:`, …).
-4. Open a **PR that references its issue** (`Closes #<n>`).
+4. Open a **PR that references its issue** (`Closes #<n>`), with a
+   **Conventional-Commit title** — the squash merge (step 5) makes the PR title
+   the commit message on `main`.
 5. **Squash merge** into `main` for a linear history.
 6. CI must be green to merge.
    (Transitional: the pipeline's `ruff check` and `mypy` are non-blocking until
