@@ -26,19 +26,21 @@ jobs:
       - name: Sync (with dev deps)
         run: uv sync --dev
 
-      # Non-blocking until the lint/type baseline is cleared (#26); then remove
-      # continue-on-error so a regression fails the build.
+      # Blocking as of #26: the lint/type/dict baseline is cleared, so a
+      # regression fails the build.
       - name: Ruff lint
-        continue-on-error: true
         run: uv run ruff check .
 
       - name: Ruff format check
         run: uv run ruff format --check .
 
-      # Non-blocking until #26; then remove continue-on-error.
       - name: Mypy
-        continue-on-error: true
         run: uv run mypy --config-file "${{ github.workspace }}/mypy.ini" pipeline
+
+      # Bare-dict ratchet: fails if untyped dict/collection annotations rise
+      # above the committed .dict-baseline (now 0 in both packages).
+      - name: Dict ratchet
+        run: ../dict-ratchet.sh
 
       - name: Pytest
         run: uv run pytest

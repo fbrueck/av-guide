@@ -6,14 +6,15 @@ line-length = 88
 
 [lint]
 # Complexity gate (function size / nesting). extend-select keeps ruff's default
-# E/F checks. Ceilings sit at today's worst offender so existing code passes;
-# ratchet each number DOWN as the giants (match.py:match_mentions,
-# merge.py:assemble_entries) get decomposed. Targets: 10 / 12 / 50.
+# E/F checks. The former giants (match.py:match_mentions, merge.py:assemble_entries)
+# were decomposed for #26, so the ceilings now sit at their targets — every
+# function stays within them. Don't raise a ceiling to fit new code; split the
+# function (see data-pipeline/CLAUDE.md).
 extend-select = ["C901", "PLR0912", "PLR0915"]
 
 [lint.mccabe]
-max-complexity = 19        # target 10
+max-complexity = 10
 
 [lint.pylint]
-max-branches = 21          # target 12
-max-statements = 96        # target 50
+max-branches = 12
+max-statements = 50
