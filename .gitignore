@@ -7,3 +7,16 @@ __pycache__/
 guides/*/data/
 *.pdf
 .claude/worktrees
+
+# route-map deployed snapshot (ADR-0003): a separate, deliberately-updated
+# committed copy of the four consumed artifacts, baked into the GitHub Pages
+# build under Vite's public/ dir. Ignore the whole snapshot tree, then
+# un-ignore EXACTLY the four published files — a noisy local pipeline rerun
+# copied here can never accidentally publish extra data. The live
+# guides/*/data/ tree above stays ignored; publishing is an explicit act.
+route-map/public/guide-data/**
+!route-map/public/guide-data/**/
+!route-map/public/guide-data/parse-routes/03_structured/routes.json
+!route-map/public/guide-data/fetch-pois/04_final/pois.geojson
+!route-map/public/guide-data/fetch-pois/04_final/place_pois.jsonl
+!route-map/public/guide-data/fetch-pois/04_final/entry_pois.jsonl

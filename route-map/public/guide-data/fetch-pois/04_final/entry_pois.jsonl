@@ -1,0 +1,1551 @@
+{"entry_id": "R1", "poi_id": "osm-node-27383264", "surface": "Garmisch-Partenkirchen, 700 m"}
+{"entry_id": "R1", "poi_id": "osm-relation-406524", "surface": "Loisach"}
+{"entry_id": "R1", "poi_id": "osm-relation-1356556", "surface": "Partnach"}
+{"entry_id": "R1", "poi_id": "osm-node-7839987371", "surface": "Garmisch"}
+{"entry_id": "R1", "poi_id": "osm-node-7839987372", "surface": "Partenkirchen"}
+{"entry_id": "R10", "poi_id": "osm-relation-163453", "surface": "Eibsee"}
+{"entry_id": "R100", "poi_id": "osm-node-476488947", "surface": "Schachenhaus, 1866 m"}
+{"entry_id": "R100", "poi_id": "osm-node-476787334", "surface": "Schachen"}
+{"entry_id": "R100", "poi_id": "osm-way-925622577", "surface": "Reintal"}
+{"entry_id": "R100", "poi_id": "osm-way-1451971905", "surface": "Oberreintal"}
+{"entry_id": "R100", "poi_id": "osm-node-256041673", "surface": "Dreitorspitze"}
+{"entry_id": "R100", "poi_id": "osm-node-256042768", "surface": "Schneefernerkopf"}
+{"entry_id": "R100", "poi_id": "osm-node-1833449075", "surface": "Hochblassens"}
+{"entry_id": "R100", "poi_id": "osm-node-259486622", "surface": "Alpspitze"}
+{"entry_id": "R100", "poi_id": "osm-node-7839987372", "surface": "Partenkirchen"}
+{"entry_id": "R100", "poi_id": "osm-node-3777140322", "surface": "Frauenalplkopf"}
+{"entry_id": "R100", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R1000", "poi_id": "osm-node-2506368453", "surface": "Scharnitzspitze, 2463 m"}
+{"entry_id": "R1000", "poi_id": "osm-node-256041930", "surface": "Oberreintalschrofens"}
+{"entry_id": "R1000", "poi_id": "osm-node-7845727141", "surface": "Schüsselkarspitze"}
+{"entry_id": "R1000", "poi_id": "osm-node-12097971761", "surface": "Schüsselkartürmen"}
+{"entry_id": "R1001", "poi_id": "osm-node-9459163110", "surface": "Westlichen Wangscharte"}
+{"entry_id": "R1001", "poi_id": "osm-node-2506368453", "surface": "Scharnitzspitze"}
+{"entry_id": "R1002", "poi_id": "osm-node-9459163094", "surface": "Östlichen Wangscharte"}
+{"entry_id": "R1002", "poi_id": "osm-node-2506368453", "surface": "Scharnitzspitze"}
+{"entry_id": "R1003", "poi_id": "osm-node-2506368453", "surface": "Scharnitzspitze"}
+{"entry_id": "R1005", "poi_id": "osm-way-26933413", "surface": "Wettersteinhütte"}
+{"entry_id": "R1006", "poi_id": "osm-way-26933413", "surface": "Wettersteinhütte"}
+{"entry_id": "R101", "poi_id": "osm-node-27383264", "surface": "Garmisch-Partenkirchen"}
+{"entry_id": "R101", "poi_id": "osm-node-894728205", "surface": "Wettersteinalm"}
+{"entry_id": "R101", "poi_id": "osm-way-223452455", "surface": "Partnachklamm"}
+{"entry_id": "R101", "poi_id": "osm-way-36337159", "surface": "Ferchenbach"}
+{"entry_id": "R101", "poi_id": "osm-node-1161325579", "surface": "Wettersteinwald"}
+{"entry_id": "R101", "poi_id": "osm-way-26715081", "surface": "Königsweg"}
+{"entry_id": "R101", "poi_id": "osm-node-1685813026", "surface": "Elmau"}
+{"entry_id": "R101", "poi_id": "osm-node-4224427657", "surface": "Schachentorkopfes"}
+{"entry_id": "R101", "poi_id": "osm-node-476787334", "surface": "Schachenalm"}
+{"entry_id": "R101", "poi_id": "osm-way-26713595", "surface": "Schachensee"}
+{"entry_id": "R101", "poi_id": "osm-node-476488947", "surface": "Schachenhaus"}
+{"entry_id": "R101", "poi_id": "osm-node-809849759", "surface": "Schachentor"}
+{"entry_id": "R1011", "poi_id": "osm-way-26933857", "surface": "Wangalm"}
+{"entry_id": "R1014", "poi_id": "osm-node-2506368453", "surface": "Scharnitzspitze"}
+{"entry_id": "R102", "poi_id": "osm-node-27383264", "surface": "Garmisch-Partenkirchen"}
+{"entry_id": "R102", "poi_id": "osm-way-36337159", "surface": "Ferchenbach"}
+{"entry_id": "R102", "poi_id": "osm-relation-1356556", "surface": "Partnach"}
+{"entry_id": "R102", "poi_id": "osm-node-6157518631", "surface": "Keilschrofen"}
+{"entry_id": "R102", "poi_id": "osm-way-26715081", "surface": "Königsweg"}
+{"entry_id": "R102", "poi_id": "osm-node-476488947", "surface": "Schachenhaus"}
+{"entry_id": "R1020", "poi_id": "osm-way-1451971905", "surface": "Oberreintal"}
+{"entry_id": "R1020", "poi_id": "osm-node-2506368453", "surface": "Scharnitzspitze"}
+{"entry_id": "R1021", "poi_id": "osm-node-12097971761", "surface": "Unteren Schüsselkarturm"}
+{"entry_id": "R1022A", "poi_id": "osm-node-2506368453", "surface": "Scharnitzspitze"}
+{"entry_id": "R1026", "poi_id": "osm-node-12097971761", "surface": "Unterem Schüsselkarturm"}
+{"entry_id": "R1028", "poi_id": "osm-node-2506368453", "surface": "Scharnitzspitze"}
+{"entry_id": "R103", "poi_id": "osm-node-1685815045", "surface": "Klais"}
+{"entry_id": "R103", "poi_id": "osm-node-1685813026", "surface": "Elmau"}
+{"entry_id": "R103", "poi_id": "osm-way-26715081", "surface": "Königsweg"}
+{"entry_id": "R103", "poi_id": "osm-node-894728205", "surface": "Wettersteinalm"}
+{"entry_id": "R103", "poi_id": "osm-node-476488947", "surface": "Schachenhaus"}
+{"entry_id": "R104", "poi_id": "osm-node-22281426", "surface": "Mittenwald"}
+{"entry_id": "R104", "poi_id": "osm-way-23425364", "surface": "Ferchensee"}
+{"entry_id": "R104", "poi_id": "osm-way-36342653", "surface": "Bannholzweg"}
+{"entry_id": "R104", "poi_id": "osm-node-1161325579", "surface": "Wettersteinwald"}
+{"entry_id": "R104", "poi_id": "osm-node-894728205", "surface": "Wettersteinalm"}
+{"entry_id": "R1040", "poi_id": "osm-node-12097971761", "surface": "Unterer Schüsselkarturm, 2200 m"}
+{"entry_id": "R1040", "poi_id": "osm-node-12097971759", "surface": "Unteren Berggeistturm"}
+{"entry_id": "R1040", "poi_id": "osm-way-1451971905", "surface": "Oberreintal"}
+{"entry_id": "R1048", "poi_id": "osm-way-1451971905", "surface": "Oberreintals"}
+{"entry_id": "R105", "poi_id": "osm-way-1451971905", "surface": "Oberreintal"}
+{"entry_id": "R105", "poi_id": "osm-node-476787334", "surface": "Schachens"}
+{"entry_id": "R105", "poi_id": "osm-way-925622577", "surface": "Reintal"}
+{"entry_id": "R1060", "poi_id": "osm-node-9459163094", "surface": "Östliche Wangscharte, 2351 m"}
+{"entry_id": "R1061", "poi_id": "osm-node-12097971759", "surface": "Unteren Berggeistturmes"}
+{"entry_id": "R1061", "poi_id": "osm-node-12097971761", "surface": "Unt. Schüsselkarturms"}
+{"entry_id": "R1061", "poi_id": "osm-node-7845727141", "surface": "Schüsselkarspitze"}
+{"entry_id": "R1061", "poi_id": "osm-node-9459163094", "surface": "Östliche Wangscharte"}
+{"entry_id": "R1061A", "poi_id": "osm-way-1451971905", "surface": "Oberreintalboden"}
+{"entry_id": "R1062", "poi_id": "osm-way-26933857", "surface": "Wangalm"}
+{"entry_id": "R1062", "poi_id": "osm-node-289304315", "surface": "Scharnitzjoch"}
+{"entry_id": "R1062", "poi_id": "osm-node-2506368453", "surface": "Scharnitzspitze"}
+{"entry_id": "R1062", "poi_id": "osm-node-7845727141", "surface": "Schüsselkarspitze"}
+{"entry_id": "R1062", "poi_id": "osm-node-9459163094", "surface": "Wangscharte"}
+{"entry_id": "R1064", "poi_id": "osm-node-9459163094", "surface": "Wangscharte"}
+{"entry_id": "R1064", "poi_id": "osm-node-7845727141", "surface": "Schüsselkarspitze"}
+{"entry_id": "R1071", "poi_id": "osm-way-26933413", "surface": "Wettersteinhütte"}
+{"entry_id": "R1071", "poi_id": "osm-way-26933857", "surface": "Wangalm"}
+{"entry_id": "R1073", "poi_id": "osm-way-26933413", "surface": "Wettersteinhütte"}
+{"entry_id": "R1074", "poi_id": "osm-way-26933413", "surface": "Wettersteinhütte"}
+{"entry_id": "R1075", "poi_id": "osm-way-26933413", "surface": "Wettersteinhütte"}
+{"entry_id": "R108", "poi_id": "osm-node-894728205", "surface": "Wettersteinalm, 1464 m"}
+{"entry_id": "R108", "poi_id": "osm-node-4051533375", "surface": "Musterstein"}
+{"entry_id": "R108", "poi_id": "osm-node-1161325579", "surface": "Wettersteinwand"}
+{"entry_id": "R108", "poi_id": "osm-node-27383264", "surface": "Garmisch-Partenkirchen"}
+{"entry_id": "R108", "poi_id": "osm-node-22281426", "surface": "Mittenwald"}
+{"entry_id": "R108", "poi_id": "osm-node-476787334", "surface": "Schachen"}
+{"entry_id": "R108", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R1080", "poi_id": "osm-node-7845727141", "surface": "Schüsselkarspitze, 2537 m"}
+{"entry_id": "R1080", "poi_id": "osm-way-1159458950", "surface": "Puitental"}
+{"entry_id": "R1080", "poi_id": "osm-node-256041673", "surface": "Dreitorspitze"}
+{"entry_id": "R1080", "poi_id": "osm-node-9459163094", "surface": "Östlichen Wangscharte"}
+{"entry_id": "R1080", "poi_id": "osm-node-27383264", "surface": "Garmisch-Partenkirchen"}
+{"entry_id": "R1081", "poi_id": "osm-way-1451971905", "surface": "Oberreintal"}
+{"entry_id": "R1081", "poi_id": "osm-node-9459163094", "surface": "östlichen Wangscharte"}
+{"entry_id": "R1081", "poi_id": "osm-way-26933413", "surface": "Wettersteinhütte"}
+{"entry_id": "R1082A", "poi_id": "osm-node-7845727141", "surface": "Schüsselkarspitze"}
+{"entry_id": "R1082A", "poi_id": "osm-node-9459163094", "surface": "östlichen Wangscharte"}
+{"entry_id": "R1082A", "poi_id": "osm-way-1451971905", "surface": "Oberreintal"}
+{"entry_id": "R1082A", "poi_id": "osm-node-289304315", "surface": "Scharnitzjoch"}
+{"entry_id": "R1083", "poi_id": "osm-node-256041673", "surface": "Leutascher Dreitorspitze"}
+{"entry_id": "R1083", "poi_id": "osm-node-7845727141", "surface": "Schüsselkarspitze"}
+{"entry_id": "R1083", "poi_id": "osm-way-26179815", "surface": "Hermann-von-Barth-Weg"}
+{"entry_id": "R1083", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R1084", "poi_id": "osm-way-26933413", "surface": "Wettersteinhütte"}
+{"entry_id": "R1085", "poi_id": "osm-node-7845727141", "surface": "Schüsselkarspitze"}
+{"entry_id": "R1085", "poi_id": "osm-way-26933413", "surface": "Wettersteinhütte"}
+{"entry_id": "R1085A", "poi_id": "osm-node-7845727141", "surface": "Schüsselkarspitze"}
+{"entry_id": "R1086", "poi_id": "osm-node-7845727141", "surface": "Schüsselkarspitze"}
+{"entry_id": "R1086", "poi_id": "osm-way-26933413", "surface": "Wettersteinhütte"}
+{"entry_id": "R1087", "poi_id": "osm-way-26933413", "surface": "Wettersteinhütte"}
+{"entry_id": "R1089", "poi_id": "osm-way-26933413", "surface": "Wettersteinhütte"}
+{"entry_id": "R1089", "poi_id": "osm-way-26933857", "surface": "Wangalm"}
+{"entry_id": "R1090A", "poi_id": "osm-way-26933413", "surface": "Wettersteinhütte"}
+{"entry_id": "R1091", "poi_id": "osm-way-26933413", "surface": "Wettersteinhütte"}
+{"entry_id": "R1091", "poi_id": "osm-way-26933857", "surface": "Wangalm"}
+{"entry_id": "R1092", "poi_id": "osm-way-26933413", "surface": "Wettersteinhütte"}
+{"entry_id": "R1094", "poi_id": "osm-node-7845727141", "surface": "Schüsselkarspitze"}
+{"entry_id": "R1094", "poi_id": "osm-way-26933413", "surface": "Wettersteinhütte"}
+{"entry_id": "R1095", "poi_id": "osm-node-7845727141", "surface": "Schüsselkarspitze"}
+{"entry_id": "R1095", "poi_id": "osm-way-26933413", "surface": "Wettersteinhütte"}
+{"entry_id": "R1095B", "poi_id": "osm-node-7845727141", "surface": "Schüsselkarspitze"}
+{"entry_id": "R1096", "poi_id": "osm-way-26933413", "surface": "Wettersteinhütte"}
+{"entry_id": "R1097", "poi_id": "osm-way-26933413", "surface": "Wettersteinhütte"}
+{"entry_id": "R1098", "poi_id": "osm-way-26933413", "surface": "Wettersteinhütte"}
+{"entry_id": "R1098A", "poi_id": "osm-node-7845727141", "surface": "Schüsselkarspitze"}
+{"entry_id": "R1099", "poi_id": "osm-way-26933413", "surface": "Wettersteinhütte"}
+{"entry_id": "R11", "poi_id": "osm-node-22281426", "surface": "Mittenwald, 913 m"}
+{"entry_id": "R11", "poi_id": "osm-relation-273028", "surface": "Isar"}
+{"entry_id": "R11", "poi_id": "osm-node-259486622", "surface": "Alpspitze"}
+{"entry_id": "R11", "poi_id": "osm-way-973058097", "surface": "Arnstock"}
+{"entry_id": "R11", "poi_id": "osm-node-61080195", "surface": "Kranzberg"}
+{"entry_id": "R110", "poi_id": "osm-way-155583950", "surface": "Meilerhütte, 2376 m"}
+{"entry_id": "R110", "poi_id": "osm-node-286687497", "surface": "Dreitorspitzgatterls"}
+{"entry_id": "R110", "poi_id": "osm-way-925622581", "surface": "Leutaschtal"}
+{"entry_id": "R110", "poi_id": "osm-node-27383264", "surface": "Garmisch-Partenkirchen"}
+{"entry_id": "R110", "poi_id": "osm-node-476787334", "surface": "Schachen"}
+{"entry_id": "R1100", "poi_id": "osm-way-1159458950", "surface": "Puitental"}
+{"entry_id": "R1100", "poi_id": "osm-way-26933413", "surface": "Wettersteinhütte"}
+{"entry_id": "R111", "poi_id": "osm-node-476787334", "surface": "Schachen"}
+{"entry_id": "R111", "poi_id": "osm-node-13321949460", "surface": "Teufelsgsaß"}
+{"entry_id": "R111", "poi_id": "osm-node-3777140322", "surface": "Frauenalplkopfes"}
+{"entry_id": "R111", "poi_id": "osm-node-286687475", "surface": "Frauenalpls"}
+{"entry_id": "R112", "poi_id": "osm-node-286687475", "surface": "Frauenalpl"}
+{"entry_id": "R112", "poi_id": "osm-node-476787334", "surface": "Schachen"}
+{"entry_id": "R1121", "poi_id": "osm-node-7845727141", "surface": "Schüsselkarspitze"}
+{"entry_id": "R1121", "poi_id": "osm-way-26933413", "surface": "Wettersteinhütte"}
+{"entry_id": "R113", "poi_id": "osm-node-944468957", "surface": "Angerlloch"}
+{"entry_id": "R113", "poi_id": "osm-node-894728205", "surface": "Wettersteinalm"}
+{"entry_id": "R113", "poi_id": "osm-node-6530414816", "surface": "Hirschbichlkopfes"}
+{"entry_id": "R113", "poi_id": "osm-node-3777140322", "surface": "Frauenalplkopfes"}
+{"entry_id": "R113", "poi_id": "osm-node-476787334", "surface": "Schachen"}
+{"entry_id": "R1130", "poi_id": "osm-node-7845727141", "surface": "Schüsselkarspitze"}
+{"entry_id": "R1131", "poi_id": "osm-way-1159458950", "surface": "Puitental"}
+{"entry_id": "R1132", "poi_id": "osm-way-1159458950", "surface": "Puitental"}
+{"entry_id": "R1136", "poi_id": "osm-node-240037998", "surface": "Leutasch"}
+{"entry_id": "R1136", "poi_id": "osm-way-1159458950", "surface": "Puitental"}
+{"entry_id": "R1136", "poi_id": "osm-way-26933857", "surface": "Wangalm"}
+{"entry_id": "R1136", "poi_id": "osm-node-289304315", "surface": "Scharnitzjoch"}
+{"entry_id": "R114", "poi_id": "osm-node-240037998", "surface": "Leutasch"}
+{"entry_id": "R114", "poi_id": "osm-node-2373066248", "surface": "Öfelekopfes"}
+{"entry_id": "R114", "poi_id": "osm-node-4051533375", "surface": "Mustersteins"}
+{"entry_id": "R1140", "poi_id": "osm-node-7845727141", "surface": "Schüsselkarspitze"}
+{"entry_id": "R1140", "poi_id": "osm-node-256041673", "surface": "Leutascher Dreitorspitze"}
+{"entry_id": "R1141", "poi_id": "osm-way-1159458950", "surface": "Puitental"}
+{"entry_id": "R1141", "poi_id": "osm-node-7845727141", "surface": "Schüsselkarspitze"}
+{"entry_id": "R115", "poi_id": "osm-node-2373047899", "surface": "Söllerpaß"}
+{"entry_id": "R115", "poi_id": "osm-node-22281426", "surface": "Mittenwald"}
+{"entry_id": "R115", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R115", "poi_id": "osm-way-1159458950", "surface": "Puitental"}
+{"entry_id": "R115", "poi_id": "osm-way-146498696", "surface": "Puitbach"}
+{"entry_id": "R115", "poi_id": "osm-node-5932640469", "surface": "Weiler Puitbach"}
+{"entry_id": "R115", "poi_id": "osm-node-944114022", "surface": "Leutascher Platts"}
+{"entry_id": "R115", "poi_id": "osm-way-26179815", "surface": "Hermann-von-Barth-Weg"}
+{"entry_id": "R115", "poi_id": "osm-node-472565283", "surface": "Partenkirchener Dreitorspitze"}
+{"entry_id": "R1150", "poi_id": "osm-node-310564229", "surface": "Gehrenspitze, 2367 m"}
+{"entry_id": "R1150", "poi_id": "osm-node-256041673", "surface": "Leutascher Dreitorspitze"}
+{"entry_id": "R1150", "poi_id": "osm-node-7845727141", "surface": "Schüsselkarspitze"}
+{"entry_id": "R1150", "poi_id": "osm-node-289304315", "surface": "Scharnitzjoch"}
+{"entry_id": "R1150", "poi_id": "osm-way-1159458950", "surface": "Puitental"}
+{"entry_id": "R1151", "poi_id": "osm-node-289304315", "surface": "Scharnitzjoch"}
+{"entry_id": "R1151A", "poi_id": "osm-node-310564229", "surface": "Gehrenspitze"}
+{"entry_id": "R1151A", "poi_id": "osm-node-240081275", "surface": "Seefeld"}
+{"entry_id": "R1152", "poi_id": "osm-way-1159458950", "surface": "Puitentales"}
+{"entry_id": "R1153", "poi_id": "osm-way-1159458950", "surface": "Puitental"}
+{"entry_id": "R1160", "poi_id": "osm-node-256041673", "surface": "Leutascher Dreitorspitze, 2673 m"}
+{"entry_id": "R1160", "poi_id": "osm-node-7845727141", "surface": "Schüsselkarspitze"}
+{"entry_id": "R1160", "poi_id": "osm-node-2373047899", "surface": "Söllerpaß"}
+{"entry_id": "R1160", "poi_id": "osm-node-944114022", "surface": "Leutascher Platt"}
+{"entry_id": "R1160", "poi_id": "osm-node-240037998", "surface": "Leutasch"}
+{"entry_id": "R1161", "poi_id": "osm-node-472565283", "surface": "Partenkirchener Dreitorspitze"}
+{"entry_id": "R1161", "poi_id": "osm-way-26179815", "surface": "H.-v.-Barth-Weg"}
+{"entry_id": "R1161", "poi_id": "osm-node-256041673", "surface": "Leutascher Dreitorspitze"}
+{"entry_id": "R1162", "poi_id": "osm-node-944114022", "surface": "Leutascher Platt"}
+{"entry_id": "R1162", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R1162", "poi_id": "osm-way-26179815", "surface": "H.-v.-Barth-Weg"}
+{"entry_id": "R1162", "poi_id": "osm-node-472565283", "surface": "Partenkirchener Dreitorspitze"}
+{"entry_id": "R1162", "poi_id": "osm-node-256041673", "surface": "Leutascher Dreitorspitze"}
+{"entry_id": "R1163", "poi_id": "osm-node-5926552262", "surface": "Plattach"}
+{"entry_id": "R1164", "poi_id": "osm-node-2373047899", "surface": "Söllerpaß"}
+{"entry_id": "R1164", "poi_id": "osm-node-944114022", "surface": "Leutascher Platts"}
+{"entry_id": "R1164", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R1166", "poi_id": "osm-way-1159458950", "surface": "Puitental"}
+{"entry_id": "R1166", "poi_id": "osm-node-7845727141", "surface": "Schüsselkarspitze"}
+{"entry_id": "R1166", "poi_id": "osm-node-256041673", "surface": "Leutascher Dreitorspitze"}
+{"entry_id": "R1169", "poi_id": "osm-node-289304315", "surface": "Scharnitzjoch"}
+{"entry_id": "R1170", "poi_id": "osm-node-7845727141", "surface": "Schüsselkarspitze"}
+{"entry_id": "R1172", "poi_id": "osm-way-1451971905", "surface": "Oberreintal"}
+{"entry_id": "R1172", "poi_id": "osm-node-256041673", "surface": "Leutascher Dreitorspitze"}
+{"entry_id": "R1173", "poi_id": "osm-node-7845727141", "surface": "Schüsselkarspitze"}
+{"entry_id": "R1173", "poi_id": "osm-node-256041673", "surface": "Leutascher Dreitorspitze"}
+{"entry_id": "R1175", "poi_id": "osm-node-9459163094", "surface": "Östl. Wangscharte"}
+{"entry_id": "R118", "poi_id": "osm-way-168699681", "surface": "Erinnerungshütte, 2050 m"}
+{"entry_id": "R118", "poi_id": "osm-node-289304315", "surface": "Scharnitzjoches"}
+{"entry_id": "R118", "poi_id": "osm-way-1159458950", "surface": "Puitental"}
+{"entry_id": "R1180", "poi_id": "osm-node-773235671", "surface": "Söllerköpfe"}
+{"entry_id": "R1180", "poi_id": "osm-node-256041673", "surface": "Leutascher Dreitorspitze"}
+{"entry_id": "R1180", "poi_id": "osm-node-2373047899", "surface": "Söllerpasses"}
+{"entry_id": "R1182", "poi_id": "osm-node-2373047899", "surface": "Söllerpaß"}
+{"entry_id": "R1183", "poi_id": "osm-node-256041673", "surface": "Leutascher Dreitorspitze"}
+{"entry_id": "R1183", "poi_id": "osm-way-1159458950", "surface": "Puitental"}
+{"entry_id": "R1183", "poi_id": "osm-node-773235671", "surface": "Söllerköpfen"}
+{"entry_id": "R1183", "poi_id": "osm-node-2373047899", "surface": "Söllerpaß"}
+{"entry_id": "R1183B", "poi_id": "osm-node-2373047899", "surface": "Söllerpasses"}
+{"entry_id": "R1183C", "poi_id": "osm-node-2373047899", "surface": "Söllerpasses"}
+{"entry_id": "R1183C", "poi_id": "osm-way-1159458950", "surface": "Puitental"}
+{"entry_id": "R119", "poi_id": "osm-node-240037998", "surface": "Leutasch"}
+{"entry_id": "R119", "poi_id": "osm-way-1159458950", "surface": "Puitental"}
+{"entry_id": "R119", "poi_id": "osm-node-2373047899", "surface": "Söllerpaß"}
+{"entry_id": "R119", "poi_id": "osm-node-289304315", "surface": "Scharnitzjoch"}
+{"entry_id": "R1190", "poi_id": "osm-node-256041673", "surface": "Leutascher Dreitorspitze"}
+{"entry_id": "R1190", "poi_id": "osm-node-773235671", "surface": "Söllerköpfe"}
+{"entry_id": "R1190", "poi_id": "osm-node-2373047899", "surface": "Söllerpaß"}
+{"entry_id": "R1190", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R1190", "poi_id": "osm-node-240081275", "surface": "Seefeld"}
+{"entry_id": "R1191", "poi_id": "osm-node-2373066246", "surface": "Öfelekopf-Westgipfel, 2469 m"}
+{"entry_id": "R1192", "poi_id": "osm-node-2373047899", "surface": "Söllerpaß"}
+{"entry_id": "R1193A", "poi_id": "osm-way-1159458950", "surface": "Puitental"}
+{"entry_id": "R1194", "poi_id": "osm-node-944114022", "surface": "Leutascher Platt"}
+{"entry_id": "R1196", "poi_id": "osm-way-1159458950", "surface": "Puitental"}
+{"entry_id": "R1196", "poi_id": "osm-node-2373047899", "surface": "Söllerpaß"}
+{"entry_id": "R1198", "poi_id": "osm-node-7845727141", "surface": "Schüsselkarspitze"}
+{"entry_id": "R1198", "poi_id": "osm-node-240037998", "surface": "Leutasch"}
+{"entry_id": "R1198", "poi_id": "osm-way-1159458950", "surface": "Puitental"}
+{"entry_id": "R1198", "poi_id": "osm-node-2373047899", "surface": "Söllerpaß"}
+{"entry_id": "R1199", "poi_id": "osm-way-1159458950", "surface": "Puitental"}
+{"entry_id": "R12", "poi_id": "osm-node-75680891", "surface": "Scharnitz, 964 m"}
+{"entry_id": "R12", "poi_id": "osm-way-973058097", "surface": "Arnstocks"}
+{"entry_id": "R120", "poi_id": "osm-way-26933857", "surface": "Wangalm"}
+{"entry_id": "R120", "poi_id": "osm-node-289304315", "surface": "Scharnitzjoches"}
+{"entry_id": "R1200", "poi_id": "osm-way-1159458950", "surface": "Puitental"}
+{"entry_id": "R1210", "poi_id": "osm-node-2373066248", "surface": "Öfelekopf-Ostgipfel, 2449 m"}
+{"entry_id": "R1211", "poi_id": "osm-node-944114022", "surface": "Leutascher Platt"}
+{"entry_id": "R1211", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R1211", "poi_id": "osm-way-925622581", "surface": "Leutaschtal"}
+{"entry_id": "R1213", "poi_id": "osm-way-1159458950", "surface": "Puitental"}
+{"entry_id": "R1215", "poi_id": "osm-way-1159458950", "surface": "Puitental"}
+{"entry_id": "R1215", "poi_id": "osm-node-240037998", "surface": "Leutasch"}
+{"entry_id": "R1215", "poi_id": "osm-node-452455592", "surface": "Leutasch-Reindlau"}
+{"entry_id": "R1220", "poi_id": "osm-node-472565283", "surface": "Partenkirchener Dreitorspitze"}
+{"entry_id": "R1220", "poi_id": "osm-node-256041673", "surface": "Leutascher Dreitorspitze"}
+{"entry_id": "R1220", "poi_id": "osm-node-286687475", "surface": "Frauenalpl"}
+{"entry_id": "R1220", "poi_id": "osm-way-1451971905", "surface": "Oberreintal"}
+{"entry_id": "R1220", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R1221", "poi_id": "osm-node-5926552262", "surface": "Plattach"}
+{"entry_id": "R1221", "poi_id": "osm-node-4059510445", "surface": "Bayerländerturm"}
+{"entry_id": "R1222", "poi_id": "osm-node-4059510444", "surface": "Signalkuppe"}
+{"entry_id": "R1222", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R1224", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R1224", "poi_id": "osm-way-26179815", "surface": "H.-v.-Barth-Weg"}
+{"entry_id": "R1224", "poi_id": "osm-node-4059510445", "surface": "Bayerländerturms"}
+{"entry_id": "R1226", "poi_id": "osm-node-4059510445", "surface": "Bayerländerturm"}
+{"entry_id": "R1229", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R1229", "poi_id": "osm-node-4059510444", "surface": "Signalkuppe"}
+{"entry_id": "R123", "poi_id": "osm-way-26933857", "surface": "Wangalm, 1751 m"}
+{"entry_id": "R123", "poi_id": "osm-node-2506368453", "surface": "Scharnitzspitze"}
+{"entry_id": "R123", "poi_id": "osm-node-256041930", "surface": "Oberreintalschrofen"}
+{"entry_id": "R123", "poi_id": "osm-node-7845727141", "surface": "Schüsselkarspitze"}
+{"entry_id": "R123", "poi_id": "osm-node-310564229", "surface": "Gehrenspitze"}
+{"entry_id": "R123", "poi_id": "osm-node-9459163110", "surface": "Westl. Wangscharte"}
+{"entry_id": "R123", "poi_id": "osm-node-9459163094", "surface": "Östl. Wangscharte"}
+{"entry_id": "R123", "poi_id": "osm-node-289304315", "surface": "Scharnitzjoch"}
+{"entry_id": "R1231", "poi_id": "osm-node-4059510444", "surface": "Signalkuppe"}
+{"entry_id": "R1231", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R124", "poi_id": "osm-relation-10742086", "surface": "Leutascher Ache"}
+{"entry_id": "R1242", "poi_id": "osm-node-286687475", "surface": "Frauenalpl"}
+{"entry_id": "R1243", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R125", "poi_id": "osm-way-26933413", "surface": "Wettersteinhütte, 1717 m"}
+{"entry_id": "R125", "poi_id": "osm-way-26933857", "surface": "Wangalm"}
+{"entry_id": "R125", "poi_id": "osm-node-240037998", "surface": "Leutasch"}
+{"entry_id": "R1251", "poi_id": "osm-way-26179815", "surface": "Hermann-von-Barth-Weg"}
+{"entry_id": "R1251", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R1251", "poi_id": "osm-node-4059510445", "surface": "Bayerländerturms"}
+{"entry_id": "R1251", "poi_id": "osm-node-944114022", "surface": "Leutascher Platts"}
+{"entry_id": "R1251", "poi_id": "osm-node-256041673", "surface": "Leutascher Dreitorspitze"}
+{"entry_id": "R1251A", "poi_id": "osm-way-26179815", "surface": "Hermann-von-Barth-Weg"}
+{"entry_id": "R1251A", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R1253", "poi_id": "osm-node-286687475", "surface": "Frauenalpl"}
+{"entry_id": "R1254A", "poi_id": "osm-way-1451971905", "surface": "Oberreintal"}
+{"entry_id": "R1254A", "poi_id": "osm-way-26179815", "surface": "Hermann-von-Barth-Weg"}
+{"entry_id": "R1254A", "poi_id": "osm-node-256041673", "surface": "Leutascher Dreitorspitze"}
+{"entry_id": "R1254A", "poi_id": "osm-node-12097971761", "surface": "Unteren Schüsselkarturmes"}
+{"entry_id": "R1255", "poi_id": "osm-node-472565283", "surface": "Partenkirchener Dreitorspitze"}
+{"entry_id": "R1255", "poi_id": "osm-node-12097971760", "surface": "Oberreintaldom"}
+{"entry_id": "R1255", "poi_id": "osm-node-12097971759", "surface": "Unteren Berggeistturm"}
+{"entry_id": "R1255", "poi_id": "osm-way-1451971905", "surface": "Oberreintal"}
+{"entry_id": "R1256", "poi_id": "osm-way-1451971905", "surface": "Oberreintal"}
+{"entry_id": "R1256", "poi_id": "osm-node-12097971760", "surface": "Oberreintaldoms"}
+{"entry_id": "R1256", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R1257", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R1258", "poi_id": "osm-node-12097971760", "surface": "Oberreintaldomes"}
+{"entry_id": "R1259", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R1259", "poi_id": "osm-way-1451971905", "surface": "Oberreintal"}
+{"entry_id": "R1260", "poi_id": "osm-node-12097971760", "surface": "Oberreintaldom"}
+{"entry_id": "R1271", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R1271", "poi_id": "osm-node-4059510444", "surface": "Signalkuppe"}
+{"entry_id": "R128", "poi_id": "osm-way-26932822", "surface": "Hämmermoosalm, 1419 m"}
+{"entry_id": "R128", "poi_id": "osm-way-123923649", "surface": "Rotmoosalm"}
+{"entry_id": "R128", "poi_id": "osm-way-149179031", "surface": "Leithenbachtal"}
+{"entry_id": "R128", "poi_id": "osm-way-26933857", "surface": "Wangalm"}
+{"entry_id": "R1280", "poi_id": "osm-node-4059510445", "surface": "Bayerländerturm, etwa 2507 m"}
+{"entry_id": "R1280", "poi_id": "osm-node-4059510444", "surface": "Signalkuppe"}
+{"entry_id": "R1281", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R1281", "poi_id": "osm-node-4059510444", "surface": "Signalkuppe"}
+{"entry_id": "R1281", "poi_id": "osm-node-4059510445", "surface": "Bayerländerturm"}
+{"entry_id": "R1282A", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R1282A", "poi_id": "osm-node-4059510444", "surface": "Signalkuppe"}
+{"entry_id": "R1283", "poi_id": "osm-way-26179815", "surface": "H.-v.-Barth-Weg"}
+{"entry_id": "R1284", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R1284", "poi_id": "osm-node-482340921", "surface": "Signalkopf"}
+{"entry_id": "R1285", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R1285", "poi_id": "osm-way-26179815", "surface": "Hermann-v.-Barth-Weg"}
+{"entry_id": "R1285A", "poi_id": "osm-way-26179815", "surface": "„Hermann-v.-Barth-Weg\""}
+{"entry_id": "R1286", "poi_id": "osm-node-4059510445", "surface": "Bayerländerturm"}
+{"entry_id": "R1286", "poi_id": "osm-way-26179815", "surface": "H.-v.-Barth-Weg"}
+{"entry_id": "R1286", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R129", "poi_id": "osm-way-925622578", "surface": "Gaistal"}
+{"entry_id": "R129", "poi_id": "osm-way-26932822", "surface": "Hämmermoosalm"}
+{"entry_id": "R1290", "poi_id": "osm-node-472565283", "surface": "Partenkirchner Dreitorspitze"}
+{"entry_id": "R1290", "poi_id": "osm-node-12097971760", "surface": "„Oberreintaldom\" (P. 2371)"}
+{"entry_id": "R1290", "poi_id": "osm-way-1451971905", "surface": "Oberreintals"}
+{"entry_id": "R1291A", "poi_id": "osm-node-12097971760", "surface": "Oberreintaldom"}
+{"entry_id": "R1292", "poi_id": "osm-node-12097971760", "surface": "Oberreintaldoms"}
+{"entry_id": "R13", "poi_id": "osm-way-925622578", "surface": "Gaistales"}
+{"entry_id": "R13", "poi_id": "osm-node-240081275", "surface": "Seefeld"}
+{"entry_id": "R13", "poi_id": "osm-node-22281426", "surface": "Mittenwald"}
+{"entry_id": "R13", "poi_id": "osm-node-76472938", "surface": "Telfs"}
+{"entry_id": "R13", "poi_id": "osm-way-147858566", "surface": "Rauthhütte"}
+{"entry_id": "R13", "poi_id": "osm-node-656014516", "surface": "Hohe Munde"}
+{"entry_id": "R131", "poi_id": "osm-way-123923649", "surface": "Rotmoosalm, 1810 m"}
+{"entry_id": "R131", "poi_id": "osm-node-256041782", "surface": "Hinterreintalschrofen"}
+{"entry_id": "R131", "poi_id": "osm-way-26932301", "surface": "Gaistalalm"}
+{"entry_id": "R1310", "poi_id": "osm-node-12097971759", "surface": "Unterer Berggeistturm, etwa 2000 m"}
+{"entry_id": "R1310", "poi_id": "osm-node-472565283", "surface": "Partenkirchener Dreitorspitze"}
+{"entry_id": "R1310", "poi_id": "osm-way-1451971905", "surface": "Oberreintal"}
+{"entry_id": "R1311A", "poi_id": "osm-node-12097971760", "surface": "Oberreintaldoms"}
+{"entry_id": "R1311A", "poi_id": "osm-node-12097971759", "surface": "Unterem Berggeistturm"}
+{"entry_id": "R1316", "poi_id": "osm-node-12097971760", "surface": "Oberreintaldom"}
+{"entry_id": "R1316", "poi_id": "osm-node-12097971759", "surface": "Berggeistturmes"}
+{"entry_id": "R1317", "poi_id": "osm-node-12097971759", "surface": "Unteren Berggeistturmes"}
+{"entry_id": "R132", "poi_id": "osm-way-26932301", "surface": "Gaistalalm"}
+{"entry_id": "R132", "poi_id": "osm-way-149179031", "surface": "Leithenbaches"}
+{"entry_id": "R132", "poi_id": "osm-way-123923649", "surface": "Rotmoos"}
+{"entry_id": "R133", "poi_id": "osm-way-26932822", "surface": "Hämmermoosalm"}
+{"entry_id": "R133", "poi_id": "osm-way-149179031", "surface": "Leithenbach"}
+{"entry_id": "R133", "poi_id": "osm-way-26932301", "surface": "Gaistalalm"}
+{"entry_id": "R133", "poi_id": "osm-way-123923649", "surface": "Rotmoos"}
+{"entry_id": "R1331A", "poi_id": "osm-node-12097971759", "surface": "Unterem Berggeistturm"}
+{"entry_id": "R1331A", "poi_id": "osm-node-12097971760", "surface": "Oberreintaldom"}
+{"entry_id": "R1332A", "poi_id": "osm-node-256041673", "surface": "Dreitorspitze"}
+{"entry_id": "R1333", "poi_id": "osm-node-12097971760", "surface": "Oberreintaldoms"}
+{"entry_id": "R1333A", "poi_id": "osm-node-12097971760", "surface": "Oberreintaldomes"}
+{"entry_id": "R1337", "poi_id": "osm-way-1451971905", "surface": "Oberreintal"}
+{"entry_id": "R1339", "poi_id": "osm-node-12097971759", "surface": "Unteren Berggeistturmes"}
+{"entry_id": "R1340", "poi_id": "osm-node-12097971760", "surface": "Oberreintaldoms"}
+{"entry_id": "R1341", "poi_id": "osm-way-1451971905", "surface": "Oberreintal"}
+{"entry_id": "R1345", "poi_id": "osm-node-12097971760", "surface": "Oberreintaldom"}
+{"entry_id": "R1346", "poi_id": "osm-node-12097971760", "surface": "Oberreintaldom"}
+{"entry_id": "R135", "poi_id": "osm-way-26932301", "surface": "Gaistalalm, 1356 m"}
+{"entry_id": "R135", "poi_id": "osm-way-123923649", "surface": "Rotmoosalm"}
+{"entry_id": "R136", "poi_id": "osm-way-925622578", "surface": "Gaistal"}
+{"entry_id": "R1360", "poi_id": "osm-node-3777140322", "surface": "Frauenalplkopf, 2352 m"}
+{"entry_id": "R1360", "poi_id": "osm-node-3777140321", "surface": "Frauenalplspitzen, 2369 m"}
+{"entry_id": "R1360", "poi_id": "osm-node-476787334", "surface": "Schachenalm"}
+{"entry_id": "R1360", "poi_id": "osm-node-286687475", "surface": "Frauenalpl"}
+{"entry_id": "R1365", "poi_id": "osm-node-286687475", "surface": "Frauenalpl"}
+{"entry_id": "R1365", "poi_id": "osm-way-1451971905", "surface": "Oberreintal"}
+{"entry_id": "R137", "poi_id": "osm-way-26931930", "surface": "Tillfußalm, 1380 m"}
+{"entry_id": "R137", "poi_id": "osm-way-925622578", "surface": "Gaistal"}
+{"entry_id": "R1370", "poi_id": "osm-node-3634965712", "surface": "Törlspitzen"}
+{"entry_id": "R1370", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R1370", "poi_id": "osm-node-4051533375", "surface": "Musterstein"}
+{"entry_id": "R1370", "poi_id": "osm-node-944468957", "surface": "Angerlloch"}
+{"entry_id": "R1371", "poi_id": "osm-node-944092774", "surface": "Westliche Törlspitze, 2427 m"}
+{"entry_id": "R1372", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R1373", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R1373", "poi_id": "osm-node-944468957", "surface": "Angerlloch"}
+{"entry_id": "R138", "poi_id": "osm-way-26931930", "surface": "Tillfußalm"}
+{"entry_id": "R1380", "poi_id": "osm-node-3634965712", "surface": "Östliche Törlspitze, 2443 m"}
+{"entry_id": "R1381", "poi_id": "osm-node-293014597", "surface": "Törlspitze"}
+{"entry_id": "R1381A", "poi_id": "osm-node-3634965712", "surface": "östlichen Törlspitze"}
+{"entry_id": "R1382", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R1382", "poi_id": "osm-node-4051533375", "surface": "Musterstein"}
+{"entry_id": "R1385", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R1385", "poi_id": "osm-node-944468957", "surface": "Angerlloch"}
+{"entry_id": "R139", "poi_id": "osm-node-240100634", "surface": "Ehrwald"}
+{"entry_id": "R140", "poi_id": "osm-way-124389528", "surface": "Steinerne Hütteln, 1920 m"}
+{"entry_id": "R140", "poi_id": "osm-node-323842894", "surface": "Kleinen Wanners"}
+{"entry_id": "R1401", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R1401", "poi_id": "osm-node-944092774", "surface": "Westl. Törlspitze"}
+{"entry_id": "R1401", "poi_id": "osm-node-3634965712", "surface": "Östl. Törlspitze"}
+{"entry_id": "R1401A", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R1403", "poi_id": "osm-node-3634965712", "surface": "östlicher Törlspitze"}
+{"entry_id": "R1403", "poi_id": "osm-node-4051533375", "surface": "Musterstein"}
+{"entry_id": "R1403", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R1403D", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R1405", "poi_id": "osm-node-4051533375", "surface": "Mustersteins"}
+{"entry_id": "R1407", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R1409", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R1409A", "poi_id": "osm-node-4051533375", "surface": "Musterstein"}
+{"entry_id": "R141", "poi_id": "osm-way-26931930", "surface": "Tillfußalm"}
+{"entry_id": "R141", "poi_id": "osm-way-124389528", "surface": "Steinernen Hütteln"}
+{"entry_id": "R1411", "poi_id": "osm-node-4051533375", "surface": "Mustersteins"}
+{"entry_id": "R1411B", "poi_id": "osm-way-1451971905", "surface": "Oberreintal"}
+{"entry_id": "R142", "poi_id": "osm-node-240100634", "surface": "Ehrwald"}
+{"entry_id": "R142", "poi_id": "osm-way-925622578", "surface": "Gaistal"}
+{"entry_id": "R142", "poi_id": "osm-node-240037998", "surface": "Leutasch"}
+{"entry_id": "R1420", "poi_id": "osm-node-1161325579", "surface": "Wettersteinwand"}
+{"entry_id": "R1421", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R1421", "poi_id": "osm-node-944468957", "surface": "Angerlloch"}
+{"entry_id": "R1421", "poi_id": "osm-node-4051533375", "surface": "Mustersteins"}
+{"entry_id": "R1421", "poi_id": "osm-node-6530414816", "surface": "Hirschbichlkopf, 2276 m"}
+{"entry_id": "R1421", "poi_id": "osm-node-476787334", "surface": "Schachen"}
+{"entry_id": "R1421A", "poi_id": "osm-node-6530414816", "surface": "Hirschbichlkopf"}
+{"entry_id": "R1421A", "poi_id": "osm-node-894728205", "surface": "Wettersteinalm"}
+{"entry_id": "R1421A", "poi_id": "osm-node-944468957", "surface": "Angerlloch"}
+{"entry_id": "R1422", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R1422", "poi_id": "osm-node-944468957", "surface": "Angerlloch"}
+{"entry_id": "R1422", "poi_id": "osm-node-4051533375", "surface": "Mustersteins"}
+{"entry_id": "R1423", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R1423", "poi_id": "osm-node-944468957", "surface": "Angerlloch"}
+{"entry_id": "R1424", "poi_id": "osm-node-944468957", "surface": "Angerlloch"}
+{"entry_id": "R143", "poi_id": "osm-way-237035038", "surface": "Ehrwalder Alm, 1493 m"}
+{"entry_id": "R143", "poi_id": "osm-node-240037998", "surface": "Leutasch"}
+{"entry_id": "R144", "poi_id": "osm-node-240100634", "surface": "Ehrwald"}
+{"entry_id": "R144", "poi_id": "osm-way-237035038", "surface": "Ehrwalder Alm"}
+{"entry_id": "R1440", "poi_id": "osm-node-1646863523", "surface": "Zirbelkopf, 1989 m"}
+{"entry_id": "R1441", "poi_id": "osm-node-5926552247", "surface": "Drei Scharten, etwa 2300 m"}
+{"entry_id": "R1441", "poi_id": "osm-node-4051533375", "surface": "Musterstein"}
+{"entry_id": "R1441", "poi_id": "osm-node-1161325579", "surface": "Wettersteinwand"}
+{"entry_id": "R1441", "poi_id": "osm-node-27383264", "surface": "Garmisch-Partenkirchen"}
+{"entry_id": "R1442A", "poi_id": "osm-node-4051533375", "surface": "Mustersteins"}
+{"entry_id": "R1443A", "poi_id": "osm-node-894728205", "surface": "Wettersteinalm"}
+{"entry_id": "R1443A", "poi_id": "osm-node-6530414816", "surface": "Hirschbichlkopfes"}
+{"entry_id": "R1450", "poi_id": "osm-node-1161325579", "surface": "Wettersteinwand, 2483 m"}
+{"entry_id": "R1450", "poi_id": "osm-node-1161325584", "surface": "Rotplattenspitze (2429 m)"}
+{"entry_id": "R1450", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R1450", "poi_id": "osm-node-4051533375", "surface": "Musterstein"}
+{"entry_id": "R1450", "poi_id": "osm-node-22281426", "surface": "Mittenwald"}
+{"entry_id": "R1451", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R1451", "poi_id": "osm-node-4051533375", "surface": "Mustersteins"}
+{"entry_id": "R1451", "poi_id": "osm-node-1161325579", "surface": "Wettersteinwand"}
+{"entry_id": "R1452", "poi_id": "osm-node-1161325584", "surface": "Rotplattenspitze"}
+{"entry_id": "R1452", "poi_id": "osm-node-348139963", "surface": "Oberen Wettersteinspitze"}
+{"entry_id": "R1452", "poi_id": "osm-node-1161325579", "surface": "Wettersteinwand"}
+{"entry_id": "R1453", "poi_id": "osm-node-4051533375", "surface": "Musterstein"}
+{"entry_id": "R1453", "poi_id": "osm-node-348139963", "surface": "Oberen Wettersteinspitze"}
+{"entry_id": "R1454", "poi_id": "osm-node-1646888535", "surface": "Kämitor"}
+{"entry_id": "R1459", "poi_id": "osm-node-1161325579", "surface": "Wettersteinwand"}
+{"entry_id": "R1459", "poi_id": "osm-node-27383264", "surface": "Garmisch-Partenkirchen"}
+{"entry_id": "R1459", "poi_id": "osm-node-240037998", "surface": "Leutasch"}
+{"entry_id": "R1459", "poi_id": "osm-node-1161325584", "surface": "Rotplattenspitze"}
+{"entry_id": "R1459", "poi_id": "osm-node-348139963", "surface": "Oberer Wettersteinspitze"}
+{"entry_id": "R1459", "poi_id": "osm-node-1646863523", "surface": "Zirbelkopf"}
+{"entry_id": "R1460", "poi_id": "osm-node-348139963", "surface": "Obere Wettersteinspitze, 2296 m"}
+{"entry_id": "R1460", "poi_id": "osm-node-6530414818", "surface": "Unteren Wettersteinspitze"}
+{"entry_id": "R1461", "poi_id": "osm-node-1161325579", "surface": "Wettersteinwand"}
+{"entry_id": "R1461", "poi_id": "osm-node-6530414818", "surface": "Unteren Wettersteinspitze"}
+{"entry_id": "R1463", "poi_id": "osm-node-527223049", "surface": "Gamsanger"}
+{"entry_id": "R1463", "poi_id": "osm-way-147556591", "surface": "Franzosensteig"}
+{"entry_id": "R1463", "poi_id": "osm-node-348139963", "surface": "Oberen Wettersteinspitze"}
+{"entry_id": "R1464", "poi_id": "osm-node-22281426", "surface": "Mittenwald"}
+{"entry_id": "R1464", "poi_id": "osm-way-147556591", "surface": "Franzosensteig"}
+{"entry_id": "R1464", "poi_id": "osm-way-23425364", "surface": "Ferchensees"}
+{"entry_id": "R1464", "poi_id": "osm-node-527223049", "surface": "Gamsanger"}
+{"entry_id": "R1464", "poi_id": "osm-node-1646863523", "surface": "Zirbelkopf"}
+{"entry_id": "R147", "poi_id": "osm-way-136778436", "surface": "Arnspitzhütte, 1955 m"}
+{"entry_id": "R147", "poi_id": "osm-node-26863047", "surface": "Gr. Arnspitze"}
+{"entry_id": "R147", "poi_id": "osm-node-22281426", "surface": "Mittenwald"}
+{"entry_id": "R147", "poi_id": "osm-node-75680891", "surface": "Scharnitz"}
+{"entry_id": "R1470", "poi_id": "osm-node-6530414818", "surface": "Untere Wettersteinspitze, 2152 m"}
+{"entry_id": "R1470", "poi_id": "osm-way-705813007", "surface": "Wettersteinkammes"}
+{"entry_id": "R1470", "poi_id": "osm-node-22281426", "surface": "Mittenwald"}
+{"entry_id": "R1471", "poi_id": "osm-node-240037998", "surface": "Leutasch"}
+{"entry_id": "R1471", "poi_id": "osm-node-348139963", "surface": "Oberen Wettersteinspitze"}
+{"entry_id": "R1471", "poi_id": "osm-node-6530414818", "surface": "Unteren Wettersteinspitze"}
+{"entry_id": "R1473", "poi_id": "osm-node-5932640468", "surface": "Schanz"}
+{"entry_id": "R1473", "poi_id": "osm-node-22281426", "surface": "Mittenwald"}
+{"entry_id": "R1473", "poi_id": "osm-way-147556591", "surface": "Franzosensteig"}
+{"entry_id": "R1473", "poi_id": "osm-node-6530414818", "surface": "Wettersteinspitze"}
+{"entry_id": "R1474", "poi_id": "osm-node-527223049", "surface": "Gamsanger"}
+{"entry_id": "R1475", "poi_id": "osm-node-22281426", "surface": "Mittenwald"}
+{"entry_id": "R1475", "poi_id": "osm-way-23425364", "surface": "Ferchensee"}
+{"entry_id": "R1475", "poi_id": "osm-node-527223049", "surface": "Gamsanger"}
+{"entry_id": "R1476", "poi_id": "osm-node-4051533375", "surface": "Musterstein"}
+{"entry_id": "R1476", "poi_id": "osm-node-5926552247", "surface": "„Drei Scharten\""}
+{"entry_id": "R1476", "poi_id": "osm-node-1161325579", "surface": "Wettersteinwand"}
+{"entry_id": "R1476", "poi_id": "osm-node-1161325584", "surface": "Rotplattenspitze"}
+{"entry_id": "R1476", "poi_id": "osm-node-348139963", "surface": "Oberer Wettersteinspitze"}
+{"entry_id": "R1476", "poi_id": "osm-node-6530414818", "surface": "Untere Wettersteinspitze"}
+{"entry_id": "R1500", "poi_id": "osm-node-26863047", "surface": "Große Arnspitze, 2196 m"}
+{"entry_id": "R1501", "poi_id": "osm-node-75680891", "surface": "Scharnitz"}
+{"entry_id": "R1501", "poi_id": "osm-way-938858046", "surface": "Hasellähne"}
+{"entry_id": "R1502", "poi_id": "osm-node-656059822", "surface": "Riedbergscharte"}
+{"entry_id": "R1502", "poi_id": "osm-node-22281426", "surface": "Mittenwald"}
+{"entry_id": "R1502", "poi_id": "osm-node-8806522423", "surface": "Achterköpfe"}
+{"entry_id": "R1502", "poi_id": "osm-node-26863047", "surface": "Arnspitze"}
+{"entry_id": "R1502", "poi_id": "osm-node-75680891", "surface": "Scharnitz"}
+{"entry_id": "R1503", "poi_id": "osm-way-136778436", "surface": "Arnspitzhütte"}
+{"entry_id": "R1504", "poi_id": "osm-node-656059822", "surface": "Riedbergscharte"}
+{"entry_id": "R1510", "poi_id": "osm-node-659580881", "surface": "Mittlere Arnspitze, 2130 m"}
+{"entry_id": "R1511", "poi_id": "osm-node-26863047", "surface": "Großen Arnspitze"}
+{"entry_id": "R1511", "poi_id": "osm-node-659580881", "surface": "Mittleren Arnspitze"}
+{"entry_id": "R1512A", "poi_id": "osm-node-26863047", "surface": "Großen"}
+{"entry_id": "R1512A", "poi_id": "osm-node-659580881", "surface": "Mittlerer Arnspitze"}
+{"entry_id": "R1513", "poi_id": "osm-node-659580881", "surface": "Mittlerer Arnspitze"}
+{"entry_id": "R1514", "poi_id": "osm-node-599290823", "surface": "Gießenbach"}
+{"entry_id": "R1514", "poi_id": "osm-node-26863047", "surface": "Großen Arnspitze"}
+{"entry_id": "R1514", "poi_id": "osm-node-659580881", "surface": "Mittleren Arnspitze"}
+{"entry_id": "R1520", "poi_id": "osm-node-659580880", "surface": "Arnplattenspitze, 2172 m"}
+{"entry_id": "R1521", "poi_id": "osm-node-659580881", "surface": "Mittleren Arnspitze"}
+{"entry_id": "R1523", "poi_id": "osm-node-4975358123", "surface": "Hohen Sattel"}
+{"entry_id": "R1523", "poi_id": "osm-node-659580779", "surface": "Arnköpfen"}
+{"entry_id": "R2", "poi_id": "osm-node-1685815045", "surface": "Klais, 932 m"}
+{"entry_id": "R2", "poi_id": "osm-node-1685815066", "surface": "Krün"}
+{"entry_id": "R2", "poi_id": "osm-node-240048579", "surface": "Wallgau"}
+{"entry_id": "R2", "poi_id": "osm-node-1685813026", "surface": "Elmau"}
+{"entry_id": "R2", "poi_id": "osm-way-8086596", "surface": "Barmsee"}
+{"entry_id": "R22", "poi_id": "osm-node-240034978", "surface": "Biberwier, 991 m"}
+{"entry_id": "R22", "poi_id": "osm-node-240100634", "surface": "Ehrwald"}
+{"entry_id": "R22", "poi_id": "osm-way-26954262", "surface": "Coburger Hütte"}
+{"entry_id": "R22", "poi_id": "osm-node-6798419060", "surface": "Biberwierer Scharte"}
+{"entry_id": "R22", "poi_id": "osm-node-983089581", "surface": "Marienbergjoch"}
+{"entry_id": "R23", "poi_id": "osm-node-240100634", "surface": "Ehrwald, 1000 m"}
+{"entry_id": "R23", "poi_id": "osm-relation-12533003", "surface": "Inntal"}
+{"entry_id": "R23", "poi_id": "osm-way-26954262", "surface": "Coburger Hütte"}
+{"entry_id": "R23", "poi_id": "osm-node-1396763486", "surface": "Breitenkopfhütte"}
+{"entry_id": "R230", "poi_id": "osm-relation-163453", "surface": "Eibsee"}
+{"entry_id": "R230", "poi_id": "osm-node-2622718349", "surface": "Törlen"}
+{"entry_id": "R230", "poi_id": "osm-node-240100634", "surface": "Ehrwald"}
+{"entry_id": "R230", "poi_id": "osm-way-124074836", "surface": "Wiener-Neustädter Hütte"}
+{"entry_id": "R230", "poi_id": "osm-way-124074409", "surface": "Zugspitzbahn-Talstation"}
+{"entry_id": "R231", "poi_id": "osm-relation-163453", "surface": "Eibsee"}
+{"entry_id": "R231", "poi_id": "osm-way-220074651", "surface": "Waxensteinhütte"}
+{"entry_id": "R231", "poi_id": "osm-node-683062552", "surface": "Obergrainau"}
+{"entry_id": "R231", "poi_id": "osm-way-41380406", "surface": "Alplbaches"}
+{"entry_id": "R231", "poi_id": "osm-node-773900419", "surface": "Bärnheimatkopf"}
+{"entry_id": "R231", "poi_id": "osm-way-223409147", "surface": "Höllentalklamm"}
+{"entry_id": "R232", "poi_id": "osm-way-223399969", "surface": "Mittagsschlucht"}
+{"entry_id": "R232", "poi_id": "osm-node-7839987371", "surface": "Garmisch"}
+{"entry_id": "R232", "poi_id": "osm-way-501241489", "surface": "Alplebaches"}
+{"entry_id": "R232", "poi_id": "osm-way-220074651", "surface": "Waxensteinhütte"}
+{"entry_id": "R232", "poi_id": "osm-node-683062552", "surface": "Obergrainau"}
+{"entry_id": "R235", "poi_id": "osm-node-1620476548", "surface": "Mittagsscharte, 2045 m"}
+{"entry_id": "R235", "poi_id": "osm-node-508474978", "surface": "Kleinem Waxenstein"}
+{"entry_id": "R235", "poi_id": "osm-node-1621651564", "surface": "Zwölferkopf"}
+{"entry_id": "R235", "poi_id": "osm-node-12817320080", "surface": "Riffelkar"}
+{"entry_id": "R235", "poi_id": "osm-way-70849281", "surface": "Schafsteiges"}
+{"entry_id": "R236", "poi_id": "osm-way-223399969", "surface": "Mittagsschlucht"}
+{"entry_id": "R237", "poi_id": "osm-way-370669072", "surface": "Höllentalangerhütte"}
+{"entry_id": "R237", "poi_id": "osm-way-227024588", "surface": "Waxensteinanstieg"}
+{"entry_id": "R237", "poi_id": "osm-way-70849281", "surface": "Schafsteig"}
+{"entry_id": "R238", "poi_id": "osm-way-70849281", "surface": "Schafsteig"}
+{"entry_id": "R238", "poi_id": "osm-node-7546679749", "surface": "Riffelscharte"}
+{"entry_id": "R238", "poi_id": "osm-way-807024911", "surface": "Waxensteinkammes"}
+{"entry_id": "R238", "poi_id": "osm-node-508474971", "surface": "Großen Waxenstein"}
+{"entry_id": "R238", "poi_id": "osm-node-508474984", "surface": "Hinteren Waxensteins"}
+{"entry_id": "R238", "poi_id": "osm-node-13999881946", "surface": "Schöneckspitze"}
+{"entry_id": "R238", "poi_id": "osm-node-773900448", "surface": "Schönangerspitze"}
+{"entry_id": "R238", "poi_id": "osm-node-508489594", "surface": "Nördl. Riffelspitze"}
+{"entry_id": "R238", "poi_id": "osm-node-12817321077", "surface": "Schönangers"}
+{"entry_id": "R238", "poi_id": "osm-node-12817320080", "surface": "Riffelkar"}
+{"entry_id": "R238", "poi_id": "osm-way-370669072", "surface": "Höllentalangerhütte"}
+{"entry_id": "R240", "poi_id": "osm-node-7546679749", "surface": "Riffelscharte, ca. 2161 m"}
+{"entry_id": "R240", "poi_id": "osm-way-807024912", "surface": "Riffelwandkamm"}
+{"entry_id": "R240", "poi_id": "osm-way-807024911", "surface": "Waxensteinkamm"}
+{"entry_id": "R240", "poi_id": "osm-relation-163453", "surface": "Eibsee"}
+{"entry_id": "R241", "poi_id": "osm-node-4242602820", "surface": "Höllentalanger"}
+{"entry_id": "R241", "poi_id": "osm-node-7546679749", "surface": "Riffelscharte"}
+{"entry_id": "R241", "poi_id": "osm-relation-163453", "surface": "Eibsee"}
+{"entry_id": "R241", "poi_id": "osm-way-370669072", "surface": "Höllentalangerhütte"}
+{"entry_id": "R241", "poi_id": "osm-node-12817320080", "surface": "Riffelkares"}
+{"entry_id": "R241", "poi_id": "osm-node-508489631", "surface": "Riffeltorkopf"}
+{"entry_id": "R241", "poi_id": "osm-way-70849281", "surface": "Schafsteig"}
+{"entry_id": "R241", "poi_id": "osm-way-62033264", "surface": "Riffelschartenweg"}
+{"entry_id": "R241", "poi_id": "osm-way-124074836", "surface": "Wiener-Neustädter Hütte"}
+{"entry_id": "R242", "poi_id": "osm-way-431068238", "surface": "Mathaisenkar"}
+{"entry_id": "R242", "poi_id": "osm-node-283065713", "surface": "Grieskarscharte"}
+{"entry_id": "R242", "poi_id": "osm-node-4547463685", "surface": "Kreuzeck"}
+{"entry_id": "R242", "poi_id": "osm-way-370669072", "surface": "Höllentalangerhütte"}
+{"entry_id": "R242", "poi_id": "osm-node-1833449075", "surface": "Hochblassen"}
+{"entry_id": "R242", "poi_id": "osm-node-259486622", "surface": "Alpspitze"}
+{"entry_id": "R242", "poi_id": "osm-way-26761684", "surface": "Stuibensee"}
+{"entry_id": "R242", "poi_id": "osm-way-23940783", "surface": "Bernadeinweg"}
+{"entry_id": "R242", "poi_id": "osm-way-23939968", "surface": "Schöngänge"}
+{"entry_id": "R242", "poi_id": "osm-way-62080320", "surface": "Hochalm"}
+{"entry_id": "R243", "poi_id": "osm-node-4547463685", "surface": "Kreuzeck"}
+{"entry_id": "R243", "poi_id": "osm-node-259486475", "surface": "Hupfleitenjoch, 1754 m"}
+{"entry_id": "R243", "poi_id": "osm-way-360293635", "surface": "Kreuzeckhaus"}
+{"entry_id": "R243", "poi_id": "osm-node-357496429", "surface": "Schwarzenkopf, 1818 m"}
+{"entry_id": "R243", "poi_id": "osm-way-370669072", "surface": "Höllentalangerhütte"}
+{"entry_id": "R244", "poi_id": "osm-node-259406948", "surface": "Osterfelderkopf"}
+{"entry_id": "R244", "poi_id": "osm-way-23925293", "surface": "Rinderweg"}
+{"entry_id": "R244", "poi_id": "osm-node-259486622", "surface": "Alpspitze"}
+{"entry_id": "R244", "poi_id": "osm-way-23925289", "surface": "Nordwandsteig"}
+{"entry_id": "R244", "poi_id": "osm-node-286776086", "surface": "Rinderscharte"}
+{"entry_id": "R244", "poi_id": "osm-way-370669072", "surface": "Höllentalangerhütte"}
+{"entry_id": "R245", "poi_id": "osm-node-4547463685", "surface": "Kreuzeck"}
+{"entry_id": "R245", "poi_id": "osm-way-925622577", "surface": "Reintal"}
+{"entry_id": "R245", "poi_id": "osm-way-36544330", "surface": "Bockhütte"}
+{"entry_id": "R245", "poi_id": "osm-way-23940783", "surface": "Bernadeinweg"}
+{"entry_id": "R245", "poi_id": "osm-way-303325398", "surface": "Bernadeinhütte"}
+{"entry_id": "R245", "poi_id": "osm-node-259486622", "surface": "Alpspitze"}
+{"entry_id": "R245", "poi_id": "osm-way-36545913", "surface": "Stuibenhütte"}
+{"entry_id": "R245", "poi_id": "osm-node-508503695", "surface": "Mauerscharte"}
+{"entry_id": "R246", "poi_id": "osm-node-476498599", "surface": "Knorrhütte"}
+{"entry_id": "R246", "poi_id": "osm-node-286574960", "surface": "Gatterl"}
+{"entry_id": "R246", "poi_id": "osm-node-240100634", "surface": "Ehrwald"}
+{"entry_id": "R246", "poi_id": "osm-node-240037998", "surface": "Leutasch"}
+{"entry_id": "R246", "poi_id": "osm-node-1400033704", "surface": "Niedermundesattel"}
+{"entry_id": "R246", "poi_id": "osm-node-76472938", "surface": "Telfs"}
+{"entry_id": "R246", "poi_id": "osm-way-925622570", "surface": "Oberinntal"}
+{"entry_id": "R246", "poi_id": "osm-node-2510073225", "surface": "Feldernjöchl"}
+{"entry_id": "R246", "poi_id": "osm-way-925622578", "surface": "Gaistal"}
+{"entry_id": "R246", "poi_id": "osm-way-124389528", "surface": "Steinerne Hütteln"}
+{"entry_id": "R247", "poi_id": "osm-node-476787334", "surface": "Schachen"}
+{"entry_id": "R247", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R247", "poi_id": "osm-node-240037998", "surface": "Leutasch"}
+{"entry_id": "R247", "poi_id": "osm-way-925622581", "surface": "Leutaschtal"}
+{"entry_id": "R247", "poi_id": "osm-way-26179815", "surface": "Hermann-von-Barth-Weg"}
+{"entry_id": "R247", "poi_id": "osm-node-2373047899", "surface": "Söllerpaß"}
+{"entry_id": "R247", "poi_id": "osm-node-1895047310", "surface": "Berglesboden"}
+{"entry_id": "R247", "poi_id": "osm-way-146498696", "surface": "Puitbach"}
+{"entry_id": "R247", "poi_id": "osm-node-452550424", "surface": "Gasse"}
+{"entry_id": "R248", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R248", "poi_id": "osm-node-2373047899", "surface": "Söllerpaß"}
+{"entry_id": "R248", "poi_id": "osm-node-240037998", "surface": "Leutasch"}
+{"entry_id": "R248", "poi_id": "osm-node-289304315", "surface": "Scharnitzjoch"}
+{"entry_id": "R248", "poi_id": "osm-node-476787334", "surface": "Schachen"}
+{"entry_id": "R248", "poi_id": "osm-way-26179815", "surface": "Hermann-von-Barth-Weg"}
+{"entry_id": "R248", "poi_id": "osm-node-944114022", "surface": "Leutascher Platts"}
+{"entry_id": "R248", "poi_id": "osm-node-2373066248", "surface": "Öfelekopfes"}
+{"entry_id": "R249", "poi_id": "osm-node-289304315", "surface": "Scharnitzjoch"}
+{"entry_id": "R249", "poi_id": "osm-node-7845727141", "surface": "Schüsselkarspitze"}
+{"entry_id": "R249", "poi_id": "osm-node-256041673", "surface": "Leutascher Dreitorspitze"}
+{"entry_id": "R249", "poi_id": "osm-way-26933857", "surface": "Wangalm"}
+{"entry_id": "R249", "poi_id": "osm-node-310564229", "surface": "Gehrenspitze"}
+{"entry_id": "R249", "poi_id": "osm-way-168699681", "surface": "Erinnerungshütte des AAVM"}
+{"entry_id": "R249", "poi_id": "osm-node-240037998", "surface": "Leutasch"}
+{"entry_id": "R250", "poi_id": "osm-node-4547463685", "surface": "Kreuzeck"}
+{"entry_id": "R250", "poi_id": "osm-node-508503695", "surface": "Mauerscharte, ca. 1890 m"}
+{"entry_id": "R250", "poi_id": "osm-way-173682244", "surface": "Reintalangerhütte"}
+{"entry_id": "R250", "poi_id": "osm-way-23941523", "surface": "Schützensteig"}
+{"entry_id": "R250", "poi_id": "osm-way-36545913", "surface": "Stuibenhütte"}
+{"entry_id": "R250", "poi_id": "osm-node-7678135852", "surface": "Stuibenkopf"}
+{"entry_id": "R250", "poi_id": "osm-way-705811815", "surface": "Gaif-O-Grat"}
+{"entry_id": "R250", "poi_id": "osm-node-508509265", "surface": "Blassenspitze"}
+{"entry_id": "R251", "poi_id": "osm-way-36544330", "surface": "Bockhütte"}
+{"entry_id": "R251", "poi_id": "osm-way-23941523", "surface": "Schützensteig"}
+{"entry_id": "R252", "poi_id": "osm-way-23941523", "surface": "Schützensteig"}
+{"entry_id": "R253", "poi_id": "osm-node-286574960", "surface": "Gatterl"}
+{"entry_id": "R253", "poi_id": "osm-node-289304315", "surface": "Scharnitzjoch"}
+{"entry_id": "R253", "poi_id": "osm-node-2510073225", "surface": "Feldernjöchl"}
+{"entry_id": "R253", "poi_id": "osm-node-323717920", "surface": "Hohen Kammes"}
+{"entry_id": "R253", "poi_id": "osm-node-286586199", "surface": "Kothbachsattel"}
+{"entry_id": "R253", "poi_id": "osm-way-124389528", "surface": "Steinernen Hütteln"}
+{"entry_id": "R254", "poi_id": "osm-way-1451971905", "surface": "Oberreintal"}
+{"entry_id": "R254", "poi_id": "osm-node-240037998", "surface": "Leutasch"}
+{"entry_id": "R254", "poi_id": "osm-node-3112764094", "surface": "Oberreintalturm"}
+{"entry_id": "R254", "poi_id": "osm-node-256041930", "surface": "Oberreintalschrofens"}
+{"entry_id": "R254", "poi_id": "osm-way-26933857", "surface": "Wangalm"}
+{"entry_id": "R254", "poi_id": "osm-way-925622581", "surface": "Leutaschtal"}
+{"entry_id": "R255", "poi_id": "osm-node-476787334", "surface": "Schachen"}
+{"entry_id": "R255", "poi_id": "osm-node-1646888535", "surface": "Kämitor"}
+{"entry_id": "R255", "poi_id": "osm-node-1685813026", "surface": "Elmau"}
+{"entry_id": "R255", "poi_id": "osm-node-22281426", "surface": "Mittenwald"}
+{"entry_id": "R255", "poi_id": "osm-node-348139963", "surface": "Oberen Wettersteinspitze"}
+{"entry_id": "R255", "poi_id": "osm-node-4224427657", "surface": "Schachentorkopf"}
+{"entry_id": "R255", "poi_id": "osm-node-1646863523", "surface": "Zirbelkopf"}
+{"entry_id": "R255", "poi_id": "osm-node-527223049", "surface": "Gamsanger"}
+{"entry_id": "R255", "poi_id": "osm-way-26715081", "surface": "Königsweg"}
+{"entry_id": "R255", "poi_id": "osm-node-809849759", "surface": "Schachentor"}
+{"entry_id": "R255", "poi_id": "osm-node-3777140322", "surface": "Frauenalplkopf"}
+{"entry_id": "R255", "poi_id": "osm-node-894728205", "surface": "Wettersteinalm"}
+{"entry_id": "R255", "poi_id": "osm-way-23425364", "surface": "Ferchensee"}
+{"entry_id": "R255", "poi_id": "osm-way-36342653", "surface": "Bannholzweg"}
+{"entry_id": "R255", "poi_id": "osm-node-1161325579", "surface": "Wettersteinwand"}
+{"entry_id": "R256", "poi_id": "osm-node-240100634", "surface": "Ehrwald"}
+{"entry_id": "R256", "poi_id": "osm-way-925622578", "surface": "Gaistal"}
+{"entry_id": "R256", "poi_id": "osm-node-240037998", "surface": "Leutasch"}
+{"entry_id": "R256", "poi_id": "osm-node-22281426", "surface": "Mittenwald"}
+{"entry_id": "R256", "poi_id": "osm-way-237035038", "surface": "Ehrwalder Alm"}
+{"entry_id": "R256", "poi_id": "osm-node-476498599", "surface": "Knorrhütte"}
+{"entry_id": "R256", "poi_id": "osm-node-6086493704", "surface": "Feldernalm, 1522 m"}
+{"entry_id": "R256", "poi_id": "osm-way-26956354", "surface": "Igelsee"}
+{"entry_id": "R256", "poi_id": "osm-way-26931930", "surface": "Tillfußalm, 1380 m"}
+{"entry_id": "R256", "poi_id": "osm-way-37658961", "surface": "Kotbaches"}
+{"entry_id": "R256", "poi_id": "osm-way-149179031", "surface": "Leitenbaches"}
+{"entry_id": "R256", "poi_id": "osm-way-925622581", "surface": "Leutaschtal"}
+{"entry_id": "R256", "poi_id": "osm-way-973058097", "surface": "Arnstock"}
+{"entry_id": "R257", "poi_id": "osm-node-22281426", "surface": "Mittenwald"}
+{"entry_id": "R257", "poi_id": "osm-node-1685813026", "surface": "Elmau"}
+{"entry_id": "R257", "poi_id": "osm-node-7839987372", "surface": "Partenkirchen"}
+{"entry_id": "R257", "poi_id": "osm-relation-2557199", "surface": "Lautersee"}
+{"entry_id": "R257", "poi_id": "osm-way-23425364", "surface": "Ferchensee"}
+{"entry_id": "R257", "poi_id": "osm-way-36337159", "surface": "Ferchenbachtal"}
+{"entry_id": "R257", "poi_id": "osm-way-223452455", "surface": "Partnachklamm"}
+{"entry_id": "R257", "poi_id": "osm-node-1775075248", "surface": "Hintergraseck"}
+{"entry_id": "R257", "poi_id": "osm-node-1775075250", "surface": "Vordergraseck"}
+{"entry_id": "R257", "poi_id": "osm-node-1775075251", "surface": "Wildenau"}
+{"entry_id": "R258", "poi_id": "osm-node-22281426", "surface": "Mittenwald"}
+{"entry_id": "R258", "poi_id": "osm-way-147556591", "surface": "Franzosensteig"}
+{"entry_id": "R258", "poi_id": "osm-node-240037998", "surface": "Leutasch"}
+{"entry_id": "R258", "poi_id": "osm-node-381013586", "surface": "Grünkopfes"}
+{"entry_id": "R258", "poi_id": "osm-way-23425364", "surface": "Ferchensees"}
+{"entry_id": "R258", "poi_id": "osm-node-619569895", "surface": "Ferchenseewände"}
+{"entry_id": "R258", "poi_id": "osm-node-527223049", "surface": "Gamsanger"}
+{"entry_id": "R270", "poi_id": "osm-node-656059822", "surface": "Riedbergscharte, 1450 m"}
+{"entry_id": "R270", "poi_id": "osm-way-973058097", "surface": "Arnstocks"}
+{"entry_id": "R270", "poi_id": "osm-way-925622581", "surface": "Leutaschtal"}
+{"entry_id": "R270", "poi_id": "osm-node-22281426", "surface": "Mittenwald"}
+{"entry_id": "R271", "poi_id": "osm-node-656059822", "surface": "Riedbergscharte"}
+{"entry_id": "R271", "poi_id": "osm-node-22281426", "surface": "Mittenwald"}
+{"entry_id": "R271", "poi_id": "osm-relation-273028", "surface": "Isar"}
+{"entry_id": "R271", "poi_id": "osm-way-925622582", "surface": "Leutaschklamm"}
+{"entry_id": "R272", "poi_id": "osm-node-4975358123", "surface": "Hoher Sattel, 1483 m"}
+{"entry_id": "R272", "poi_id": "osm-node-26863047", "surface": "Arnspitzen"}
+{"entry_id": "R272", "poi_id": "osm-node-3790880024", "surface": "Zunteregg"}
+{"entry_id": "R273", "poi_id": "osm-node-240037998", "surface": "Leutasch"}
+{"entry_id": "R273", "poi_id": "osm-node-4975358123", "surface": "Hoher Sattel"}
+{"entry_id": "R273", "poi_id": "osm-node-75680891", "surface": "Scharnitz"}
+{"entry_id": "R273", "poi_id": "osm-relation-10742086", "surface": "Leutascher Ache"}
+{"entry_id": "R273", "poi_id": "osm-node-847868878", "surface": "Weidach"}
+{"entry_id": "R273", "poi_id": "osm-way-925622579", "surface": "Satteltales"}
+{"entry_id": "R273", "poi_id": "osm-node-26863047", "surface": "Arnspitzen"}
+{"entry_id": "R3", "poi_id": "osm-way-8086596", "surface": "Barmsee, 885 m"}
+{"entry_id": "R3", "poi_id": "osm-node-1685815045", "surface": "Klais"}
+{"entry_id": "R3", "poi_id": "osm-node-1685815066", "surface": "Krün"}
+{"entry_id": "R30", "poi_id": "osm-way-124074836", "surface": "Wiener-Neustädter Hütte, 2213 m"}
+{"entry_id": "R30", "poi_id": "osm-way-1383342753", "surface": "Ehrwalder Kopf"}
+{"entry_id": "R30", "poi_id": "osm-relation-163453", "surface": "Eibsee"}
+{"entry_id": "R30", "poi_id": "osm-relation-7069488", "surface": "Badersee"}
+{"entry_id": "R30", "poi_id": "osm-node-256042810", "surface": "Sonnenspitzls"}
+{"entry_id": "R30", "poi_id": "osm-node-323896644", "surface": "Zugspitzecks"}
+{"entry_id": "R30", "poi_id": "osm-node-27384190", "surface": "Zugspitze"}
+{"entry_id": "R31", "poi_id": "osm-relation-163453", "surface": "Eibsee"}
+{"entry_id": "R31", "poi_id": "osm-node-2622718349", "surface": "Törlen"}
+{"entry_id": "R31", "poi_id": "osm-way-1383342753", "surface": "Ehrwalder Köpfe"}
+{"entry_id": "R31", "poi_id": "osm-way-124074409", "surface": "Mittelstation der Tiroler Zugspitzbahn"}
+{"entry_id": "R32", "poi_id": "osm-node-240100634", "surface": "Ehrwald"}
+{"entry_id": "R32", "poi_id": "osm-way-233424780", "surface": "Georg-Jäger-Steig"}
+{"entry_id": "R32", "poi_id": "osm-way-124074409", "surface": "Mittelstation der Tiroler Zugspitzbahn"}
+{"entry_id": "R33", "poi_id": "osm-way-30126017", "surface": "Obermoos"}
+{"entry_id": "R33", "poi_id": "osm-way-233424780", "surface": "Georg-Jäger-Steig"}
+{"entry_id": "R330", "poi_id": "osm-node-27384190", "surface": "Zugspitze, 2964 m"}
+{"entry_id": "R331", "poi_id": "osm-node-5291656702", "surface": "Bergstation der Bayer. Zugspitzbahn"}
+{"entry_id": "R332", "poi_id": "osm-way-54681051", "surface": "Höllentalferner"}
+{"entry_id": "R332", "poi_id": "osm-way-370669072", "surface": "Höllentalangerhütte"}
+{"entry_id": "R332", "poi_id": "osm-node-7546679749", "surface": "Riffelscharte"}
+{"entry_id": "R332", "poi_id": "osm-node-9549285147", "surface": "„Brett\""}
+{"entry_id": "R332", "poi_id": "osm-node-12302397557", "surface": "Irmerscharte"}
+{"entry_id": "R333", "poi_id": "osm-way-124074836", "surface": "Wiener-Neustädter Hütte"}
+{"entry_id": "R333", "poi_id": "osm-way-37293628", "surface": "„Stopselzieher\""}
+{"entry_id": "R334", "poi_id": "osm-node-508489623", "surface": "Großen Riffelwandspitze"}
+{"entry_id": "R334", "poi_id": "osm-node-12302397557", "surface": "Irmerscharte"}
+{"entry_id": "R335", "poi_id": "osm-way-124074836", "surface": "Wiener-Neustädter Hütte"}
+{"entry_id": "R335", "poi_id": "osm-way-236047957", "surface": "Münchner Haus"}
+{"entry_id": "R335", "poi_id": "osm-node-27384190", "surface": "Zugspitze"}
+{"entry_id": "R336", "poi_id": "osm-node-12302397557", "surface": "Irmerscharte"}
+{"entry_id": "R336", "poi_id": "osm-node-27384190", "surface": "Zugspitzgipfels"}
+{"entry_id": "R336A", "poi_id": "osm-node-27384190", "surface": "Zugspitze"}
+{"entry_id": "R337", "poi_id": "osm-way-124074836", "surface": "Wiener-Neustädter Hütte"}
+{"entry_id": "R337", "poi_id": "osm-node-983927678", "surface": "Kaiserkopfes"}
+{"entry_id": "R338", "poi_id": "osm-way-130395806", "surface": "Jubiläumsgrat"}
+{"entry_id": "R338", "poi_id": "osm-node-508503691", "surface": "Inneren Höllentalspitze"}
+{"entry_id": "R338", "poi_id": "osm-node-283065713", "surface": "Grieskarscharte"}
+{"entry_id": "R338", "poi_id": "osm-node-476498599", "surface": "Knorrhütte"}
+{"entry_id": "R338", "poi_id": "osm-node-508503689", "surface": "Mittleren Höllentalspitze"}
+{"entry_id": "R338", "poi_id": "osm-node-508503693", "surface": "Äußeren Höllentalspitze"}
+{"entry_id": "R338", "poi_id": "osm-node-508503694", "surface": "Vollkarspitze"}
+{"entry_id": "R338", "poi_id": "osm-node-1833449075", "surface": "Hochblassen"}
+{"entry_id": "R338", "poi_id": "osm-way-431068238", "surface": "Mathaisenkar"}
+{"entry_id": "R338", "poi_id": "osm-way-370669072", "surface": "Höllentalangerhütte"}
+{"entry_id": "R35", "poi_id": "osm-way-220074651", "surface": "Waxensteinhütte (Alplehütte), 1380 m"}
+{"entry_id": "R350", "poi_id": "osm-node-323896644", "surface": "Zugspitzeck, 2820 m"}
+{"entry_id": "R350", "poi_id": "osm-way-200283292", "surface": "Schneeferners"}
+{"entry_id": "R351", "poi_id": "osm-node-4938335786", "surface": "Schneefernerscharte"}
+{"entry_id": "R351", "poi_id": "osm-node-4985695634", "surface": "Bergstation der Tiroler Zugspitzbahn"}
+{"entry_id": "R352", "poi_id": "osm-node-256042810", "surface": "Sonnenspitzls"}
+{"entry_id": "R352", "poi_id": "osm-way-124074836", "surface": "Wiener-Neustädter Hütte"}
+{"entry_id": "R353", "poi_id": "osm-way-124074836", "surface": "Wiener-Neustädter Hütte"}
+{"entry_id": "R354", "poi_id": "osm-way-124074836", "surface": "Wiener-Neustädter Hütte"}
+{"entry_id": "R354", "poi_id": "osm-node-240100634", "surface": "Ehrwald"}
+{"entry_id": "R355", "poi_id": "osm-node-323896644", "surface": "Zugspitzeck"}
+{"entry_id": "R355", "poi_id": "osm-node-4938335786", "surface": "Schneefernerscharte"}
+{"entry_id": "R36", "poi_id": "osm-node-683062552", "surface": "Obergrainau"}
+{"entry_id": "R36", "poi_id": "osm-relation-163453", "surface": "Eibsee"}
+{"entry_id": "R36", "poi_id": "osm-way-223399969", "surface": "Mittagsschlucht"}
+{"entry_id": "R36", "poi_id": "osm-way-220074651", "surface": "Waxensteinhütte"}
+{"entry_id": "R360", "poi_id": "osm-node-983927675", "surface": "Sonnenspitzl, etwa 2600 m"}
+{"entry_id": "R361", "poi_id": "osm-way-124074836", "surface": "Wiener-Neustädter Hütte"}
+{"entry_id": "R37", "poi_id": "osm-node-683062552", "surface": "Obergrainau"}
+{"entry_id": "R370", "poi_id": "osm-node-256042768", "surface": "Schneefernerkopf, 2875 m"}
+{"entry_id": "R370", "poi_id": "osm-node-240100634", "surface": "Ehrwald"}
+{"entry_id": "R370", "poi_id": "osm-node-27384190", "surface": "Zugspitze"}
+{"entry_id": "R371", "poi_id": "osm-way-200283292", "surface": "Schneeferner"}
+{"entry_id": "R371", "poi_id": "osm-node-4938335786", "surface": "Schneefernerscharte"}
+{"entry_id": "R371", "poi_id": "osm-node-256042768", "surface": "Schneefernerkopfes"}
+{"entry_id": "R372A", "poi_id": "osm-node-12817211594", "surface": "Wetterspitzen"}
+{"entry_id": "R373", "poi_id": "osm-node-256042768", "surface": "Schneefernerkopf"}
+{"entry_id": "R373", "poi_id": "osm-node-6550931823", "surface": "Nördl. Wetterspitze"}
+{"entry_id": "R374", "poi_id": "osm-node-256042768", "surface": "Schneefernerkopfes"}
+{"entry_id": "R374", "poi_id": "osm-node-10978210261", "surface": "Holzereck (P. 2373)"}
+{"entry_id": "R374", "poi_id": "osm-node-240100634", "surface": "Ehrwald"}
+{"entry_id": "R375", "poi_id": "osm-node-10978210261", "surface": "Holzereck"}
+{"entry_id": "R376A", "poi_id": "osm-node-10978210261", "surface": "Holzereck"}
+{"entry_id": "R377", "poi_id": "osm-node-256042768", "surface": "Schneefernerkopf"}
+{"entry_id": "R377", "poi_id": "osm-way-86112669", "surface": "Bergstation des Wettersteinliftes"}
+{"entry_id": "R378", "poi_id": "osm-node-256042768", "surface": "Schneefernerkopfes"}
+{"entry_id": "R378", "poi_id": "osm-node-3543039598", "surface": "Wettersteinlift"}
+{"entry_id": "R378", "poi_id": "osm-node-240100634", "surface": "Ehrwald"}
+{"entry_id": "R379", "poi_id": "osm-node-240100634", "surface": "Ehrwald"}
+{"entry_id": "R379", "poi_id": "osm-node-4938335786", "surface": "Schneefernerscharte"}
+{"entry_id": "R379", "poi_id": "osm-way-1383342753", "surface": "Ehrwalder Köpfen"}
+{"entry_id": "R379", "poi_id": "osm-way-124074836", "surface": "Wiener-Neustädter Hütte"}
+{"entry_id": "R380", "poi_id": "osm-node-240100634", "surface": "Ehrwald"}
+{"entry_id": "R390", "poi_id": "osm-node-256042768", "surface": "Schneefernerkopf"}
+{"entry_id": "R391", "poi_id": "osm-node-6550931823", "surface": "Nördl. Wetterspitze"}
+{"entry_id": "R391", "poi_id": "osm-way-200283292", "surface": "Schneeferner"}
+{"entry_id": "R391", "poi_id": "osm-node-256042768", "surface": "Schneefernerkopfes"}
+{"entry_id": "R392", "poi_id": "osm-node-256042768", "surface": "Schneefernerkopfes"}
+{"entry_id": "R392", "poi_id": "osm-node-6550931823", "surface": "Nördlichen Wetterspitze"}
+{"entry_id": "R393", "poi_id": "osm-node-12817211594", "surface": "Östl. Wetterspitze"}
+{"entry_id": "R393", "poi_id": "osm-way-200283292", "surface": "Schneeferner"}
+{"entry_id": "R394", "poi_id": "osm-node-240100634", "surface": "Ehrwald"}
+{"entry_id": "R395", "poi_id": "osm-way-237035038", "surface": "Ehrwalder Alm"}
+{"entry_id": "R4", "poi_id": "osm-node-429289574", "surface": "Kaltenbrunn"}
+{"entry_id": "R4", "poi_id": "osm-node-1685815045", "surface": "Klais"}
+{"entry_id": "R4", "poi_id": "osm-way-36908251", "surface": "Wagenbrüchsee"}
+{"entry_id": "R40", "poi_id": "osm-node-357482706", "surface": "Höllentaleingangshütte, 1045 m"}
+{"entry_id": "R40", "poi_id": "osm-way-223409147", "surface": "Höllentalklamm"}
+{"entry_id": "R400", "poi_id": "osm-node-983927681", "surface": "Wetterwandeck, 2699 m"}
+{"entry_id": "R400", "poi_id": "osm-way-200283292", "surface": "Schneeferners"}
+{"entry_id": "R400", "poi_id": "osm-way-237035038", "surface": "Ehrwalder Alm"}
+{"entry_id": "R400", "poi_id": "osm-node-5928695276", "surface": "Westl. Plattspitze"}
+{"entry_id": "R401", "poi_id": "osm-node-256042768", "surface": "Schneefernerkopf"}
+{"entry_id": "R401", "poi_id": "osm-node-12817211594", "surface": "Wetterspitzen"}
+{"entry_id": "R401", "poi_id": "osm-node-983927681", "surface": "Wetterwandecks"}
+{"entry_id": "R402", "poi_id": "osm-node-476498599", "surface": "Knorrhütte"}
+{"entry_id": "R402", "poi_id": "osm-node-5928695276", "surface": "Plattspitze"}
+{"entry_id": "R402", "poi_id": "osm-node-983927681", "surface": "Wetterwandecks"}
+{"entry_id": "R403", "poi_id": "osm-node-5928695276", "surface": "Plattspitze"}
+{"entry_id": "R404", "poi_id": "osm-node-983927681", "surface": "Wetterwandecks"}
+{"entry_id": "R410", "poi_id": "osm-node-5928695276", "surface": "Westl. Plattspitze, 2678 m"}
+{"entry_id": "R411", "poi_id": "osm-way-893418051", "surface": "Brunntales"}
+{"entry_id": "R411", "poi_id": "osm-node-5928695276", "surface": "Westl. Plattspitze"}
+{"entry_id": "R412", "poi_id": "osm-node-508530564", "surface": "Östl. Plattspitze"}
+{"entry_id": "R413", "poi_id": "osm-way-237035038", "surface": "Ehrwalder Alm"}
+{"entry_id": "R413", "poi_id": "osm-node-2700114094", "surface": "Issentalköpfl"}
+{"entry_id": "R414", "poi_id": "osm-way-237035038", "surface": "Ehrwalder Alm"}
+{"entry_id": "R414", "poi_id": "osm-node-2700114094", "surface": "Issentalköpfl"}
+{"entry_id": "R415", "poi_id": "osm-node-5928695276", "surface": "westl. Plattspitze"}
+{"entry_id": "R415", "poi_id": "osm-way-237035038", "surface": "Ehrwalder Alm"}
+{"entry_id": "R42", "poi_id": "osm-way-370669072", "surface": "Höllentalangerhütte, 1381 m"}
+{"entry_id": "R42", "poi_id": "osm-node-4242602820", "surface": "Höllentalanger"}
+{"entry_id": "R42", "poi_id": "osm-way-54681051", "surface": "Höllentalferner"}
+{"entry_id": "R42", "poi_id": "osm-node-27384190", "surface": "Zugspitze"}
+{"entry_id": "R42", "poi_id": "osm-node-1833449075", "surface": "Hochblassen"}
+{"entry_id": "R42", "poi_id": "osm-node-259486622", "surface": "Alpspitze"}
+{"entry_id": "R42", "poi_id": "osm-node-2441923393", "surface": "Höllentorkopf"}
+{"entry_id": "R420", "poi_id": "osm-node-508530564", "surface": "Östl. Plattspitze, 2679 m"}
+{"entry_id": "R421", "poi_id": "osm-node-476498599", "surface": "Knorrhütte"}
+{"entry_id": "R421", "poi_id": "osm-node-4218227955", "surface": "Westl. Gatterlkopf"}
+{"entry_id": "R421", "poi_id": "osm-node-508530564", "surface": "Plattspitze"}
+{"entry_id": "R422A", "poi_id": "osm-node-508530564", "surface": "Östlicher Plattspitze"}
+{"entry_id": "R422A", "poi_id": "osm-node-323258238", "surface": "Mittlerer Plattspitze"}
+{"entry_id": "R423", "poi_id": "osm-way-237035038", "surface": "Ehrwalder Alm"}
+{"entry_id": "R423", "poi_id": "osm-node-2700114094", "surface": "Issentalköpfel"}
+{"entry_id": "R423", "poi_id": "osm-node-4218227955", "surface": "westl. Gatterlkopf"}
+{"entry_id": "R423", "poi_id": "osm-node-508530564", "surface": "Plattspitze"}
+{"entry_id": "R424", "poi_id": "osm-node-476498599", "surface": "Knorrhütte"}
+{"entry_id": "R424", "poi_id": "osm-node-508530564", "surface": "Östl. Plattspitze"}
+{"entry_id": "R425", "poi_id": "osm-way-925622577", "surface": "Reintal"}
+{"entry_id": "R43", "poi_id": "osm-way-223409147", "surface": "Höllentalklamm"}
+{"entry_id": "R43", "poi_id": "osm-node-357482706", "surface": "Höllentaleingangshütte"}
+{"entry_id": "R43", "poi_id": "osm-node-4242602820", "surface": "Höllentalanger"}
+{"entry_id": "R431", "poi_id": "osm-node-4218227956", "surface": "Östl. (Vorderer) Gatterlkopf, 2476 m"}
+{"entry_id": "R432", "poi_id": "osm-node-286574960", "surface": "Gatterl"}
+{"entry_id": "R432", "poi_id": "osm-node-2510073225", "surface": "Feldernjöchel"}
+{"entry_id": "R432", "poi_id": "osm-node-4218227956", "surface": "Östl. Gatterlkopf"}
+{"entry_id": "R434", "poi_id": "osm-node-4218227955", "surface": "Westl. Gatterlkopf"}
+{"entry_id": "R434", "poi_id": "osm-node-508530564", "surface": "Östlichen Plattspitze"}
+{"entry_id": "R445", "poi_id": "osm-node-4218227955", "surface": "Westlicher (Hinterer) Gatterlkopf, 2490 m"}
+{"entry_id": "R446", "poi_id": "osm-node-4218227955", "surface": "Westl. Gatterlkopfes"}
+{"entry_id": "R450", "poi_id": "osm-node-508489623", "surface": "Große Riffelwandspitze, 2626 m"}
+{"entry_id": "R450", "poi_id": "osm-node-27384190", "surface": "Zugspitze"}
+{"entry_id": "R452", "poi_id": "osm-node-508489627", "surface": "Kleinen Riffelwandspitze"}
+{"entry_id": "R452", "poi_id": "osm-node-508489623", "surface": "Großer Riffelwandspitze"}
+{"entry_id": "R453", "poi_id": "osm-node-508489623", "surface": "Großen Riffelwandspitze"}
+{"entry_id": "R453", "poi_id": "osm-node-508489627", "surface": "Kleine Riffelwandspitze"}
+{"entry_id": "R453", "poi_id": "osm-relation-163453", "surface": "Eibsee"}
+{"entry_id": "R454", "poi_id": "osm-node-508489623", "surface": "Großen Riffelwandspitze"}
+{"entry_id": "R454", "poi_id": "osm-node-508489627", "surface": "Kleinen Riffelwandspitze"}
+{"entry_id": "R455", "poi_id": "osm-node-7546679749", "surface": "Riffelscharte"}
+{"entry_id": "R455", "poi_id": "osm-node-508489623", "surface": "Großen"}
+{"entry_id": "R455", "poi_id": "osm-node-508489627", "surface": "Kleinen Riffelwandspitze"}
+{"entry_id": "R456", "poi_id": "osm-way-807024912", "surface": "Riffelwandkamm"}
+{"entry_id": "R456", "poi_id": "osm-way-62033264", "surface": "Riffelschartenweg"}
+{"entry_id": "R456", "poi_id": "osm-node-508489627", "surface": "Kleinen Riffelwandspitze"}
+{"entry_id": "R456", "poi_id": "osm-node-508489623", "surface": "Großer Riffelwandspitze"}
+{"entry_id": "R460", "poi_id": "osm-node-508489627", "surface": "Kleine Riffelwandspitze, 2536 m"}
+{"entry_id": "R461", "poi_id": "osm-node-7546679749", "surface": "Riffelscharte"}
+{"entry_id": "R461", "poi_id": "osm-node-508489631", "surface": "Riffeltorkopfes"}
+{"entry_id": "R462", "poi_id": "osm-node-508489627", "surface": "Kleiner Riffelwandspitze"}
+{"entry_id": "R462", "poi_id": "osm-way-370669072", "surface": "Höllentalangerhütte"}
+{"entry_id": "R463", "poi_id": "osm-node-508489623", "surface": "Große Riffelwand"}
+{"entry_id": "R463", "poi_id": "osm-node-508489627", "surface": "Kleiner Riffelwandspitze"}
+{"entry_id": "R464", "poi_id": "osm-node-508489627", "surface": "Kleinen Riffelwandspitze"}
+{"entry_id": "R464", "poi_id": "osm-way-62033264", "surface": "Riffelschartenweg"}
+{"entry_id": "R464", "poi_id": "osm-node-7546679749", "surface": "Riffelscharte"}
+{"entry_id": "R465", "poi_id": "osm-node-508489627", "surface": "kleinen Riffelwandspitze"}
+{"entry_id": "R465", "poi_id": "osm-node-508489631", "surface": "Riffeltorkopfes"}
+{"entry_id": "R465", "poi_id": "osm-way-62033264", "surface": "Riffelschartenweg"}
+{"entry_id": "R465", "poi_id": "osm-node-7546679749", "surface": "Riffelscharte"}
+{"entry_id": "R470", "poi_id": "osm-node-508489627", "surface": "Kleinen Riffelwandspitze"}
+{"entry_id": "R470", "poi_id": "osm-node-12817320080", "surface": "Riffelkar"}
+{"entry_id": "R470", "poi_id": "osm-way-54681051", "surface": "-ferner"}
+{"entry_id": "R470", "poi_id": "osm-node-4242602820", "surface": "Höllentalanger"}
+{"entry_id": "R470", "poi_id": "osm-node-9549285147", "surface": "„Brett\""}
+{"entry_id": "R471", "poi_id": "osm-node-7546679749", "surface": "Riffelscharte"}
+{"entry_id": "R471", "poi_id": "osm-node-12817320080", "surface": "Riffelkar"}
+{"entry_id": "R471", "poi_id": "osm-node-508489627", "surface": "Kleine Riffelwandspitze"}
+{"entry_id": "R471", "poi_id": "osm-node-508489631", "surface": "Riffeltorkopfes"}
+{"entry_id": "R472", "poi_id": "osm-way-370669072", "surface": "Höllentalangerhütte"}
+{"entry_id": "R472", "poi_id": "osm-node-9549285147", "surface": "„Brett\""}
+{"entry_id": "R472", "poi_id": "osm-node-12817320080", "surface": "Riffelkar"}
+{"entry_id": "R472", "poi_id": "osm-way-62033264", "surface": "Riffelschartenweg"}
+{"entry_id": "R473", "poi_id": "osm-node-12817320080", "surface": "Riffelkar"}
+{"entry_id": "R477", "poi_id": "osm-way-370669072", "surface": "Höllentalangerhütte"}
+{"entry_id": "R478", "poi_id": "osm-way-370669072", "surface": "Höllentalangerhütte"}
+{"entry_id": "R480", "poi_id": "osm-way-370669072", "surface": "Höllentalangerhütte"}
+{"entry_id": "R480", "poi_id": "osm-node-12817320080", "surface": "Riffelkar"}
+{"entry_id": "R490", "poi_id": "osm-node-508489631", "surface": "Riffeltorkopf, 2230 m"}
+{"entry_id": "R490", "poi_id": "osm-node-7546679749", "surface": "Riffelscharte"}
+{"entry_id": "R496", "poi_id": "osm-relation-163453", "surface": "Eibsee"}
+{"entry_id": "R496", "poi_id": "osm-way-62033264", "surface": "Riffelschartenweg"}
+{"entry_id": "R496", "poi_id": "osm-node-7546679749", "surface": "Riffelscharte"}
+{"entry_id": "R499", "poi_id": "osm-way-807024911", "surface": "Waxensteinkammes"}
+{"entry_id": "R499", "poi_id": "osm-node-7546679749", "surface": "Riffelscharte"}
+{"entry_id": "R499", "poi_id": "osm-node-508474978", "surface": "Kleinen Waxenstein"}
+{"entry_id": "R499", "poi_id": "osm-way-370669072", "surface": "Höllentalhütte"}
+{"entry_id": "R499", "poi_id": "osm-node-773900398", "surface": "Manndl"}
+{"entry_id": "R5", "poi_id": "osm-node-429289574", "surface": "Kaltenbrunn, 855 m"}
+{"entry_id": "R5", "poi_id": "osm-node-7839987372", "surface": "Partenkirchen"}
+{"entry_id": "R5", "poi_id": "osm-node-1437394390", "surface": "Wamberg"}
+{"entry_id": "R50", "poi_id": "osm-way-26417824", "surface": "Stangensteig"}
+{"entry_id": "R50", "poi_id": "osm-way-370669072", "surface": "Höllentalangerhütte"}
+{"entry_id": "R500", "poi_id": "osm-node-508489606", "surface": "Südliche Riffelspitze, 2263 m"}
+{"entry_id": "R501", "poi_id": "osm-node-7546679749", "surface": "Riffelscharte"}
+{"entry_id": "R502", "poi_id": "osm-node-508489594", "surface": "Nördlichen Riffelspitze"}
+{"entry_id": "R510", "poi_id": "osm-node-508489594", "surface": "Nördliche Riffelspitze, 2242 m"}
+{"entry_id": "R511A", "poi_id": "osm-way-70849281", "surface": "Schafsteig"}
+{"entry_id": "R511A", "poi_id": "osm-node-7546679749", "surface": "Riffelscharte"}
+{"entry_id": "R512A", "poi_id": "osm-node-12817321077", "surface": "Schönanger"}
+{"entry_id": "R512A", "poi_id": "osm-relation-163453", "surface": "Eibsee"}
+{"entry_id": "R512A", "poi_id": "osm-way-70849281", "surface": "Schafsteig"}
+{"entry_id": "R513", "poi_id": "osm-node-508489594", "surface": "Nördl. Riffelspitze"}
+{"entry_id": "R513", "poi_id": "osm-way-62033264", "surface": "Riffelschartenweg"}
+{"entry_id": "R520", "poi_id": "osm-node-773900448", "surface": "Schönangerspitze, 2273 m"}
+{"entry_id": "R521", "poi_id": "osm-way-70849281", "surface": "Schafsteig"}
+{"entry_id": "R521", "poi_id": "osm-node-12817321077", "surface": "Schönangers"}
+{"entry_id": "R522", "poi_id": "osm-way-70849281", "surface": "Schafsteig"}
+{"entry_id": "R522", "poi_id": "osm-node-13999881946", "surface": "Schöneckspitze"}
+{"entry_id": "R523", "poi_id": "osm-node-13999881946", "surface": "Schöneckspitze"}
+{"entry_id": "R524", "poi_id": "osm-node-773900419", "surface": "Bärnheimatkopf"}
+{"entry_id": "R524", "poi_id": "osm-node-773900448", "surface": "Schönangerspitze"}
+{"entry_id": "R526", "poi_id": "osm-node-773900448", "surface": "Schönangerspitze"}
+{"entry_id": "R527", "poi_id": "osm-node-773900448", "surface": "Schönangerspitze"}
+{"entry_id": "R529", "poi_id": "osm-relation-163453", "surface": "Eibsee"}
+{"entry_id": "R540", "poi_id": "osm-node-13999881946", "surface": "Schöneckspitze, 2258 m"}
+{"entry_id": "R541", "poi_id": "osm-way-70849281", "surface": "Schafsteig"}
+{"entry_id": "R541", "poi_id": "osm-way-370669072", "surface": "Höllentalangerhütte"}
+{"entry_id": "R542", "poi_id": "osm-node-773900419", "surface": "Bärnheimatkopf"}
+{"entry_id": "R542", "poi_id": "osm-node-13999881946", "surface": "Schöneckspitze"}
+{"entry_id": "R542", "poi_id": "osm-node-773900448", "surface": "Schönangerspitze"}
+{"entry_id": "R542", "poi_id": "osm-node-508474984", "surface": "Hinteren Waxensteins"}
+{"entry_id": "R543", "poi_id": "osm-node-773900419", "surface": "Bärnheimatkopf"}
+{"entry_id": "R543", "poi_id": "osm-node-13999881946", "surface": "Schöneckspitze"}
+{"entry_id": "R55", "poi_id": "osm-node-4547463685", "surface": "Kreuzeck"}
+{"entry_id": "R55", "poi_id": "osm-way-36384374", "surface": "Bergstation der Kreuzeckbahn"}
+{"entry_id": "R55", "poi_id": "osm-node-259486475", "surface": "Hupfleitenjoch"}
+{"entry_id": "R55", "poi_id": "osm-way-36544330", "surface": "Bockhütte"}
+{"entry_id": "R55", "poi_id": "osm-way-173682244", "surface": "Reintalangerhütte"}
+{"entry_id": "R55", "poi_id": "osm-way-23941523", "surface": "Schützensteig"}
+{"entry_id": "R55", "poi_id": "osm-way-23925293", "surface": "Rinderweg"}
+{"entry_id": "R55", "poi_id": "osm-node-283065713", "surface": "Grieskarscharte"}
+{"entry_id": "R55", "poi_id": "osm-way-431068238", "surface": "Mathaisenkar"}
+{"entry_id": "R550", "poi_id": "osm-node-508474984", "surface": "Hinterer Waxenstein"}
+{"entry_id": "R550", "poi_id": "osm-node-13999881946", "surface": "Schöneckspitze"}
+{"entry_id": "R550", "poi_id": "osm-node-508474971", "surface": "Großem Waxenstein"}
+{"entry_id": "R552", "poi_id": "osm-way-370669072", "surface": "Höllentalangerhütte"}
+{"entry_id": "R552", "poi_id": "osm-way-70849281", "surface": "Schafsteig"}
+{"entry_id": "R553", "poi_id": "osm-way-70849281", "surface": "Schafsteig"}
+{"entry_id": "R56", "poi_id": "osm-node-27383264", "surface": "Garmisch-Partenkirchen"}
+{"entry_id": "R56", "poi_id": "osm-way-36555424", "surface": "Rießerkopfhütte (Tonihütte)"}
+{"entry_id": "R56", "poi_id": "osm-relation-2282118", "surface": "Rießersee"}
+{"entry_id": "R56", "poi_id": "osm-way-36781976", "surface": "Talstation der Kreuzeckbahn"}
+{"entry_id": "R56", "poi_id": "osm-way-217504824", "surface": "Trögelhütte"}
+{"entry_id": "R56", "poi_id": "osm-way-36384372", "surface": "Kreuzalm"}
+{"entry_id": "R56", "poi_id": "osm-way-62091442", "surface": "Kreuzjochhaus"}
+{"entry_id": "R56", "poi_id": "osm-way-360293635", "surface": "Kreuzeckhaus"}
+{"entry_id": "R560", "poi_id": "osm-node-508474971", "surface": "Großer Waxenstein, 2277 m"}
+{"entry_id": "R560", "poi_id": "osm-way-807024911", "surface": "Waxensteinkammes"}
+{"entry_id": "R561", "poi_id": "osm-way-370669072", "surface": "Höllentalangerhütte"}
+{"entry_id": "R561", "poi_id": "osm-node-508474971", "surface": "Großen Waxensteins"}
+{"entry_id": "R561", "poi_id": "osm-way-70849281", "surface": "Schafsteig"}
+{"entry_id": "R562", "poi_id": "osm-node-1621651564", "surface": "Zwölferkopf"}
+{"entry_id": "R563", "poi_id": "osm-way-223399969", "surface": "Mittagsschlucht"}
+{"entry_id": "R563", "poi_id": "osm-node-1621651564", "surface": "Zwölferkopf"}
+{"entry_id": "R564", "poi_id": "osm-node-508474971", "surface": "Großen Waxensteins"}
+{"entry_id": "R566", "poi_id": "osm-node-508474971", "surface": "Großen Waxensteins"}
+{"entry_id": "R567", "poi_id": "osm-node-508474971", "surface": "Großen Waxensteins"}
+{"entry_id": "R57", "poi_id": "osm-way-25007633", "surface": "Klammweg"}
+{"entry_id": "R57", "poi_id": "osm-node-774051577", "surface": "Waldecks"}
+{"entry_id": "R57", "poi_id": "osm-way-217504824", "surface": "Trögelhütte"}
+{"entry_id": "R57", "poi_id": "osm-node-4547463685", "surface": "Kreuzeck"}
+{"entry_id": "R57", "poi_id": "osm-node-2526645264", "surface": "Henneneck"}
+{"entry_id": "R57", "poi_id": "osm-way-360293635", "surface": "Kreuzeckhauses"}
+{"entry_id": "R570", "poi_id": "osm-node-508474971", "surface": "Gr. Waxensteins"}
+{"entry_id": "R571", "poi_id": "osm-way-220074651", "surface": "Waxensteinhüttel"}
+{"entry_id": "R58", "poi_id": "osm-way-512562017", "surface": "Bodenlahntal"}
+{"entry_id": "R58", "poi_id": "osm-node-27383264", "surface": "Garmisch-Partenkirchen"}
+{"entry_id": "R58", "poi_id": "osm-way-36365521", "surface": "Hohen Weg"}
+{"entry_id": "R58", "poi_id": "osm-node-4547463685", "surface": "Kreuzecks"}
+{"entry_id": "R580", "poi_id": "osm-node-1621651564", "surface": "Zwölferkopf, 2232 m"}
+{"entry_id": "R580", "poi_id": "osm-node-508474971", "surface": "Großem Waxenstein"}
+{"entry_id": "R580", "poi_id": "osm-node-508474978", "surface": "Kleinem Waxenstein"}
+{"entry_id": "R580", "poi_id": "osm-node-7839987371", "surface": "Garmisch"}
+{"entry_id": "R582", "poi_id": "osm-node-508474971", "surface": "Großen Waxenstein"}
+{"entry_id": "R583", "poi_id": "osm-way-223399969", "surface": "Mittagsschlucht"}
+{"entry_id": "R584", "poi_id": "osm-way-223399969", "surface": "Mittagsschlucht"}
+{"entry_id": "R585", "poi_id": "osm-node-508474971", "surface": "Großen Waxenstein"}
+{"entry_id": "R585", "poi_id": "osm-node-1621651564", "surface": "Zwölferkopf"}
+{"entry_id": "R586", "poi_id": "osm-node-508474971", "surface": "Großen Waxenstein"}
+{"entry_id": "R586", "poi_id": "osm-node-1621651564", "surface": "Zwölfer-"}
+{"entry_id": "R587", "poi_id": "osm-node-508474971", "surface": "Großen Waxenstein"}
+{"entry_id": "R59", "poi_id": "osm-way-217504824", "surface": "Trögelhütte"}
+{"entry_id": "R59", "poi_id": "osm-node-4547463685", "surface": "Kreuzeck"}
+{"entry_id": "R590", "poi_id": "osm-node-508474978", "surface": "Kleiner Waxenstein, 2163 m"}
+{"entry_id": "R590", "poi_id": "osm-way-807024911", "surface": "Waxensteinkammes"}
+{"entry_id": "R590", "poi_id": "osm-node-27383264", "surface": "Garmisch-Partenkirchen"}
+{"entry_id": "R591", "poi_id": "osm-way-223399969", "surface": "Mittagsschlucht"}
+{"entry_id": "R591", "poi_id": "osm-node-773900398", "surface": "Manndl"}
+{"entry_id": "R591", "poi_id": "osm-node-508474978", "surface": "Kleinem Waxenstein"}
+{"entry_id": "R592", "poi_id": "osm-way-26417824", "surface": "Stangensteig"}
+{"entry_id": "R592", "poi_id": "osm-node-773900398", "surface": "Manndl"}
+{"entry_id": "R593", "poi_id": "osm-node-773900398", "surface": "Manndl"}
+{"entry_id": "R594", "poi_id": "osm-node-508474978", "surface": "Kleinen Waxensteins"}
+{"entry_id": "R595", "poi_id": "osm-way-223399969", "surface": "Mittagsschlucht"}
+{"entry_id": "R6", "poi_id": "osm-node-1437394390", "surface": "Wamberg, 996 m"}
+{"entry_id": "R6", "poi_id": "osm-node-8686172044", "surface": "Kainzenbad"}
+{"entry_id": "R6", "poi_id": "osm-node-429289574", "surface": "Station Kaltenbrunn"}
+{"entry_id": "R6", "poi_id": "osm-node-7839987372", "surface": "Partenkirchen"}
+{"entry_id": "R600", "poi_id": "osm-node-773900419", "surface": "Bärnheimatkopf, 1600 m"}
+{"entry_id": "R600", "poi_id": "osm-way-807024911", "surface": "Waxensteinkamm"}
+{"entry_id": "R600", "poi_id": "osm-node-508474984", "surface": "Hinteren Waxenstein"}
+{"entry_id": "R600", "poi_id": "osm-node-13999881946", "surface": "Schöneckspitze"}
+{"entry_id": "R600", "poi_id": "osm-node-773900448", "surface": "Schönangerspitze"}
+{"entry_id": "R605", "poi_id": "osm-way-220074651", "surface": "Waxensteinhütte"}
+{"entry_id": "R605", "poi_id": "osm-relation-163453", "surface": "Eibsee"}
+{"entry_id": "R611", "poi_id": "osm-node-476498599", "surface": "Knorrhütte"}
+{"entry_id": "R611", "poi_id": "osm-node-508503692", "surface": "Brunntalkopfes"}
+{"entry_id": "R611", "poi_id": "osm-way-123724123", "surface": "Jubiläumsweg"}
+{"entry_id": "R611", "poi_id": "osm-node-508503691", "surface": "Inneren Höllentalspitze"}
+{"entry_id": "R612", "poi_id": "osm-way-893418052", "surface": "Weißen Tal"}
+{"entry_id": "R612", "poi_id": "osm-node-476498599", "surface": "Knorrhütte"}
+{"entry_id": "R613", "poi_id": "osm-node-508503691", "surface": "Innere Höllentalspitze"}
+{"entry_id": "R615", "poi_id": "osm-way-54681051", "surface": "Höllentalferner"}
+{"entry_id": "R62", "poi_id": "osm-way-62091442", "surface": "Kreuzjochhaus, 1600 m"}
+{"entry_id": "R62", "poi_id": "osm-node-6581492738", "surface": "Kreuzjochs"}
+{"entry_id": "R62", "poi_id": "osm-way-360293635", "surface": "Kreuzeckhaus"}
+{"entry_id": "R620", "poi_id": "osm-node-508503692", "surface": "Brunntalkopf, 2265 m"}
+{"entry_id": "R620", "poi_id": "osm-node-508503691", "surface": "Inneren Höllentalspitze"}
+{"entry_id": "R620", "poi_id": "osm-node-476498599", "surface": "Knorrhütte"}
+{"entry_id": "R625", "poi_id": "osm-node-508503689", "surface": "Mittlere Höllentalspitze, 2740 m"}
+{"entry_id": "R625", "poi_id": "osm-node-508503691", "surface": "Inneren Höllentalspitze"}
+{"entry_id": "R626", "poi_id": "osm-node-476498599", "surface": "Knorrhütte"}
+{"entry_id": "R626", "poi_id": "osm-way-173682244", "surface": "Reintalangerhütte"}
+{"entry_id": "R626", "poi_id": "osm-node-508503692", "surface": "Brunntalkopfes"}
+{"entry_id": "R627", "poi_id": "osm-node-476498599", "surface": "Knorrhütte"}
+{"entry_id": "R628", "poi_id": "osm-node-959664581", "surface": "Mitterkars"}
+{"entry_id": "R628", "poi_id": "osm-way-431068238", "surface": "Mathaisenkar"}
+{"entry_id": "R628", "poi_id": "osm-way-370669072", "surface": "Höllentalangerhütte"}
+{"entry_id": "R628", "poi_id": "osm-node-508503689", "surface": "Mittlerer Höllentalspitze"}
+{"entry_id": "R628", "poi_id": "osm-node-508503693", "surface": "Äußerer Höllentalspitze"}
+{"entry_id": "R628A", "poi_id": "osm-node-959664581", "surface": "Mitterkar"}
+{"entry_id": "R629", "poi_id": "osm-way-370669072", "surface": "Höllentalangerhütte"}
+{"entry_id": "R629", "poi_id": "osm-node-508503689", "surface": "Mittlere Höllentalspitze"}
+{"entry_id": "R63", "poi_id": "osm-way-36384372", "surface": "Kreuzalm, 1600 m"}
+{"entry_id": "R63", "poi_id": "osm-way-36384374", "surface": "Bergstation der Kreuzeckbahn"}
+{"entry_id": "R63", "poi_id": "osm-node-27383264", "surface": "Garmisch-Partenkirchen"}
+{"entry_id": "R63", "poi_id": "osm-way-360293635", "surface": "Kreuzeckhaus"}
+{"entry_id": "R64", "poi_id": "osm-way-62080320", "surface": "Hochalm, 1705 m"}
+{"entry_id": "R64", "poi_id": "osm-node-259486622", "surface": "Alpspitze"}
+{"entry_id": "R64", "poi_id": "osm-way-360293635", "surface": "Kreuzeckhaus"}
+{"entry_id": "R640", "poi_id": "osm-node-508503693", "surface": "Äußere Höllentalspitze, 2716 m"}
+{"entry_id": "R640", "poi_id": "osm-way-370669072", "surface": "Höllentalhütte"}
+{"entry_id": "R640", "poi_id": "osm-way-431068238", "surface": "Mathaisenkar"}
+{"entry_id": "R640", "poi_id": "osm-node-476498599", "surface": "Knorrhütte"}
+{"entry_id": "R640", "poi_id": "osm-way-925622577", "surface": "Reintal"}
+{"entry_id": "R641", "poi_id": "osm-node-476498599", "surface": "Knorrhütte"}
+{"entry_id": "R641", "poi_id": "osm-node-1833449069", "surface": "großen Kirchturmes"}
+{"entry_id": "R641", "poi_id": "osm-node-508503693", "surface": "Äußeren Höllentalspitze"}
+{"entry_id": "R642", "poi_id": "osm-way-173682244", "surface": "Reintalangerhütte"}
+{"entry_id": "R642", "poi_id": "osm-node-508503693", "surface": "Höllentalspitze"}
+{"entry_id": "R643", "poi_id": "osm-way-431068238", "surface": "Mathaisenkar"}
+{"entry_id": "R643", "poi_id": "osm-way-370669072", "surface": "Höllentalangerhütte"}
+{"entry_id": "R643", "poi_id": "osm-node-508503693", "surface": "Äußeren Höllentalspitze"}
+{"entry_id": "R65", "poi_id": "osm-way-36545913", "surface": "Stuibenhütte, 1620 m"}
+{"entry_id": "R65", "poi_id": "osm-node-27383264", "surface": "Garmisch-Partenkirchen"}
+{"entry_id": "R65", "poi_id": "osm-node-4547463685", "surface": "Kreuzeck"}
+{"entry_id": "R651", "poi_id": "osm-node-1833449069", "surface": "Großer Kirchturm, 2514 m"}
+{"entry_id": "R652", "poi_id": "osm-node-476498599", "surface": "Knorrhütte"}
+{"entry_id": "R652", "poi_id": "osm-node-1833449069", "surface": "Großen Kirchturms"}
+{"entry_id": "R653", "poi_id": "osm-way-173682244", "surface": "Reintalangerhütte"}
+{"entry_id": "R653", "poi_id": "osm-way-23941523", "surface": "Schützensteig"}
+{"entry_id": "R653", "poi_id": "osm-node-4938279910", "surface": "Kl. Kirchturm"}
+{"entry_id": "R654", "poi_id": "osm-way-173682244", "surface": "Reintalangerhütte"}
+{"entry_id": "R66", "poi_id": "osm-way-217504824", "surface": "Trögelhütte (Forstamtshütte), 1489 m"}
+{"entry_id": "R66", "poi_id": "osm-way-36555424", "surface": "Rießerkopfhütte"}
+{"entry_id": "R66", "poi_id": "osm-node-4547463685", "surface": "Kreuzeck"}
+{"entry_id": "R660", "poi_id": "osm-node-4938279910", "surface": "Kleiner Kirchturm, 2368 m"}
+{"entry_id": "R660", "poi_id": "osm-node-1833449069", "surface": "Großen Kirchturmes"}
+{"entry_id": "R661", "poi_id": "osm-node-476498599", "surface": "Knorrhütte"}
+{"entry_id": "R664", "poi_id": "osm-node-9459163088", "surface": "Anger"}
+{"entry_id": "R669", "poi_id": "osm-node-508503694", "surface": "Vollkarspitze, 2638 m"}
+{"entry_id": "R669", "poi_id": "osm-way-130395806", "surface": "Jubiläumsgrat"}
+{"entry_id": "R67", "poi_id": "osm-way-36555424", "surface": "Rießerkopfhütte, etwa 1130 m"}
+{"entry_id": "R67", "poi_id": "osm-node-797461041", "surface": "Rießerkopfes"}
+{"entry_id": "R67", "poi_id": "osm-node-7839987371", "surface": "Garmisch"}
+{"entry_id": "R67", "poi_id": "osm-relation-2282118", "surface": "Rießersee"}
+{"entry_id": "R67", "poi_id": "osm-node-4547463685", "surface": "Kreuzeck"}
+{"entry_id": "R67", "poi_id": "osm-way-36781976", "surface": "Talstation der Kreuzeckbahn"}
+{"entry_id": "R67", "poi_id": "osm-way-26923567", "surface": "Aule-Alm"}
+{"entry_id": "R670", "poi_id": "osm-node-1833449075", "surface": "Hochblassen"}
+{"entry_id": "R670", "poi_id": "osm-node-259486622", "surface": "Alpspitze"}
+{"entry_id": "R670", "poi_id": "osm-node-476787334", "surface": "Schachen"}
+{"entry_id": "R670", "poi_id": "osm-way-41524904", "surface": "Blassengrat"}
+{"entry_id": "R670", "poi_id": "osm-node-1833449085", "surface": "Gaif"}
+{"entry_id": "R670", "poi_id": "osm-way-431068238", "surface": "Mathaisenkar"}
+{"entry_id": "R671", "poi_id": "osm-node-283065713", "surface": "Grieskarscharte"}
+{"entry_id": "R671", "poi_id": "osm-way-23939968", "surface": "Schöngänge"}
+{"entry_id": "R671", "poi_id": "osm-node-259486622", "surface": "Alpspitze"}
+{"entry_id": "R671", "poi_id": "osm-way-26761684", "surface": "Stuibensees"}
+{"entry_id": "R671", "poi_id": "osm-way-23940783", "surface": "Bernadeinweg"}
+{"entry_id": "R671", "poi_id": "osm-node-4547463685", "surface": "Kreuzeck"}
+{"entry_id": "R671", "poi_id": "osm-node-1833449075", "surface": "Hochblassen"}
+{"entry_id": "R671", "poi_id": "osm-node-508503694", "surface": "Vollkarspitze"}
+{"entry_id": "R671", "poi_id": "osm-way-123724123", "surface": "Jubiläumsweg"}
+{"entry_id": "R672", "poi_id": "osm-node-283065713", "surface": "Grieskarscharte"}
+{"entry_id": "R673", "poi_id": "osm-node-283065713", "surface": "Grieskarscharte"}
+{"entry_id": "R674", "poi_id": "osm-way-41524904", "surface": "Blassengrat"}
+{"entry_id": "R674", "poi_id": "osm-node-1833449085", "surface": "Hohen Gaif"}
+{"entry_id": "R674", "poi_id": "osm-node-508509265", "surface": "Blassenspitze"}
+{"entry_id": "R674", "poi_id": "osm-node-1833449075", "surface": "Hochblassen"}
+{"entry_id": "R676", "poi_id": "osm-way-41524904", "surface": "Blassengrat"}
+{"entry_id": "R677", "poi_id": "osm-node-1833449075", "surface": "Hochblassen"}
+{"entry_id": "R677", "poi_id": "osm-node-508503694", "surface": "Vollkarspitze"}
+{"entry_id": "R678", "poi_id": "osm-node-1833449075", "surface": "Hochblassen"}
+{"entry_id": "R679", "poi_id": "osm-node-1833449075", "surface": "Hochblassen"}
+{"entry_id": "R68", "poi_id": "osm-way-36379914", "surface": "Garmischer Haus, 1320 m"}
+{"entry_id": "R68", "poi_id": "osm-node-259486622", "surface": "Alpspitze"}
+{"entry_id": "R68", "poi_id": "osm-node-27384190", "surface": "Zugspitze"}
+{"entry_id": "R68", "poi_id": "osm-way-62093540", "surface": "Bergstation der Hausbergbahn"}
+{"entry_id": "R69", "poi_id": "osm-way-36374991", "surface": "Bayernhaus, etwa 1250 m"}
+{"entry_id": "R69", "poi_id": "osm-way-62093540", "surface": "Bergstation der Hausbergbahn"}
+{"entry_id": "R690", "poi_id": "osm-node-508509265", "surface": "Blassenspitze, etwa 2400 m"}
+{"entry_id": "R690", "poi_id": "osm-way-41524904", "surface": "Blassengrat"}
+{"entry_id": "R690", "poi_id": "osm-node-1833449085", "surface": "Hohem Gaif"}
+{"entry_id": "R690", "poi_id": "osm-node-1833449075", "surface": "Hochblassen"}
+{"entry_id": "R691", "poi_id": "osm-node-508509265", "surface": "Blassenspitze"}
+{"entry_id": "R692A", "poi_id": "osm-node-508509265", "surface": "Blassenspitze"}
+{"entry_id": "R693", "poi_id": "osm-way-925622577", "surface": "Reintal"}
+{"entry_id": "R693", "poi_id": "osm-way-41524904", "surface": "Blassenkammes"}
+{"entry_id": "R693", "poi_id": "osm-node-1833449075", "surface": "Hochblassen"}
+{"entry_id": "R693", "poi_id": "osm-node-508509265", "surface": "Blassenspitze"}
+{"entry_id": "R693", "poi_id": "osm-way-23941523", "surface": "Schützensteig"}
+{"entry_id": "R693", "poi_id": "osm-node-1833449085", "surface": "Hohen Gaif"}
+{"entry_id": "R694", "poi_id": "osm-way-41524904", "surface": "Blassenkamm"}
+{"entry_id": "R694", "poi_id": "osm-way-23941523", "surface": "Schützensteig"}
+{"entry_id": "R695", "poi_id": "osm-way-23941523", "surface": "Schützensteig"}
+{"entry_id": "R7", "poi_id": "osm-node-1685813026", "surface": "Elmau, 995 m"}
+{"entry_id": "R7", "poi_id": "osm-node-61080195", "surface": "Kranzberges"}
+{"entry_id": "R7", "poi_id": "osm-node-1161325579", "surface": "Wettersteinwaldes"}
+{"entry_id": "R7", "poi_id": "osm-node-472565283", "surface": "Partenkirchner Dreitorspitze"}
+{"entry_id": "R7", "poi_id": "osm-node-4051533375", "surface": "Mustersteins"}
+{"entry_id": "R7", "poi_id": "osm-way-705813007", "surface": "Wettersteingrates"}
+{"entry_id": "R7", "poi_id": "osm-node-1685815045", "surface": "Klais"}
+{"entry_id": "R7", "poi_id": "osm-node-22281426", "surface": "Mittenwald"}
+{"entry_id": "R7", "poi_id": "osm-relation-2557199", "surface": "Lauter-"}
+{"entry_id": "R7", "poi_id": "osm-way-23425364", "surface": "Ferchensee"}
+{"entry_id": "R70", "poi_id": "osm-way-62093540", "surface": "Hausbergbahn"}
+{"entry_id": "R700", "poi_id": "osm-node-1833449085", "surface": "Hoher Gaif, 2288 m"}
+{"entry_id": "R700", "poi_id": "osm-way-41524904", "surface": "Blassengrates"}
+{"entry_id": "R701", "poi_id": "osm-way-23939968", "surface": "Schöngänge"}
+{"entry_id": "R701", "poi_id": "osm-way-26761684", "surface": "Stuibensee"}
+{"entry_id": "R701", "poi_id": "osm-node-1833449085", "surface": "Gaifs"}
+{"entry_id": "R701", "poi_id": "osm-way-23940783", "surface": "Bernadeinweg"}
+{"entry_id": "R702", "poi_id": "osm-node-508503695", "surface": "Mauerscharte"}
+{"entry_id": "R702", "poi_id": "osm-way-36545913", "surface": "Stuibenhütte"}
+{"entry_id": "R702", "poi_id": "osm-way-23941523", "surface": "Schützensteig"}
+{"entry_id": "R703", "poi_id": "osm-way-36545913", "surface": "Stuibenhütte"}
+{"entry_id": "R703", "poi_id": "osm-node-4547463685", "surface": "Kreuzeck"}
+{"entry_id": "R703", "poi_id": "osm-way-23941523", "surface": "Schützensteig"}
+{"entry_id": "R703", "poi_id": "osm-node-1833449085", "surface": "Hohen Gaifs"}
+{"entry_id": "R704", "poi_id": "osm-node-1833449085", "surface": "Gaif-Südwand"}
+{"entry_id": "R705", "poi_id": "osm-way-36545913", "surface": "Stuibenhütte"}
+{"entry_id": "R705", "poi_id": "osm-node-508503695", "surface": "Mauerscharte"}
+{"entry_id": "R705", "poi_id": "osm-way-23941523", "surface": "Schützensteiges"}
+{"entry_id": "R705", "poi_id": "osm-node-1833449085", "surface": "Hohen Gaifs"}
+{"entry_id": "R71", "poi_id": "osm-node-27383264", "surface": "Garmisch-Partenkirchen"}
+{"entry_id": "R71", "poi_id": "osm-node-797515927", "surface": "Kochelberges"}
+{"entry_id": "R71", "poi_id": "osm-way-61695668", "surface": "Kochelbergalm"}
+{"entry_id": "R710", "poi_id": "osm-node-259486622", "surface": "Alpspitze, 2629 m"}
+{"entry_id": "R710", "poi_id": "osm-node-27383264", "surface": "Garmisch-Partenkirchen"}
+{"entry_id": "R710", "poi_id": "osm-way-130395806", "surface": "Jubiläumsgrat"}
+{"entry_id": "R710", "poi_id": "osm-node-27384190", "surface": "Zugspitze"}
+{"entry_id": "R710", "poi_id": "osm-node-7839987372", "surface": "Partenkirchen"}
+{"entry_id": "R710", "poi_id": "osm-node-4547463685", "surface": "Kreuzeck"}
+{"entry_id": "R710", "poi_id": "osm-node-259406948", "surface": "Osterfelderkopf"}
+{"entry_id": "R710", "poi_id": "osm-node-283065713", "surface": "Grieskarscharte"}
+{"entry_id": "R710", "poi_id": "osm-way-26761684", "surface": "Stuibensee"}
+{"entry_id": "R710", "poi_id": "osm-way-23940783", "surface": "Bernadeinweg"}
+{"entry_id": "R710", "poi_id": "osm-way-36384374", "surface": "Kreuzeckbahn"}
+{"entry_id": "R710", "poi_id": "osm-way-23925289", "surface": "Nordwandsteig"}
+{"entry_id": "R711", "poi_id": "osm-way-23939968", "surface": "Schöngänge"}
+{"entry_id": "R711", "poi_id": "osm-node-4547463685", "surface": "Kreuzeck"}
+{"entry_id": "R711", "poi_id": "osm-way-62080320", "surface": "Hochalm"}
+{"entry_id": "R711", "poi_id": "osm-node-13306536324", "surface": "Aschenköpfen"}
+{"entry_id": "R711", "poi_id": "osm-node-286790301", "surface": "Bernadeinkopfes"}
+{"entry_id": "R711", "poi_id": "osm-way-26761684", "surface": "Stuibensee"}
+{"entry_id": "R712", "poi_id": "osm-way-26761684", "surface": "Stuibensee"}
+{"entry_id": "R712", "poi_id": "osm-node-4547463685", "surface": "Kreuzeck"}
+{"entry_id": "R712", "poi_id": "osm-way-303325398", "surface": "Bernadeinjagdhütte"}
+{"entry_id": "R712", "poi_id": "osm-way-23940783", "surface": "Bernadeinweg"}
+{"entry_id": "R712", "poi_id": "osm-node-259486622", "surface": "Alpspitze"}
+{"entry_id": "R712", "poi_id": "osm-way-23939968", "surface": "Schöngänge"}
+{"entry_id": "R713", "poi_id": "osm-node-283065713", "surface": "Grieskarscharte"}
+{"entry_id": "R716", "poi_id": "osm-node-4547463685", "surface": "Kreuzeck"}
+{"entry_id": "R716", "poi_id": "osm-way-23939968", "surface": "Schöngängen"}
+{"entry_id": "R716", "poi_id": "osm-node-259406948", "surface": "Osterfelderbahn"}
+{"entry_id": "R717", "poi_id": "osm-node-259406948", "surface": "Osterfelderbahn"}
+{"entry_id": "R718", "poi_id": "osm-way-23925289", "surface": "Nordwandsteig"}
+{"entry_id": "R718", "poi_id": "osm-node-259406948", "surface": "Osterfelderkopf"}
+{"entry_id": "R718", "poi_id": "osm-node-259486622", "surface": "Alpspitze"}
+{"entry_id": "R718", "poi_id": "osm-way-23971675", "surface": "Alpspitz-Ferrata"}
+{"entry_id": "R719", "poi_id": "osm-node-259406948", "surface": "Osterfelderkopf"}
+{"entry_id": "R719", "poi_id": "osm-node-259486622", "surface": "Alpspitze"}
+{"entry_id": "R719", "poi_id": "osm-way-130395806", "surface": "Jubiläumsgrates"}
+{"entry_id": "R720", "poi_id": "osm-node-6581492738", "surface": "Kreuzjoch, 1719 m"}
+{"entry_id": "R721", "poi_id": "osm-way-62091442", "surface": "Kreuzjochhaus"}
+{"entry_id": "R721", "poi_id": "osm-way-36384372", "surface": "Kreuzalm"}
+{"entry_id": "R722", "poi_id": "osm-node-797461064", "surface": "Rauhkopf, 1621 m"}
+{"entry_id": "R722", "poi_id": "osm-node-4547463685", "surface": "Kreuzeck"}
+{"entry_id": "R723", "poi_id": "osm-way-360293635", "surface": "Kreuzeckhaus"}
+{"entry_id": "R730", "poi_id": "osm-node-2441923393", "surface": "Höllentorkopf, 2150 m"}
+{"entry_id": "R730", "poi_id": "osm-node-259486622", "surface": "Alpspitze"}
+{"entry_id": "R730", "poi_id": "osm-node-259406948", "surface": "Osterfelderkopf"}
+{"entry_id": "R730", "poi_id": "osm-node-27384190", "surface": "Zugspitze"}
+{"entry_id": "R731", "poi_id": "osm-node-4547463685", "surface": "Kreuzeck"}
+{"entry_id": "R731A", "poi_id": "osm-way-23925293", "surface": "Rinderweg"}
+{"entry_id": "R734", "poi_id": "osm-way-36384374", "surface": "Kreuzeckbahn"}
+{"entry_id": "R734", "poi_id": "osm-node-259486475", "surface": "Hupfleitenjoch"}
+{"entry_id": "R734", "poi_id": "osm-node-2441923393", "surface": "Höllentorkopf"}
+{"entry_id": "R734", "poi_id": "osm-way-370669072", "surface": "Höllentalangerhütte"}
+{"entry_id": "R738", "poi_id": "osm-node-286776086", "surface": "Rinderscharte"}
+{"entry_id": "R75", "poi_id": "osm-way-36544330", "surface": "Bockhütte, 1052 m"}
+{"entry_id": "R75", "poi_id": "osm-way-925622577", "surface": "Reintal"}
+{"entry_id": "R750", "poi_id": "osm-node-259486622", "surface": "Alpspitze-Nordwand"}
+{"entry_id": "R750", "poi_id": "osm-way-23939968", "surface": "Schöngänge"}
+{"entry_id": "R752", "poi_id": "osm-way-23939968", "surface": "Schöngängeweg"}
+{"entry_id": "R754", "poi_id": "osm-way-23939968", "surface": "Schöngänge"}
+{"entry_id": "R76", "poi_id": "osm-way-925622577", "surface": "Reintal"}
+{"entry_id": "R77", "poi_id": "osm-way-173682244", "surface": "Reintalangerhütte, 1366 m"}
+{"entry_id": "R77", "poi_id": "osm-node-323842894", "surface": "Kleinen Wanners"}
+{"entry_id": "R77", "poi_id": "osm-node-1833449075", "surface": "Hochblassen"}
+{"entry_id": "R77", "poi_id": "osm-node-27384190", "surface": "Zugspitze"}
+{"entry_id": "R770", "poi_id": "osm-node-323842894", "surface": "Kleiner Wanner, 2546 m"}
+{"entry_id": "R770", "poi_id": "osm-node-286574960", "surface": "Zugspitzgatterls"}
+{"entry_id": "R770", "poi_id": "osm-node-323717920", "surface": "Hohe Kamm, 2371 m"}
+{"entry_id": "R770", "poi_id": "osm-way-925622577", "surface": "Reintal"}
+{"entry_id": "R771", "poi_id": "osm-node-323842894", "surface": "Kleinwanner"}
+{"entry_id": "R772", "poi_id": "osm-node-286574960", "surface": "Gatterl"}
+{"entry_id": "R772", "poi_id": "osm-node-286586199", "surface": "Kothbachsattel"}
+{"entry_id": "R772", "poi_id": "osm-node-240100634", "surface": "Ehrwald"}
+{"entry_id": "R772", "poi_id": "osm-way-26931930", "surface": "Tillfußalm"}
+{"entry_id": "R772", "poi_id": "osm-node-323717920", "surface": "Hohen Kamm"}
+{"entry_id": "R772", "poi_id": "osm-node-323842894", "surface": "Kleinen Wanners"}
+{"entry_id": "R773", "poi_id": "osm-node-323842894", "surface": "Kleinen Wanners"}
+{"entry_id": "R774", "poi_id": "osm-node-323842894", "surface": "Kleinwanner"}
+{"entry_id": "R774", "poi_id": "osm-node-323717920", "surface": "Hohem Kamm"}
+{"entry_id": "R774", "poi_id": "osm-node-9459163088", "surface": "oberen Anger"}
+{"entry_id": "R776", "poi_id": "osm-way-173682244", "surface": "Reintalangerhütte"}
+{"entry_id": "R776", "poi_id": "osm-relation-1356556", "surface": "Parfunach"}
+{"entry_id": "R776A", "poi_id": "osm-node-323842894", "surface": "Kleinen Wanners"}
+{"entry_id": "R777", "poi_id": "osm-way-925622577", "surface": "Reintal"}
+{"entry_id": "R777", "poi_id": "osm-node-323842894", "surface": "Kleinen Wanners"}
+{"entry_id": "R778A", "poi_id": "osm-node-323842894", "surface": "Kleinen Wanners"}
+{"entry_id": "R78", "poi_id": "osm-way-223452455", "surface": "Partnachklamm"}
+{"entry_id": "R78", "poi_id": "osm-way-925622577", "surface": "Reintal"}
+{"entry_id": "R78", "poi_id": "osm-way-512562017", "surface": "Bodenlahn"}
+{"entry_id": "R78", "poi_id": "osm-way-36544330", "surface": "Bockhütte"}
+{"entry_id": "R78", "poi_id": "osm-relation-1356556", "surface": "Partnach"}
+{"entry_id": "R78", "poi_id": "osm-node-4944025921", "surface": "Jungfernkarkopfes"}
+{"entry_id": "R780", "poi_id": "osm-node-323717920", "surface": "Hohen Kamm"}
+{"entry_id": "R790", "poi_id": "osm-node-2061799676", "surface": "Hochwanner, 2746 m"}
+{"entry_id": "R791", "poi_id": "osm-way-124389528", "surface": "Steinernen Hüttein"}
+{"entry_id": "R791", "poi_id": "osm-way-26171773", "surface": "Südsteig"}
+{"entry_id": "R791", "poi_id": "osm-node-286593353", "surface": "Mitterjöchl"}
+{"entry_id": "R791", "poi_id": "osm-node-323842894", "surface": "Klein-"}
+{"entry_id": "R792", "poi_id": "osm-node-286586199", "surface": "Kothbachsattel"}
+{"entry_id": "R792", "poi_id": "osm-node-476498599", "surface": "Knorrhütte"}
+{"entry_id": "R792", "poi_id": "osm-node-286574960", "surface": "Gatterl"}
+{"entry_id": "R792", "poi_id": "osm-way-237035038", "surface": "Ehrwalder Alm"}
+{"entry_id": "R792", "poi_id": "osm-node-2510073225", "surface": "Feldernjöchl"}
+{"entry_id": "R792", "poi_id": "osm-node-323717920", "surface": "Hohen Kamms"}
+{"entry_id": "R792", "poi_id": "osm-node-323842894", "surface": "Kleinen Wanners"}
+{"entry_id": "R792", "poi_id": "osm-node-286593353", "surface": "Mitterjöchel"}
+{"entry_id": "R792A", "poi_id": "osm-node-286586199", "surface": "Kothbachsattel"}
+{"entry_id": "R792A", "poi_id": "osm-node-323842894", "surface": "Kleinwanners"}
+{"entry_id": "R792A", "poi_id": "osm-node-323717920", "surface": "Hohen Kamm"}
+{"entry_id": "R792A", "poi_id": "osm-node-476498599", "surface": "Knorrhütte"}
+{"entry_id": "R793", "poi_id": "osm-node-323842894", "surface": "Kleinwanner"}
+{"entry_id": "R793", "poi_id": "osm-way-925622577", "surface": "Reintal"}
+{"entry_id": "R793", "poi_id": "osm-way-173682244", "surface": "Reintalangerhütte"}
+{"entry_id": "R793", "poi_id": "osm-relation-1356556", "surface": "Partnach"}
+{"entry_id": "R794", "poi_id": "osm-way-925622577", "surface": "Reintal"}
+{"entry_id": "R795", "poi_id": "osm-way-173682244", "surface": "Reintalangerhütte"}
+{"entry_id": "R795", "poi_id": "osm-way-36544330", "surface": "Bockhütte"}
+{"entry_id": "R795", "poi_id": "osm-way-925622577", "surface": "Reintals"}
+{"entry_id": "R795", "poi_id": "osm-relation-1356556", "surface": "Partnachbäche"}
+{"entry_id": "R796", "poi_id": "osm-way-173682244", "surface": "Reintalangerhütte"}
+{"entry_id": "R796", "poi_id": "osm-way-36544330", "surface": "Bockhütte"}
+{"entry_id": "R799", "poi_id": "osm-node-256041782", "surface": "Hinterreintalschrofen"}
+{"entry_id": "R799", "poi_id": "osm-way-925622577", "surface": "Reintal"}
+{"entry_id": "R799", "poi_id": "osm-node-4944025921", "surface": "Jungfernkarkopf"}
+{"entry_id": "R8", "poi_id": "osm-node-683062552", "surface": "Ober- und Untergrainau"}
+{"entry_id": "R8", "poi_id": "osm-node-27383264", "surface": "Garmisch-Partenkirchen"}
+{"entry_id": "R80", "poi_id": "osm-node-476498599", "surface": "Knorrhütte, 2051 m"}
+{"entry_id": "R80", "poi_id": "osm-node-476771385", "surface": "Zugspitzplatt"}
+{"entry_id": "R80", "poi_id": "osm-node-508503692", "surface": "Brunntalkopf"}
+{"entry_id": "R80", "poi_id": "osm-node-27384190", "surface": "Zugspitze"}
+{"entry_id": "R800", "poi_id": "osm-node-256041782", "surface": "Hinterreintalschrofen"}
+{"entry_id": "R81", "poi_id": "osm-way-173682244", "surface": "Reintalangerhütte"}
+{"entry_id": "R81", "poi_id": "osm-relation-1356556", "surface": "Partnachufer"}
+{"entry_id": "R81", "poi_id": "osm-node-323842894", "surface": "Kleinen Wanners"}
+{"entry_id": "R81", "poi_id": "osm-way-893418051", "surface": "Brunntal"}
+{"entry_id": "R81", "poi_id": "osm-node-508503692", "surface": "Brunntalkopfes"}
+{"entry_id": "R810", "poi_id": "osm-node-12468970499", "surface": "Höhlenkopf, 2403 m"}
+{"entry_id": "R810", "poi_id": "osm-way-925622577", "surface": "Reintal"}
+{"entry_id": "R811", "poi_id": "osm-node-12468970499", "surface": "Höhlenkopf"}
+{"entry_id": "R82", "poi_id": "osm-node-240100634", "surface": "Ehrwald"}
+{"entry_id": "R82", "poi_id": "osm-way-237035038", "surface": "Ehrwalder Alm"}
+{"entry_id": "R82", "poi_id": "osm-node-2510073225", "surface": "Feldernjöchl, 2024 m"}
+{"entry_id": "R82", "poi_id": "osm-node-286574960", "surface": "Gatterl"}
+{"entry_id": "R82", "poi_id": "osm-way-925622581", "surface": "Leutasch"}
+{"entry_id": "R82", "poi_id": "osm-node-476498599", "surface": "Knorrhütte"}
+{"entry_id": "R820", "poi_id": "osm-node-256041782", "surface": "Hinterreintalschrofen, 2674 m"}
+{"entry_id": "R820", "poi_id": "osm-node-4944025921", "surface": "Jungfernkarkopf"}
+{"entry_id": "R821A", "poi_id": "osm-way-123923649", "surface": "Rotmoosalm"}
+{"entry_id": "R822", "poi_id": "osm-node-4064859689", "surface": "Großen Hundsstallkopf"}
+{"entry_id": "R822", "poi_id": "osm-node-6530414814", "surface": "Kleinen Hundsstallkopfes"}
+{"entry_id": "R83", "poi_id": "osm-node-240037998", "surface": "Leutasch"}
+{"entry_id": "R83", "poi_id": "osm-way-26931930", "surface": "Tillfußalm"}
+{"entry_id": "R83", "poi_id": "osm-way-925622578", "surface": "Gaistal"}
+{"entry_id": "R83", "poi_id": "osm-way-37658961", "surface": "Kothbach"}
+{"entry_id": "R83", "poi_id": "osm-way-124389528", "surface": "Steinernen Hütteln, 1920 m"}
+{"entry_id": "R83", "poi_id": "osm-node-286586199", "surface": "Kothbachsattel, 2184 m"}
+{"entry_id": "R83", "poi_id": "osm-node-2510073225", "surface": "Feldernjöchl"}
+{"entry_id": "R83", "poi_id": "osm-node-476498599", "surface": "Knorrhütte"}
+{"entry_id": "R830", "poi_id": "osm-node-4944025921", "surface": "Jungfernkarkopf, etwa 2300 m"}
+{"entry_id": "R830", "poi_id": "osm-node-256041782", "surface": "Hinterreintalschrofens"}
+{"entry_id": "R830", "poi_id": "osm-way-925622577", "surface": "hinteren Reintales"}
+{"entry_id": "R833A", "poi_id": "osm-node-4944025921", "surface": "Jungfernkarkopf"}
+{"entry_id": "R833A", "poi_id": "osm-node-256041782", "surface": "Hinterreintalschrofen"}
+{"entry_id": "R834", "poi_id": "osm-node-4944025921", "surface": "Jungfernkarkopf"}
+{"entry_id": "R834", "poi_id": "osm-way-925622577", "surface": "Reintal"}
+{"entry_id": "R835", "poi_id": "osm-way-925622577", "surface": "Reintal"}
+{"entry_id": "R835", "poi_id": "osm-node-4944025921", "surface": "Jungfernkarkopfes"}
+{"entry_id": "R836", "poi_id": "osm-node-4944025921", "surface": "Jungfernkarkopfes"}
+{"entry_id": "R836", "poi_id": "osm-way-925622577", "surface": "Reintal"}
+{"entry_id": "R840", "poi_id": "osm-way-1451971905", "surface": "Oberreintal"}
+{"entry_id": "R840", "poi_id": "osm-node-4944025921", "surface": "Jungfernkarkopf"}
+{"entry_id": "R840", "poi_id": "osm-node-6530414814", "surface": "Kleinen Hundsstallkopf"}
+{"entry_id": "R840", "poi_id": "osm-node-527223049", "surface": "Gamsanger"}
+{"entry_id": "R840", "poi_id": "osm-way-832203765", "surface": "Zundernkamm"}
+{"entry_id": "R840", "poi_id": "osm-way-925622577", "surface": "Reintal"}
+{"entry_id": "R842", "poi_id": "osm-node-4944025921", "surface": "Jungfernkarkopfes"}
+{"entry_id": "R843", "poi_id": "osm-node-527223049", "surface": "Gamsanger"}
+{"entry_id": "R843", "poi_id": "osm-node-6530414814", "surface": "Kleinen Hundsstallkopf"}
+{"entry_id": "R846", "poi_id": "osm-way-1451971905", "surface": "Oberreintalkar"}
+{"entry_id": "R846", "poi_id": "osm-way-832203765", "surface": "Zunderngrat"}
+{"entry_id": "R847", "poi_id": "osm-way-925622577", "surface": "Reintal"}
+{"entry_id": "R847", "poi_id": "osm-way-36544330", "surface": "Bockhütte"}
+{"entry_id": "R847", "poi_id": "osm-relation-1356556", "surface": "Partnach"}
+{"entry_id": "R848", "poi_id": "osm-way-1451971905", "surface": "Oberreintal"}
+{"entry_id": "R848", "poi_id": "osm-way-832203765", "surface": "Zundernkamm"}
+{"entry_id": "R848", "poi_id": "osm-way-36544330", "surface": "Bockhütte"}
+{"entry_id": "R85", "poi_id": "osm-node-476771385", "surface": "Zugspitzplatt"}
+{"entry_id": "R85", "poi_id": "osm-node-27384190", "surface": "Zugspitze"}
+{"entry_id": "R850", "poi_id": "osm-node-6530414814", "surface": "Kleiner Hundsstallkopf, 2323 m"}
+{"entry_id": "R850", "poi_id": "osm-node-527223049", "surface": "Gamsanger"}
+{"entry_id": "R851", "poi_id": "osm-node-6530414814", "surface": "Kleinem Hundsstallkopf"}
+{"entry_id": "R861", "poi_id": "osm-way-925622577", "surface": "Reintal"}
+{"entry_id": "R861", "poi_id": "osm-node-6530414814", "surface": "Kleinen Hundsstallkopfes"}
+{"entry_id": "R862", "poi_id": "osm-way-36544330", "surface": "Bockhütte"}
+{"entry_id": "R870", "poi_id": "osm-node-4064859689", "surface": "Großer Hundsstallkopf, 2559 m"}
+{"entry_id": "R870", "poi_id": "osm-way-832203765", "surface": "Zundernkamm"}
+{"entry_id": "R870", "poi_id": "osm-node-6631990152", "surface": "Teufelskopf"}
+{"entry_id": "R871", "poi_id": "osm-way-26933857", "surface": "Wangalm"}
+{"entry_id": "R871", "poi_id": "osm-node-289304315", "surface": "Scharnitzjoch"}
+{"entry_id": "R871", "poi_id": "osm-node-256041930", "surface": "Oberreintalschrofen"}
+{"entry_id": "R871", "poi_id": "osm-node-6631990152", "surface": "Teufelskopf"}
+{"entry_id": "R872", "poi_id": "osm-node-6631990152", "surface": "Teufelskopfes"}
+{"entry_id": "R874A", "poi_id": "osm-node-4064859689", "surface": "Großen Hundsstallkopfes"}
+{"entry_id": "R874A", "poi_id": "osm-way-832203765", "surface": "Zundernkamm"}
+{"entry_id": "R876", "poi_id": "osm-node-256041782", "surface": "Hinterreintalschrofen"}
+{"entry_id": "R876", "poi_id": "osm-way-168699681", "surface": "Erinnerungshütte"}
+{"entry_id": "R876", "poi_id": "osm-node-289304315", "surface": "Scharnitzjoch"}
+{"entry_id": "R876", "poi_id": "osm-node-4064859689", "surface": "Großen Hundsstallkopf"}
+{"entry_id": "R88", "poi_id": "osm-way-236047957", "surface": "Münchner Haus, 2957 m"}
+{"entry_id": "R88", "poi_id": "osm-node-27384190", "surface": "Zugspitze"}
+{"entry_id": "R880", "poi_id": "osm-way-925622578", "surface": "Gaistal"}
+{"entry_id": "R880", "poi_id": "osm-node-310564229", "surface": "Gehrenspitze"}
+{"entry_id": "R880", "poi_id": "osm-node-983927681", "surface": "Wetterwand"}
+{"entry_id": "R880", "poi_id": "osm-node-2700114094", "surface": "Issentalköpfl, 1932 m"}
+{"entry_id": "R880", "poi_id": "osm-way-237035038", "surface": "Ehrwalder Alm"}
+{"entry_id": "R880", "poi_id": "osm-node-12683926867", "surface": "Hochwannenkopf, 2230 m"}
+{"entry_id": "R880", "poi_id": "osm-node-2510073225", "surface": "Feldernjöchls"}
+{"entry_id": "R880", "poi_id": "osm-node-5177791554", "surface": "Haberlenz, 2206 m"}
+{"entry_id": "R880", "poi_id": "osm-way-124389528", "surface": "Steinernen Hüttein"}
+{"entry_id": "R880", "poi_id": "osm-node-715720577", "surface": "Predigtstuhl, 2241 m"}
+{"entry_id": "R880", "poi_id": "osm-node-5926552257", "surface": "Schönberg, 2040 m"}
+{"entry_id": "R880", "poi_id": "osm-node-256041782", "surface": "Hinterreintalschrofens"}
+{"entry_id": "R880", "poi_id": "osm-way-26933857", "surface": "Wangalm"}
+{"entry_id": "R880", "poi_id": "osm-way-1159458950", "surface": "Puitentales"}
+{"entry_id": "R881", "poi_id": "osm-node-286586199", "surface": "Kothbachsattel"}
+{"entry_id": "R881", "poi_id": "osm-node-2510073225", "surface": "Feldernjöchl"}
+{"entry_id": "R882", "poi_id": "osm-node-286586199", "surface": "Kothbachsattel"}
+{"entry_id": "R882", "poi_id": "osm-way-124389528", "surface": "Steinernen Hüttein"}
+{"entry_id": "R883", "poi_id": "osm-way-123923649", "surface": "Rotmoosalm"}
+{"entry_id": "R885", "poi_id": "osm-way-832203765", "surface": "Zundernkamm"}
+{"entry_id": "R885", "poi_id": "osm-node-4064859689", "surface": "Großen Hundsstallkopf"}
+{"entry_id": "R885", "poi_id": "osm-way-925622577", "surface": "Reintal"}
+{"entry_id": "R887A", "poi_id": "osm-way-1451971905", "surface": "Oberreintal"}
+{"entry_id": "R888A", "poi_id": "osm-way-1451971905", "surface": "Oberreintal"}
+{"entry_id": "R889", "poi_id": "osm-way-1451971905", "surface": "Oberreintalkar"}
+{"entry_id": "R89", "poi_id": "osm-node-476498599", "surface": "Knorrhütte"}
+{"entry_id": "R89", "poi_id": "osm-node-476771385", "surface": "Zugspitzplatts"}
+{"entry_id": "R89", "poi_id": "osm-way-893418052", "surface": "Weißen Tales"}
+{"entry_id": "R89", "poi_id": "osm-way-200283292", "surface": "Schneeferner"}
+{"entry_id": "R892", "poi_id": "osm-way-1451971905", "surface": "Oberreintalkar"}
+{"entry_id": "R893", "poi_id": "osm-way-1451971905", "surface": "Oberreintalkar"}
+{"entry_id": "R9", "poi_id": "osm-relation-163453", "surface": "Eibsee, 972 m"}
+{"entry_id": "R9", "poi_id": "osm-node-683062552", "surface": "Obergrainau"}
+{"entry_id": "R9", "poi_id": "osm-relation-406524", "surface": "Loisach"}
+{"entry_id": "R9", "poi_id": "osm-way-83825173", "surface": "Neidernach"}
+{"entry_id": "R9", "poi_id": "osm-node-27384190", "surface": "Zugspitze"}
+{"entry_id": "R90", "poi_id": "osm-way-236047957", "surface": "Münchner Hauses"}
+{"entry_id": "R90", "poi_id": "osm-node-4985695634", "surface": "Bergstation der Tiroler Gipfelbahn"}
+{"entry_id": "R911", "poi_id": "osm-node-4064859689", "surface": "Großen Hundsstallkopfes"}
+{"entry_id": "R930", "poi_id": "osm-node-256041930", "surface": "Oberreintalschrofen, 2523 m"}
+{"entry_id": "R930", "poi_id": "osm-node-9459163110", "surface": "Westlichen Wangscharte"}
+{"entry_id": "R930", "poi_id": "osm-node-3112764094", "surface": "Oberreintalturm"}
+{"entry_id": "R932", "poi_id": "osm-way-26933857", "surface": "Wangalm"}
+{"entry_id": "R933", "poi_id": "osm-node-9459163110", "surface": "Westlichen Wangscharte"}
+{"entry_id": "R934", "poi_id": "osm-way-26933857", "surface": "Wangalm"}
+{"entry_id": "R935", "poi_id": "osm-way-26933857", "surface": "Wangalm"}
+{"entry_id": "R936", "poi_id": "osm-node-256041930", "surface": "Oberreintalschrofen"}
+{"entry_id": "R937", "poi_id": "osm-way-26933413", "surface": "Wettersteinhütte"}
+{"entry_id": "R938", "poi_id": "osm-way-26933857", "surface": "Wangalm"}
+{"entry_id": "R940", "poi_id": "osm-node-256041930", "surface": "Oberreintalschrofen"}
+{"entry_id": "R95", "poi_id": "osm-node-508503693", "surface": "Äußeren Höllentalspitze"}
+{"entry_id": "R950", "poi_id": "osm-node-3112764094", "surface": "Oberreintalturm, etwa 1940 m"}
+{"entry_id": "R950", "poi_id": "osm-way-1451971905", "surface": "Oberreintales"}
+{"entry_id": "R950", "poi_id": "osm-node-256041930", "surface": "Oberreintalschrofen"}
+{"entry_id": "R950", "poi_id": "osm-node-12097971759", "surface": "Berggeisttürmen"}
+{"entry_id": "R950", "poi_id": "osm-node-7845727141", "surface": "Schüsselkarspitze"}
+{"entry_id": "R954", "poi_id": "osm-way-1451971905", "surface": "Oberreintal"}
+{"entry_id": "R956A", "poi_id": "osm-node-3112764094", "surface": "Oberreintalturms"}
+{"entry_id": "R957", "poi_id": "osm-way-1451971905", "surface": "Oberreintal"}
+{"entry_id": "R96", "poi_id": "osm-node-476494311", "surface": "Oberreintalhütte (Franz-Fischer-Hütte), 1530 m"}
+{"entry_id": "R96", "poi_id": "osm-node-256041673", "surface": "Dreitorspitze"}
+{"entry_id": "R96", "poi_id": "osm-node-7845727141", "surface": "Schüsselkarspitze"}
+{"entry_id": "R96", "poi_id": "osm-node-2506368453", "surface": "Scharnitzspitze"}
+{"entry_id": "R96", "poi_id": "osm-node-256041930", "surface": "Oberreintalschrofens"}
+{"entry_id": "R96", "poi_id": "osm-way-832203765", "surface": "Zundernkammes"}
+{"entry_id": "R96", "poi_id": "osm-way-155583950", "surface": "Meilerhütte"}
+{"entry_id": "R963", "poi_id": "osm-node-3112764094", "surface": "Oberreintalturmes"}
+{"entry_id": "R966", "poi_id": "osm-node-3112764094", "surface": "Oberreintalturms"}
+{"entry_id": "R968A", "poi_id": "osm-node-3112764094", "surface": "Oberreintalturmes"}
+{"entry_id": "R97", "poi_id": "osm-node-27383264", "surface": "Garmisch-Partenkirchen"}
+{"entry_id": "R97", "poi_id": "osm-way-925622577", "surface": "Reintal"}
+{"entry_id": "R980", "poi_id": "osm-node-256041930", "surface": "Oberreintalschrofen"}
+{"entry_id": "R980", "poi_id": "osm-node-3112764094", "surface": "Oberreintalturm"}
+{"entry_id": "R981A", "poi_id": "osm-node-256041930", "surface": "Oberreintalschrofen"}
+{"entry_id": "R981A", "poi_id": "osm-node-3112764094", "surface": "Oberreintalturm"}
+{"entry_id": "R984", "poi_id": "osm-way-1451971905", "surface": "Oberreintalkar"}
+{"entry_id": "R985", "poi_id": "osm-way-1451971905", "surface": "Oberreintal"}
+{"entry_id": "R986", "poi_id": "osm-node-3112764094", "surface": "Oberreintalturmes"}
+{"entry_id": "R987", "poi_id": "osm-node-3112764094", "surface": "Oberreintalturms"}
+{"entry_id": "R99", "poi_id": "osm-node-530194208", "surface": "Schüsselkarbiwak, etwa 2530 m"}
+{"entry_id": "R99", "poi_id": "osm-node-7845727141", "surface": "Schüsselkarspitze"}
+{"entry_id": "R995", "poi_id": "osm-node-9459163110", "surface": "Westliche Wangscharte, 2336 m"}
+{"entry_id": "R996", "poi_id": "osm-way-26933857", "surface": "Wangalm"}
+{"entry_id": "R996", "poi_id": "osm-node-9459163110", "surface": "Wangscharte"}
+{"entry_id": "R996", "poi_id": "osm-node-256041930", "surface": "Oberreintalschrofen"}
+{"entry_id": "R997", "poi_id": "osm-node-9459163110", "surface": "Wangscharte"}
+{"entry_id": "R998", "poi_id": "osm-node-9459163110", "surface": "Westlichen Wangscharte"}
+{"entry_id": "R998", "poi_id": "osm-way-26933857", "surface": "Wangalm"}
+{"entry_id": "p0091_01", "poi_id": "osm-node-508503691", "surface": "Innere Höllentalspitze, 2737 m"}
+{"entry_id": "p0091_01", "poi_id": "osm-node-27384190", "surface": "Zugspitze"}
+{"entry_id": "p0091_01", "poi_id": "osm-node-259486622", "surface": "Alpspitze"}
+{"entry_id": "p0091_01", "poi_id": "osm-way-130395806", "surface": "Jubiläumsgrat"}
+{"entry_id": "p0184_02", "poi_id": "osm-node-9459163094", "surface": "Östlichen Wangscharte"}
+{"entry_id": "p0184_02", "poi_id": "osm-node-7845727141", "surface": "Schüsselkarspitze"}
+{"entry_id": "p0245_01", "poi_id": "osm-node-944114022", "surface": "Leutascher Platt"}
+{"entry_id": "p0250_02", "poi_id": "osm-node-4059510444", "surface": "Signalkuppe, 2486 m"}
+{"entry_id": "p0264_02", "poi_id": "osm-node-12097971760", "surface": "Oberreintaldom, 2371 m"}
+{"entry_id": "p0264_02", "poi_id": "osm-node-472565283", "surface": "Partenkirchener Dreitorspitze"}
+{"entry_id": "p0264_02", "poi_id": "osm-node-12097971759", "surface": "Unteren Berggeistturm"}
+{"entry_id": "p0264_02", "poi_id": "osm-node-12097971761", "surface": "Unteren Schüsselkarturm"}
+{"entry_id": "p0280_03", "poi_id": "osm-node-4051533375", "surface": "Musterstein, 2478 m"}
