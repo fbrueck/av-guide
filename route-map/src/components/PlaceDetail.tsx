@@ -43,7 +43,7 @@ export function PlaceDetail({ place, nav }: PlaceDetailProps) {
 			) : null}
 			{place.description ? (
 				<details className="detail__disclosure">
-					<summary>Übersicht</summary>
+					<summary className="detail__subtitle">Übersicht</summary>
 					<p className="detail__description">{place.description}</p>
 				</details>
 			) : null}
