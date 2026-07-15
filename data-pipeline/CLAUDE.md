@@ -75,12 +75,58 @@ Load-bearing. Breaking one needs a deliberate, called-out reason.
 - Referencing the driving issue in a comment for a non-obvious decision (e.g.
   `# guarded hut widening (#14)`) is encouraged where it aids a future reader.
 
+### Types & data shapes
+
+Rules bind **new code**; existing `dict`-passing is grandfathered — convert it
+when you touch it, not in a big-bang refactor (KISS/YAGNI).
+
+- **Domain records are dataclasses, not dicts — convert at the I/O boundary.**
+  A `dict` is the JSONL wire format only: read functions parse it into typed
+  records named for their `CONTEXT.md` concept (`Entry`/`Route`/`POI`/…), write
+  functions serialize back. No bare record `dict` crosses a boundary in
+  between; no `verdict["pick"]` access in the core (Domain-based).
+- **`@dataclass(frozen=True, slots=True)` is the standard** — immutable
+  records, transform into new ones rather than mutate; `frozen=False` needs a
+  stated reason (Predictable; matches `GuideConfig`).
+- **Dataclass required once a value has ≥2 unified fields *and* it crosses a
+  boundary / is returned / is stored.** Local tuples unpacked on the spot stay
+  tuples; a composite dict key stays a `tuple` unless call sites can't tell what
+  it means.
+- **Construct, don't validate.** Building the dataclass already fails on missing
+  fields and `slots` rejects unknown ones — no pydantic/schema deps (YAGNI).
+  Optional `@classmethod from_dict` as the home for a parse step.
+- **No `*args` / `**kwargs`** — pass explicit named parameters.
+- **A ratchet gate enforces the boundary rule.** `./dict-ratchet.sh` (run from
+  a package dir) counts untyped `dict`/collection annotations via mypy
+  `--disallow-any-generics` and fails if the count rises above the committed
+  `.dict-baseline`. A new `entry: dict` breaks the build. Lower the baseline as
+  records become dataclasses; **never raise it** — type the value instead.
+
+### Function size & nesting
+
+- **One function, one step.** Extract a helper the moment a function grows a
+  second responsibility or a third level of nesting; prefer guard clauses and
+  early returns over nested `if`/`for`. Typed records (above) are what make the
+  extracted step readable — pass an `Entry`, not `entry: dict`.
+- **A ruff complexity gate enforces this** (`C901` + `PLR0912`/`PLR0915` in the
+  root `ruff.toml`). Ceilings currently sit at the worst existing function so
+  the giants pass; they **ratchet down** toward 10 / 12 / 50 as those functions
+  are decomposed. Don't raise a ceiling to fit new code — split the function.
+
+Principles as the *why*, rules do the enforcing: **CUPID** (Domain-based +
+Predictable above; Composable/Unix per the one-stage **Architecture rules**),
+**KISS**, **YAGNI**.
+
 ## Testing
 
 New or changed **deterministic Python must ship with pytest tests** (see each
 package's `tests/`). LLM-subagent prompt work is exempt — we don't fake LLM
 outputs in unit tests. Tests import `pipeline` directly (`pythonpath = ["."]`)
 and point stages at fixture data via the injected `GuideConfig`.
+
+The **Types & data shapes** rules bind production `pipeline/` code. Tests may
+use dict / JSONL fixtures freely, but feed them through the real read path and
+**assert on the parsed dataclasses**, not on dict internals.
 
 ## Adding to the pipeline
 

@@ -1,4 +1,19 @@
 # Shared ruff config for the whole repo. Both packages have no [tool.ruff] of
-# their own, so ruff walks up and uses this. Kept at defaults on purpose.
+# their own, so ruff walks up and uses this. Kept at defaults on purpose,
+# except the complexity gate below.
 target-version = "py313"
 line-length = 88
+
+[lint]
+# Complexity gate (function size / nesting). extend-select keeps ruff's default
+# E/F checks. Ceilings sit at today's worst offender so existing code passes;
+# ratchet each number DOWN as the giants (match.py:match_mentions,
+# merge.py:assemble_entries) get decomposed. Targets: 10 / 12 / 50.
+extend-select = ["C901", "PLR0912", "PLR0915"]
+
+[lint.mccabe]
+max-complexity = 19        # target 10
+
+[lint.pylint]
+max-branches = 21          # target 12
+max-statements = 96        # target 50
