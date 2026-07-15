@@ -7,10 +7,9 @@ interface PlaceDetailProps {
 }
 
 // The detail panel for a selected Place (#44, #72): the book's data for the
-// target feature — name, Typ/Höhe, summary — with the long Übersicht tucked
-// behind a collapsed-by-default disclosure so the sections below stay reachable,
-// then the list of **Routes leading here** (routes that target this Place;
-// selecting one drills into that Route's detail) and the Place's **Mentions**
+// target feature — name, Typ/Höhe, summary — then the list of **Routes leading
+// here** (routes that target this Place; selecting one drills into that Route's
+// detail), the verbatim "Original Text" description, and the Place's **Mentions**
 // (same non-clickable chip pattern as the Route detail view). A Place that
 // resolved to no POI renders honestly (route-map/CLAUDE.md rule 3): a note says
 // so rather than hiding, so an unresolved Place is visible, not silent.
@@ -41,13 +40,6 @@ export function PlaceDetail({ place, nav }: PlaceDetailProps) {
 			{place.summary ? (
 				<p className="detail__summary">{place.summary}</p>
 			) : null}
-			{place.description ? (
-				<details className="detail__disclosure">
-					<summary className="detail__subtitle">Übersicht</summary>
-					<p className="detail__description">{place.description}</p>
-				</details>
-			) : null}
-
 			<h3 className="detail__subtitle">
 				Routen hierher ({place.routes.length})
 			</h3>
@@ -75,6 +67,13 @@ export function PlaceDetail({ place, nav }: PlaceDetailProps) {
 					))}
 				</ul>
 			)}
+
+			{place.description ? (
+				<>
+					<h3 className="detail__subtitle">Original Text</h3>
+					<p className="detail__description">{place.description}</p>
+				</>
+			) : null}
 
 			<h3 className="detail__subtitle">Mentions ({place.mentions.length})</h3>
 			{place.mentions.length === 0 ? (
