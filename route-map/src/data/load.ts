@@ -16,10 +16,15 @@ import type {
 // POI GeoJSON, and the two link tables — place_pois.jsonl (Place -> POI) and
 // entry_pois.jsonl (Entry Mentions -> POI). The old route_pois.jsonl is gone.
 
-const ENTRIES_URL = "/guide-data/parse-routes/03_structured/routes.json";
-const POIS_URL = "/guide-data/fetch-pois/04_final/pois.geojson";
-const PLACE_POIS_URL = "/guide-data/fetch-pois/04_final/place_pois.jsonl";
-const ENTRY_POIS_URL = "/guide-data/fetch-pois/04_final/entry_pois.jsonl";
+// Prefix the stable `/guide-data/…` scheme with Vite's BASE_URL (always
+// trailing-slashed): it is `/` in dev — so URLs stay `/guide-data/…` for the
+// configureServer middleware — and `/av-guide/` in the GitHub Pages build, so
+// they resolve to `/av-guide/guide-data/…` against the deployed base path.
+const DATA_BASE = `${import.meta.env.BASE_URL}guide-data`;
+const ENTRIES_URL = `${DATA_BASE}/parse-routes/03_structured/routes.json`;
+const POIS_URL = `${DATA_BASE}/fetch-pois/04_final/pois.geojson`;
+const PLACE_POIS_URL = `${DATA_BASE}/fetch-pois/04_final/place_pois.jsonl`;
+const ENTRY_POIS_URL = `${DATA_BASE}/fetch-pois/04_final/entry_pois.jsonl`;
 
 async function fetchText(url: string): Promise<string> {
 	const res = await fetch(url);
