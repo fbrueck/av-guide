@@ -39,7 +39,7 @@ class GuideConfig:
         return self.data_root / "01_raw"
 
     @property
-    def clean_dir(self) -> Path:  # LLM-cleaned OCR text
+    def clean_dir(self) -> Path:  # stage 2: deterministic pre-clean + LLM OCR repair
         return self.data_root / "02_clean"
 
     @property
@@ -49,6 +49,12 @@ class GuideConfig:
     @property
     def raw_pages(self) -> Path:
         return self.raw_dir / "pages"
+
+    @property
+    def clean_prepared(
+        self,
+    ) -> Path:  # deterministic pre-clean output → LLM input (#82)
+        return self.clean_dir / "prepared"
 
     @property
     def clean_pages(self) -> Path:
