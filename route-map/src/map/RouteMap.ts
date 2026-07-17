@@ -4,8 +4,10 @@ import {
 	type FilterSpecification,
 	type GeoJSONSource,
 	LngLatBounds,
+	type LngLatLike,
 	Map as MapLibreMap,
 	NavigationControl,
+	type PointLike,
 	ScaleControl,
 } from "maplibre-gl";
 import type { Entry, Poi } from "../domain";
@@ -55,6 +57,16 @@ const FIT_MAX_ZOOM = 15;
 // Mirrors the single `max-width: 768px` CSS breakpoint (route-map/CLAUDE.md
 // rule 8): below it the route panel becomes a bottom sheet overlaying the map.
 const MOBILE_BREAKPOINT = 768;
+
+// Tap-tolerance for selecting a POI on touch/mobile. A Place marker's rendered
+// disc is only ~16px across — well under the ≥44px mobile tap-target bar
+// (route-map/CLAUDE.md rule 8). Rather than fatten the markers (which would
+// bleed onto desktop and change the place-first look), we widen only the HIT
+// TEST: on mobile a tap queries a padded box of this radius and selects the
+// nearest tappable Place marker. Desktop keeps exact-hit — a mouse is precise,
+// and a tolerance would "select" over empty map. The pad is the box radius, so
+// 32px ≈ a 64px hit box.
+const TAP_TOLERANCE_PX = 32;
 
 // On mobile the bottom sheet overlays the lower part of the map with its
 // collapsed peek height, so the camera must frame highlighted POIs in the area
@@ -571,17 +583,43 @@ export function createRouteMap(
 		// highlight + fit + detail panel fire for free. A mention-only / gazetteer
 		// marker has no Place of its own, so its tap is inert — navigation is
 		// one-directional (Entry → its POIs), never POI → Entries.
-		map.on("click", POI_LAYER_ID, (event) => {
-			const feature = event.features?.[0];
-			if (!feature) {
-				return;
+		// Map-level (not layer-delegated) so the query geometry is ours to widen.
+		// On mobile the tap queries a padded box (TAP_TOLERANCE_PX); on desktop it
+		// stays an exact-point query, i.e. the rendered circle disc as before.
+		map.on("click", (event) => {
+			const { x, y } = event.point;
+			const onMobile = window.innerWidth <= MOBILE_BREAKPOINT;
+			const geometry: PointLike | [PointLike, PointLike] = onMobile
+				? [
+						[x - TAP_TOLERANCE_PX, y - TAP_TOLERANCE_PX],
+						[x + TAP_TOLERANCE_PX, y + TAP_TOLERANCE_PX],
+					]
+				: event.point;
+			const features = map.queryRenderedFeatures(geometry, {
+				layers: [POI_LAYER_ID],
+			});
+			// The box can catch several markers. Pick the nearest TAPPABLE (Place)
+			// one to the tap point; inert mention-only markers are skipped (ADR-0004)
+			// so a tap near a mention still reaches a Place within reach.
+			let bestId: string | null = null;
+			let bestDist = Number.POSITIVE_INFINITY;
+			for (const feature of features) {
+				const props = feature.properties as PoiFeatureProps;
+				if (!props.isPlace || feature.geometry.type !== "Point") {
+					continue;
+				}
+				const point = map.project(feature.geometry.coordinates as LngLatLike);
+				const dist = (point.x - x) ** 2 + (point.y - y) ** 2;
+				if (dist < bestDist) {
+					bestDist = dist;
+					bestId = props.id;
+				}
 			}
-			const props = feature.properties as PoiFeatureProps;
-			if (!props.isPlace) {
+			if (!bestId) {
 				return;
 			}
 			const place = entriesByPoiId
-				.get(props.id)
+				.get(bestId)
 				?.find((entry) => entry.kind === "place");
 			if (place) {
 				onSelectEntry(place);
