@@ -16,9 +16,10 @@ import { createRouteMap, type RouteMap } from "./map";
 // state — no router, no state library. The map is created once behind its
 // imperative API; React drives it through effects (rule 4).
 //
-// Selection is a small **stack** of Entries (#44): the sidebar (or a map popup)
-// starts a fresh selection; drilling from a Place into a Route leading there, or
-// following a Route's Destination / Reference cross-link, pushes; a Back button pops.
+// Selection is a small **stack** of Entries (#44): the sidebar (or a
+// Place-coordinate marker tap) starts a fresh selection; drilling from a Place
+// into a Route leading there, or following a Route's Destination / Reference
+// cross-link, pushes; a Back button pops.
 // This is still plain React state (one array) — no router — and gives honest
 // back-navigation through the place-first Entry graph.
 export function App() {
@@ -32,9 +33,9 @@ export function App() {
 
 	const currentEntry = selection[selection.length - 1] ?? null;
 
-	// Start a fresh selection (sidebar click, or a map POI popup cross-link). A
+	// Start a fresh selection (sidebar click, or a Place-coordinate marker tap). A
 	// stable useCallback so the map-creation effect below does not re-create the
-	// map. The map calls this too, so a popup selection goes through the exact
+	// map. The map calls this too, so a marker-tap selection goes through the exact
 	// same door as a sidebar click — the map never owns selection (rule 4).
 	const handleSelectEntry = useCallback((entry: Entry) => {
 		setSelection([entry]);
@@ -53,9 +54,10 @@ export function App() {
 	}, []);
 
 	// Create the map instance once and keep it in a ref for effects to drive.
-	// Pass handleSelectEntry at construction so an Entry clicked in a POI popup
-	// selects it through the exact same entry point as a sidebar click.
-	// handleSelectEntry is a stable useCallback, available before data loads.
+	// Pass handleSelectEntry at construction so a Place-coordinate marker tap
+	// selects its Place through the exact same entry point as a sidebar click
+	// (POIs are display-only, ADR-0004). handleSelectEntry is a stable useCallback,
+	// available before data loads.
 	useEffect(() => {
 		const container = containerRef.current;
 		if (!container) {
