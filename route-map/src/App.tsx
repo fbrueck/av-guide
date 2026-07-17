@@ -178,9 +178,11 @@ export function App() {
 					sheetExpanded ? "route-panel route-panel--expanded" : "route-panel"
 				}
 			>
-				{/* Bottom-sheet grabber: shown only below 768px (rule 8), taps peek <->
+				{/* Bottom-sheet toggle: shown only below 768px (rule 8), taps peek <->
 				    full. On desktop it is display:none and the panel is the docked
-				    column. Smart peek content is #102 — this is just the tap target. */}
+				    column. Smart peek content is #102 — this is just the tap target.
+				    A chevron (not a drag pill) signals the interaction is a TAP: it
+				    points up to expand and rotates to point down to collapse. */}
 				<button
 					type="button"
 					className="sheet-header"
@@ -188,7 +190,22 @@ export function App() {
 					aria-label={sheetExpanded ? "Collapse panel" : "Expand panel"}
 					onClick={handleToggleSheet}
 				>
-					<span className="sheet-header__grabber" />
+					<svg
+						className="sheet-header__chevron"
+						viewBox="0 0 24 24"
+						width="22"
+						height="22"
+						aria-hidden="true"
+					>
+						<path
+							d="M6 15l6-6 6 6"
+							fill="none"
+							stroke="currentColor"
+							strokeWidth="2"
+							strokeLinecap="round"
+							strokeLinejoin="round"
+						/>
+					</svg>
 				</button>
 				<Sidebar
 					places={guideData?.places ?? []}

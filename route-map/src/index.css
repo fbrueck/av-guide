@@ -179,31 +179,45 @@ body,
 .detail__header {
 	position: sticky;
 	top: 0;
-	display: flex;
-	align-items: flex-start;
-	justify-content: space-between;
-	gap: 0.5rem;
-	padding: 1rem 0 0.5rem;
+	padding: 0.5rem 0;
 	border-bottom: 1px solid #ddd;
 	background: #fff;
 }
 
-.detail__header-titles {
-	min-width: 0;
+/* Top-left row of icon actions: search first, then the optional back arrow. */
+.detail__header-actions {
+	display: flex;
+	align-items: center;
+	gap: 0.25rem;
+	margin-bottom: 0.35rem;
 }
 
-.detail__back {
-	padding: 0;
+/* An icon action button (search / back): a bare, centered hit area whose SVG
+ * inherits currentColor and darkens on hover. */
+.detail__action {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0.25rem;
 	border: none;
 	background: none;
-	font: inherit;
-	font-size: 0.8rem;
-	color: #2563eb;
+	color: #666;
 	cursor: pointer;
 }
 
+.detail__action:hover:not(:disabled) {
+	color: #222;
+}
+
+/* Back with no history left: kept in place (stable layout) but greyed and
+ * non-interactive rather than removed. */
+.detail__action:disabled {
+	color: #ccc;
+	cursor: default;
+}
+
 .detail__title {
-	margin: 0.1rem 0 0;
+	margin: 0;
 	font-size: 1.05rem;
 }
 
@@ -212,21 +226,6 @@ body,
 .detail__title-suffix {
 	font-weight: 400;
 	color: #666;
-}
-
-.detail__close {
-	flex: none;
-	padding: 0 0.25rem;
-	border: none;
-	background: none;
-	font-size: 1.5rem;
-	line-height: 1;
-	color: #666;
-	cursor: pointer;
-}
-
-.detail__close:hover {
-	color: #000;
 }
 
 .detail__meta {
@@ -565,15 +564,20 @@ body,
 		z-index: 3;
 	}
 
-	.sheet-header__grabber {
-		width: 2.5rem;
-		height: 0.25rem;
-		border-radius: 999px;
-		background: #ccc;
+	/* A chevron, not a drag pill: it signals the header is a TAP toggle. It points
+	 * up to expand the sheet and rotates to point down when expanded, in step with
+	 * the sheet's own height transition (same 0.28s ease). */
+	.sheet-header__chevron {
+		color: #999;
+		transition: transform 0.28s ease;
+	}
+
+	.sheet-header[aria-expanded="true"] .sheet-header__chevron {
+		transform: rotate(180deg);
 	}
 
 	/* Reserve the header's height: the sidebar and any detail panel fill the
-	 * sheet (inset: 0) but must start below the grabber so it is never covered.
+	 * sheet (inset: 0) but must start below the header so it is never covered.
 	 * Both scroll their own content, so peek shows the top and full shows all. */
 	.route-panel .sidebar,
 	.route-panel .detail {
@@ -588,21 +592,12 @@ body,
 	 * already puts the right content first. Full (92vh) shows the whole panel. */
 
 	/* ≥44px tap targets on mobile (#102, rule 8): the sheet header is already
-	 * 2.75rem (44px). The detail Back and Close controls are small text/icon hit
-	 * areas on desktop, so give them a comfortable 44px touch box inside the
-	 * sheet — the reader walks the Place -> Route -> Reference stack with these. */
-	.detail__back {
-		min-height: 44px;
-		padding: 0.5rem 0;
-	}
-
-	.detail__close {
-		display: flex;
-		align-items: center;
-		justify-content: center;
+	 * 2.75rem (44px). The detail search/back icon actions are small hit areas on
+	 * desktop, so give them a comfortable 44px touch box inside the sheet — the
+	 * reader walks the Place -> Route -> Reference stack with these. */
+	.detail__action {
 		min-width: 44px;
 		min-height: 44px;
-		padding: 0;
 	}
 
 	/* On-map controls de-conflicted with the bottom sheet (#103, rule 8). Nothing
