@@ -217,6 +217,104 @@ def test_book_id_collision_rekeyed_synthetic():
     assert report.synthetic == 0
 
 
+# --- dropped-Randziffer recovery from the sequence (#86) -----------------------
+
+
+def test_dropped_place_randziffer_inferred_from_sequence():
+    # A hut heading whose Randziffer the OCR dropped (entry_id_raw=None) sits
+    # between route 276 and route 281; the strictly-ascending sequence pins it to
+    # R280 (next-1), even though the book skipped 277–279. No synthetic fallback.
+    records, report = assemble(
+        [
+            (
+                40,
+                [
+                    route("•276", "Abstieg"),
+                    place(None, "Dammkarhütte"),
+                    route("•281", "Von Mittenwald"),
+                ],
+            )
+        ]
+    )
+    hut = next(r for r in records if r.kind == "place")
+    assert hut.id == "R280"
+    assert hut.id_source == "inferred"
+    assert report.inferred == 1
+    assert report.synthetic == 0
+
+
+def test_inferred_hut_id_resolves_a_previously_dangling_reference():
+    # The Aschauer-Alm case (#86): with the hut's Randziffer dropped it was keyed
+    # synthetically, so a cross-ref to its book id dangled. Once the sequence keys
+    # the hut R290, that reference resolves against a real Entry.
+    records, report = assemble(
+        [
+            (
+                41,
+                [
+                    route("•287", "Von der Fereinalm"),
+                    place(None, "Aschauer Alm"),
+                    route("•291", "Von Mittenwald"),
+                    route(
+                        "•296",
+                        "Zustieg",
+                        text="Von der Aschauer Alm wie R 290 hinauf zur Alm.",
+                    ),
+                ],
+            )
+        ]
+    )
+    hut = next(r for r in records if r.name == "Aschauer Alm")
+    assert hut.id == "R290"
+    assert hut.id_source == "inferred"
+    assert report.dangling_refs == []  # R290 now exists, so the >290 ref resolves
+
+
+def test_dropped_id_without_a_next_anchor_stays_synthetic():
+    # Nothing to anchor on the right → the number is genuinely unrecoverable, so
+    # the deterministic synthetic fallback stands (never invented).
+    records, report = assemble(
+        [(41, [route("•287", "Zustieg"), place(None, "Namenlose Alm")])]
+    )
+    hut = next(r for r in records if r.kind == "place")
+    assert hut.id == "p0041_02"
+    assert hut.id_source == "synthetic"
+    assert report.synthetic == 1
+    assert report.inferred == 0
+
+
+def test_gap_that_cannot_stay_above_prev_stays_synthetic():
+    # next-1 would be 280 = the previous id: filling it would break strict
+    # ascension / collide, so the entry stays synthetic, not a duplicate.
+    records, report = assemble(
+        [(40, [route("•280", "A"), place(None, "Dup"), route("•281", "B")])]
+    )
+    dup = next(r for r in records if r.name == "Dup")
+    assert dup.id_source == "synthetic"
+    assert report.inferred == 0
+
+
+def test_inferred_id_never_steals_a_number_recovered_elsewhere():
+    # A garbled ordering where the gap would infer 287, but 287 is a real
+    # recovered entry: keep the synthetic fallback rather than double-key it.
+    records, _ = assemble(
+        [
+            (
+                40,
+                [
+                    route("•285", "A"),
+                    place(None, "Ghost"),
+                    route("•288", "B"),
+                    route("•287", "C"),
+                ],
+            )
+        ]
+    )
+    ghost = next(r for r in records if r.name == "Ghost")
+    assert ghost.id_source == "synthetic"
+    assert "R287" in {r.id for r in records}  # the real 287 keeps its number
+
+
 # --- merge (filesystem) -------------------------------------------------------
 
 

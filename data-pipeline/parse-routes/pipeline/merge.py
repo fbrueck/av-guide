@@ -11,9 +11,11 @@ The deterministic work that turns loose per-page entries into a linked dataset
 lives here (no LLM):
 
 - **Identity.** Key each Entry by the book's entry id, normalized to the
-  canonical key (`R43`); fall back to a deterministic synthetic id when the
-  Randziffer is unrecoverable, flagged `id_source: book | synthetic`. Places and
-  Routes share one id namespace.
+  canonical key (`R43`). When the OCR dropped a Randziffer (a reverse-video
+  banner number, #86), recover it from the strictly-ascending sequence where the
+  surviving neighbours pin it unambiguously (`inferred`); fall back to a
+  deterministic synthetic id when it stays unrecoverable. Flagged `id_source:
+  book | inferred | synthetic`. Places and Routes share one id namespace.
 - **Destination and places.** A Route's *Destination* is its structural parent
   Place — the nearest preceding Place in the book's running sequence
   (`destination_id`, id-to-id from nesting; null when there is none, surfaced in
@@ -41,7 +43,7 @@ from dataclasses import dataclass, field, replace
 
 from .config import GuideConfig, load_guide
 from .export import write_routes_json
-from .ids import normalize_entry_id, synthetic_id
+from .ids import entry_id_number, infer_sequence_ids, normalize_entry_id, synthetic_id
 from .records import Entry, PartEntry
 from .references import parse_references
 from .slicing import slice_description
@@ -69,7 +71,8 @@ class MergeReport:
     on purpose: it is an accumulator built up across the passes (unlike the
     frozen domain records it reports on)."""
 
-    synthetic: int = 0  # book number unrecoverable from OCR (the spec's trigger)
+    synthetic: int = 0  # OCR-unrecoverable AND un-inferable (the spec's trigger)
+    inferred: int = 0  # Randziffer OCR dropped, recovered from the sequence (#86)
     id_collisions: list[str] = field(default_factory=list)  # recoverable but taken
     unresolved_places: list[UnresolvedPlace] = field(default_factory=list)
     missing_destination: list[str] = field(default_factory=list)  # no parent Place
@@ -82,22 +85,64 @@ def _norm_name(name: str) -> str:
     return " ".join(name.split()).casefold()
 
 
-def _assign_id(
-    raw: PartEntry, page: int, seq: int, used_ids: set[str], report: MergeReport
+def _assign_ids(
+    parts: list[tuple[int, list[PartEntry]]], report: MergeReport
+) -> list[tuple[str, str]]:
+    """Assign every entry's `(id, id_source)` in book order.
+
+    Batched, not per-entry, because recovering a Randziffer the OCR dropped needs
+    the whole ascending sequence in view (#86): the id is inferred from the gap
+    the surviving neighbours leave. A recoverable, unique book number keys the
+    Entry directly (`book`); a gap the sequence pins unambiguously is filled
+    (`inferred`); failing both, a deterministic synthetic id stands. See
+    `_pick_id` for the per-entry choice."""
+    flat = [
+        (page, seq, raw)
+        for page, entries in parts
+        for seq, raw in enumerate(entries, start=1)
+    ]
+    recovered = [normalize_entry_id(raw.entry_id_raw) for _, _, raw in flat]
+    inferred = infer_sequence_ids([entry_id_number(c) for c in recovered])
+    taken = {c for c in recovered if c}  # every real book id, to never re-key one
+
+    used: set[str] = set()
+    assignments: list[tuple[str, str]] = []
+    for (page, seq, _), book, number in zip(flat, recovered, inferred):
+        entry_id, id_source = _pick_id(
+            book, number, synthetic_id(page, seq), used, taken, report
+        )
+        used.add(entry_id)
+        assignments.append((entry_id, id_source))
+    return assignments
+
+
+def _pick_id(
+    book: str | None,
+    inferred_number: int | None,
+    fallback: str,
+    used: set[str],
+    taken: set[str],
+    report: MergeReport,
 ) -> tuple[str, str]:
-    """A recoverable, unique book number keys the Entry directly
-    (`id_source: book`). Otherwise a deterministic synthetic id is assigned for
-    one of two reasons, counted apart: the number was unrecoverable from OCR
-    (the spec's trigger), or it collided with an earlier Entry (surfaced, not
-    silently overwritten)."""
-    book_id = normalize_entry_id(raw.entry_id_raw)
-    if book_id and book_id not in used_ids:
-        return book_id, "book"
-    if book_id in used_ids and book_id is not None:
-        report.id_collisions.append(book_id)
-    else:
-        report.synthetic += 1  # only the OCR-unrecoverable case
-    return synthetic_id(page, seq), "synthetic"
+    """Choose one entry's `(id, id_source)`: its own unique book number, else a
+    sequence-inferred number, else `fallback` (the entry's deterministic
+    synthetic id). Synthetic is counted apart for its two causes — a collision
+    with an earlier Entry (surfaced, not overwritten) versus an OCR-unrecoverable,
+    un-inferable number (the trigger). An inferred number is used only when it
+    collides with no id at all — neither one already assigned nor any real book
+    number elsewhere in the book."""
+    if book and book not in used:
+        return book, "book"
+    if book:  # recoverable but already taken — never silently overwrite
+        report.id_collisions.append(book)
+        return fallback, "synthetic"
+    if inferred_number is not None:
+        candidate = f"R{inferred_number}"
+        if candidate not in used and candidate not in taken:
+            report.inferred += 1
+            return candidate, "inferred"
+    report.synthetic += 1
+    return fallback, "synthetic"
 
 
 def _build_entry(
@@ -181,22 +226,22 @@ def assemble_entries(
     description between its anchors (the next page is read too, for entries that
     span a page break). Returns `(records, report)` where records are Entries in
     book order and report collects dangling refs / unresolved place names /
-    destination gaps / synthetic-id and collision counts / unsliced anchors for
-    the caller to surface.
+    destination gaps / inferred-, synthetic-id and collision counts / unsliced
+    anchors for the caller to surface.
     """
     report = MergeReport()
 
-    # Pass 1 — assign ids, slice descriptions, build Entries (targets still
+    # Pass 1 — assign ids (one batch, so the gap-fill sees the whole ascending
+    # sequence, #86), slice descriptions, build Entries (targets still
     # unresolved). Keep each Route's raw traverse place-names for the target pass.
     records: list[Entry] = []
     place_names: list[list[str]] = []
-    used_ids: set[str] = set()
+    assignments = iter(_assign_ids(parts, report))
     for page, entries in parts:
         text = page_texts.get(page, "")
         next_text = page_texts.get(page + 1)
-        for seq, raw in enumerate(entries, start=1):
-            entry_id, id_source = _assign_id(raw, page, seq, used_ids, report)
-            used_ids.add(entry_id)
+        for raw in entries:
+            entry_id, id_source = next(assignments)
             description = slice_description(
                 text, next_text, raw.start_quote, raw.end_quote
             )
@@ -296,6 +341,7 @@ def _print_summary(
     print(f"Wrote {len(records)} entry files -> {cfg.entries_dir}")
     print(
         f"  {n_place} places, {n_route} routes, "
+        f"{report.inferred} inferred ids (Randziffer recovered from sequence), "
         f"{report.synthetic} synthetic ids (OCR-unrecoverable), "
         f"{n_collision} collision re-keyed"
     )
