@@ -44,7 +44,7 @@ class Entry:
     summary: str | None = None
     references: list[Reference] = field(default_factory=list)
     # Internal bookkeeping — not part of the route-map contract.
-    id_source: str = "book"  # "book" | "synthetic"
+    id_source: str = "book"  # "book" | "inferred" | "synthetic"
     source_page: int | None = None
     # Place-only verbatim metadata.
     place_type: str | None = None
