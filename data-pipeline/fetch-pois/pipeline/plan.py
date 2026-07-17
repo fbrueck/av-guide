@@ -17,7 +17,10 @@ resumes without redoing completed entries.
 
 Output: one JSON object per line on stdout, e.g.
   {"batch": 1, "entries": [{"entry_id": ..., "kind": ..., "name": ...,
-   "description": ...}]}
+   "source": ...}]}
+`source` is the path to that entry's on-disk file
+(`03_structured/entries/<entry_id>.json`), which the mention-extractor Reads
+itself — the bulk prose never travels through the orchestrator context (#90).
 A human-readable summary goes to stderr.
 
   python -m pipeline.plan adjudicate --guide <id> [--batch 10]
@@ -220,7 +223,11 @@ def _plan_extract(cfg: GuideConfig, batch_size: int) -> None:
                 "entry_id": e["id"],
                 "kind": e["kind"],
                 "name": e.get("name"),
-                "description": e["description"],
+                # A path to the entry's on-disk prose, not the prose itself, so
+                # the bulk text never enters the orchestrator context (#90) — the
+                # mention-extractor Reads it. The planner owns the layout, so the
+                # subagent prompt needs no path template.
+                "source": str(cfg.parse_routes_entries_dir / f"{e['id']}.json"),
             }
             for e in entries[i : i + batch_size]
             if not (cfg.mention_parts / f"{e['id']}.json").exists()

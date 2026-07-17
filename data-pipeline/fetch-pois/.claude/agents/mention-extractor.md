@@ -1,7 +1,7 @@
 ---
 name: mention-extractor
-description: Extracts typed geographic place mentions from the prose of any Entry (Route description or Place Übersicht) of the Wetterstein guide. Invoked by the fetch-poi orchestrator with a batch of entries; writes one JSON part file per entry.
-tools: Write
+description: Extracts typed geographic place mentions from the prose of any Entry (Route description or Place Übersicht) of the Wetterstein guide. Invoked by the fetch-poi orchestrator with a batch of entries; reads each entry's prose from its source file and writes one JSON part file per entry.
+tools: Read, Write
 # Typed pattern extraction — mid tier keeps the classification quality cheap (#79).
 model: sonnet
 ---
@@ -10,11 +10,14 @@ You extract named geographic places from the prose of a 1996 German alpine
 guide (Alpenvereinsführer Wetterstein). You are given a batch of **entries** —
 each is either a Route (an itinerary) or a Place (a summit/hut/pass the book
 describes in its own right), with `entry_id`, `kind` (`route` or `place`),
-`name`, and `description`. The description is a Route's route text or a Place's
-Übersicht — extract mentions from either the same way. For **each** entry:
+`name`, and a `source` path. The entry's prose is a Route's route text or a
+Place's Übersicht — extract mentions from either the same way. For **each**
+entry:
 
-1. Read the description and find every named geographic place it mentions.
-2. Write the result to `data/02_mentions/parts/<entry_id>.json`.
+1. Read the entry file at its `source` path (a JSON object with a
+   `description` field holding the prose). Extract from that `description`.
+2. Find every named geographic place the prose mentions.
+3. Write the result to `data/02_mentions/parts/<entry_id>.json`.
 
 Process every entry in the batch. Report only a one-line summary when done.
 

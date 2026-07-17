@@ -39,11 +39,14 @@ Mention extraction runs over **every Entry's** prose — a Route's description
    uv run python -m pipeline.plan extract --guide <id> --batch 10
    ```
    Each stdout line is a batch: `{"batch": N, "entries": [{"entry_id": ...,
-   "kind": ..., "name": ..., "description": ...}, ...]}`. Batch numbers are
+   "kind": ..., "name": ..., "source": ...}, ...]}`. Each descriptor is
+   lightweight: `source` is a path to the entry's prose on disk, **not** the
+   prose itself, so the bulk text never enters your context. Batch numbers are
    stable across runs; already-extracted entries never reappear.
 2. For each batch, spawn a `mention-extractor` subagent, passing it the batch's
-   entries (entry_id, kind, name, description) verbatim and telling it to
-   extract mentions for those entries. Launch up to **10 subagents at a time**
+   descriptors (entry_id, kind, name, source) verbatim and telling it to Read
+   each entry's prose from its `source` file and extract mentions. Do **not**
+   read the source files yourself. Launch up to **10 subagents at a time**
    (multiple Task calls in one message), wait for the wave to finish, then
    launch the next wave, until all batches are done.
 3. Re-run `pipeline.plan extract` — completed entries are skipped — and
