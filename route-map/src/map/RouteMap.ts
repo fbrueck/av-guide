@@ -14,12 +14,13 @@ import type { Entry, Poi } from "../domain";
 import {
 	BASEMAP_MAX_ZOOM,
 	basemapStyle2d,
-	basemapStyle3d,
-	customizeBasemap,
+	buildCombinedStyle,
+	HILLSHADE_SOURCE_ID,
+	OPENTOPO_SOURCE_ID,
 	TERRAIN_EXAGGERATION,
 	TERRAIN_PITCH,
 	TERRAIN_SOURCE_ID,
-	terrainSource,
+	VERSATILES_SOURCE_ID,
 } from "./basemap";
 import { poiColorExpression } from "./poiStyle";
 import {
@@ -126,10 +127,13 @@ export interface RouteMap {
 	 *  geometry, so nothing is invented (route-map/CLAUDE.md rule 3). Idempotent
 	 *  and safe to call before the style loads. */
 	highlightEntry(entry: Entry | null): void;
-	/** Flip the map between the flat 2D basemap and 3D terrain (#23). On enable
-	 *  the Mapterhorn raster-dem source is draped under the basemap and the
-	 *  camera pitches up; on disable the terrain is cleared and the camera
-	 *  returns to flat. Idempotent and safe to call before the style loads. */
+	/** Flip the map between the flat 2D basemap and 3D terrain (#23). Both base
+	 *  maps live in one combined style, so this is a visibility flip + setTerrain
+	 *  + camera pitch — never a setStyle — which keeps the toggle a single smooth
+	 *  motion with no full-style-reload flash (#121). On enable the OpenTopoMap
+	 *  raster is hidden, the VersaTiles landcover + hillshade are shown, the
+	 *  Mapterhorn terrain mesh is applied, and the camera pitches up; disable
+	 *  reverses it. Idempotent and safe to call before the style loads. */
 	setTerrain(enabled: boolean): void;
 	destroy(): void;
 }
@@ -260,6 +264,22 @@ export function createRouteMap(
 	map.addControl(new NavigationControl(), "top-right");
 	map.addControl(new ScaleControl(), "bottom-left");
 
+	// Swap the 2D-only bootstrap style for the combined style (both base maps + the
+	// DEM) once its remote VersaTiles part is fetched. This is a one-time install at
+	// startup — invisible, since both styles show OpenTopoMap in 2D — after which a
+	// 2D↔3D toggle never touches setStyle (#121). The install wipes runtime-added
+	// layers, so onCombinedReady re-applies POIs, highlight, and the view mode. Wait
+	// for the new style's first `styledata` before gating on full readiness (right
+	// after setStyle, isStyleLoaded() still reports the OLD style).
+	buildCombinedStyle()
+		.then((style) => {
+			map.setStyle(style);
+			map.once("styledata", () => whenStyleReady(onCombinedReady));
+		})
+		.catch((error: unknown) => {
+			console.error("[route-map] combined style install failed", error);
+		});
+
 	// The poi_id -> referencing-Entries index, supplied with the POIs via showPois
 	// (both come from the loaded GuideData). Used to resolve a tapped
 	// Place-coordinate marker back to its Place (ADR-0004: POIs are display-only,
@@ -285,18 +305,20 @@ export function createRouteMap(
 	// the POIs load after a selection is already active.
 	let selectedEntry: Entry | null = null;
 	// setTerrain has the same race; buffer the latest desired state and apply it
-	// on load. Track the applied state so re-adding the source stays idempotent.
+	// once the combined style is installed.
 	let terrainEnabled = false;
-	// The base map depends on the view mode: 2D → OpenTopoMap, 3D → VersaTiles.
-	// Track which base style is applied so setTerrain only swaps the whole style
-	// when the mode actually changes. Starts "2d" — the style the map is built with.
-	let appliedMode: "2d" | "3d" = "2d";
-	// The last POI set handed to showPois. setStyle() wipes all runtime-added
-	// sources/layers, so the POIs (and the selection highlight, from selectedEntry)
-	// must be re-rendered from here after every base-map swap.
+	// The map boots on the 2D-only style for an instant first paint, then the
+	// combined style (both base maps + the DEM) is installed once its remote
+	// VersaTiles part has been fetched (buildCombinedStyle). Until then a 2D↔3D
+	// toggle is buffered in terrainEnabled and applied on install; after it, the
+	// toggle is a pure visibility flip with no setStyle.
+	let combinedInstalled = false;
+	// The last POI set handed to showPois. Installing the combined style wipes all
+	// runtime-added sources/layers, so the POIs (and the selection highlight, from
+	// selectedEntry) must be re-rendered from here once it is in.
 	let currentPois: Poi[] | null = null;
 	// The POI click/hover handlers are map-level, filtered by layer id, so they
-	// survive setStyle and must be wired exactly once — re-wiring per swap would
+	// survive a style install and must be wired exactly once — re-wiring would
 	// stack duplicate handlers.
 	let interactionsWired = false;
 
@@ -327,42 +349,56 @@ export function createRouteMap(
 		map.on("idle", attempt);
 	}
 
-	function applyTerrain(enabled: boolean): void {
-		if (enabled) {
-			if (!map.getSource(TERRAIN_SOURCE_ID)) {
-				map.addSource(TERRAIN_SOURCE_ID, terrainSource);
+	// Flip which base map is shown, without a setStyle: 2D shows the OpenTopoMap
+	// raster; 3D shows the VersaTiles landcover + hillshade + the floating peak
+	// labels. A hidden layer streams no tiles, so 2D loads neither the VersaTiles
+	// nor the DEM tiles (attribution stays honest). Leaves the POI + highlight
+	// layers untouched — they show in both modes.
+	function setBaseVisibility(enabled: boolean): void {
+		const setVis = (id: string, visible: boolean) => {
+			if (map.getLayer(id)) {
+				map.setLayoutProperty(id, "visibility", visible ? "visible" : "none");
 			}
+		};
+		for (const layer of map.getStyle().layers ?? []) {
+			if (layer.id === OPENTOPO_SOURCE_ID) {
+				setVis(layer.id, !enabled);
+			} else if ("source" in layer && layer.source === VERSATILES_SOURCE_ID) {
+				setVis(layer.id, enabled);
+			}
+		}
+		setVis(HILLSHADE_SOURCE_ID, enabled);
+		setVis(PEAK_LABEL_LAYER_ID, enabled);
+	}
+
+	// Apply the view mode: swap base visibility, attach/clear the terrain mesh
+	// (its DEM source is resident in the combined style, so no addSource), and
+	// pitch the camera. Firing all three together lets the tilt and the relief
+	// animate as one motion instead of the old flat-then-pitch-then-pop stages.
+	function applyMode(enabled: boolean): void {
+		setBaseVisibility(enabled);
+		if (enabled) {
 			map.setTerrain({
 				source: TERRAIN_SOURCE_ID,
 				exaggeration: TERRAIN_EXAGGERATION,
 			});
-			map.easeTo({ pitch: TERRAIN_PITCH });
 		} else {
 			map.setTerrain(null);
-			map.easeTo({ pitch: 0 });
 		}
+		map.easeTo({ pitch: enabled ? TERRAIN_PITCH : 0 });
 	}
 
-	// Rebuild everything a base-map swap wiped. setStyle() removes all runtime-added
-	// sources/layers (base customizations, terrain mesh, POI + highlight layers), so
-	// after the new style loads we re-apply them from the retained state. Order
-	// matters: base customizations first, then terrain, then POIs and the highlight
-	// on top. Nothing here reframes the camera — a mode toggle keeps the view.
-	function reapplyAfterStyle(): void {
-		if (appliedMode === "3d") {
-			customizeBasemap(map);
-		}
-		applyTerrain(terrainEnabled);
+	// Installing the combined style wipes all runtime-added sources/layers, so once
+	// it is in we re-apply them from the retained state: POIs (+ peak labels) and
+	// the selection highlight, then the current view mode. Nothing here reframes
+	// the camera — a mode toggle keeps the view.
+	function onCombinedReady(): void {
+		combinedInstalled = true;
 		if (currentPois) {
 			renderPois(currentPois);
 		}
-		// Peak labels go on AFTER renderPois (they read POI_SOURCE_ID) and AFTER
-		// customizeBasemap's symbol-strip; 3D only — 2D OpenTopoMap keeps its own
-		// baked labels.
-		if (appliedMode === "3d") {
-			addPeakLabels();
-		}
 		renderHighlight(selectedEntry, false);
+		applyMode(terrainEnabled);
 	}
 
 	function renderPois(pois: Poi[]): void {
@@ -408,18 +444,31 @@ export function createRouteMap(
 		// already selected when the POIs load, its Mentions show too. Same call the
 		// highlight path uses, so there is one place the filter is built.
 		applyPoiVisibility();
-		// Wire interactions once (handlers are map-level and survive setStyle); the
-		// layer is re-created on every base-map swap but the handlers still match it.
+		// Wire interactions once (handlers are map-level and survive a style
+		// install); the layer is re-created on each install but the handlers still
+		// match it.
 		if (!interactionsWired) {
 			wireInteractions();
 			interactionsWired = true;
 		}
+		// Float peak names above the summits (reads POI_SOURCE_ID). Present in both
+		// modes but shown only in 3D — the 2D OpenTopoMap carries its own baked
+		// labels — so its visibility tracks the current mode.
+		addPeakLabels();
+		if (map.getLayer(PEAK_LABEL_LAYER_ID)) {
+			map.setLayoutProperty(
+				PEAK_LABEL_LAYER_ID,
+				"visibility",
+				terrainEnabled ? "visible" : "none",
+			);
+		}
 	}
 
-	// A symbol layer for peak names, floating above each summit marker. Added only
-	// in 3D and only AFTER customizeBasemap() has stripped the basemap's own symbol
-	// layers, so it survives that pass. Reads the
-	// existing `pois` GeoJSON source (POI_SOURCE_ID), filtered to peaks — no new
+	// A symbol layer for peak names, floating above each summit marker. Added once
+	// the POIs exist and shown only in 3D (renderPois gates its visibility on the
+	// mode; the VersaTiles style's own symbol layers were stripped at build time in
+	// buildCombinedStyle, so this is the only label layer on the 3D surface). Reads
+	// the existing `pois` GeoJSON source (POI_SOURCE_ID), filtered to peaks — no new
 	// source/data. Screen-space "above the summit": the true metres-above-terrain
 	// property (symbol-elevation) is not in maplibre 5.24 (style-spec #62 /
 	// gl-js #7827, not shipped), so anchor the label's bottom edge on the summit and
@@ -665,22 +714,14 @@ export function createRouteMap(
 		},
 		setTerrain(enabled: boolean): void {
 			terrainEnabled = enabled;
-			const targetMode = enabled ? "3d" : "2d";
-			if (targetMode === appliedMode) {
-				// Same base map already applied — just toggle the terrain mesh.
-				whenStyleReady(() => applyTerrain(terrainEnabled));
+			// Before the combined style is in, both base maps do not yet exist to
+			// flip between; buffer the desired state — onCombinedReady applies the
+			// latest terrainEnabled once it lands. After that, a toggle is a pure
+			// visibility flip + terrain + pitch, with no setStyle.
+			if (!combinedInstalled) {
 				return;
 			}
-			// Mode changed: swap the whole base map (2D OpenTopoMap ↔ 3D VersaTiles).
-			// setStyle wipes runtime sources/layers, so re-apply them once the new
-			// style has loaded. NOTE: right after setStyle, map.isStyleLoaded() still
-			// reports the OLD style as loaded (the new one loads async), so calling
-			// whenStyleReady synchronously would run against the outgoing style and
-			// its work would be wiped. Wait for the new style's first `styledata`,
-			// then gate on full readiness.
-			appliedMode = targetMode;
-			map.setStyle(enabled ? basemapStyle3d : basemapStyle2d);
-			map.once("styledata", () => whenStyleReady(reapplyAfterStyle));
+			whenStyleReady(() => applyMode(terrainEnabled));
 		},
 		destroy() {
 			map.remove();
