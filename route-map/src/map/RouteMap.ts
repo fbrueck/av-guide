@@ -11,11 +11,13 @@ import {
 import type { Entry, Poi } from "../domain";
 import {
 	BASEMAP_MAX_ZOOM,
+	basemapStyle2d,
+	basemapStyle3d,
+	customizeBasemap,
 	TERRAIN_EXAGGERATION,
 	TERRAIN_PITCH,
 	TERRAIN_SOURCE_ID,
 	terrainSource,
-	topoBasemapStyle,
 } from "./basemap";
 import { poiColorExpression } from "./poiStyle";
 import {
@@ -210,7 +212,7 @@ export function createRouteMap(
 ): RouteMap {
 	const map = new MapLibreMap({
 		container,
-		style: topoBasemapStyle,
+		style: basemapStyle2d,
 		bounds: WETTERSTEIN_BOUNDS,
 		// Reserve the mobile bottom sheet's height so the initial overview frames
 		// above it, not behind it (same rationale as fitToPois).
@@ -260,6 +262,18 @@ export function createRouteMap(
 	// setTerrain has the same race; buffer the latest desired state and apply it
 	// on load. Track the applied state so re-adding the source stays idempotent.
 	let terrainEnabled = false;
+	// The base map depends on the view mode: 2D → OpenTopoMap, 3D → VersaTiles.
+	// Track which base style is applied so setTerrain only swaps the whole style
+	// when the mode actually changes. Starts "2d" — the style the map is built with.
+	let appliedMode: "2d" | "3d" = "2d";
+	// The last POI set handed to showPois. setStyle() wipes all runtime-added
+	// sources/layers, so the POIs (and the selection highlight, from selectedEntry)
+	// must be re-rendered from here after every base-map swap.
+	let currentPois: Poi[] | null = null;
+	// The POI click/hover handlers are map-level, filtered by layer id, so they
+	// survive setStyle and must be wired exactly once — re-wiring per swap would
+	// stack duplicate handlers.
+	let interactionsWired = false;
 
 	// Run `task` once the style can accept sources/layers. maplibre's `load`
 	// event is one-shot, so a `map.once("load", …)` registered AFTER load has
@@ -302,6 +316,22 @@ export function createRouteMap(
 			map.setTerrain(null);
 			map.easeTo({ pitch: 0 });
 		}
+	}
+
+	// Rebuild everything a base-map swap wiped. setStyle() removes all runtime-added
+	// sources/layers (base customizations, terrain mesh, POI + highlight layers), so
+	// after the new style loads we re-apply them from the retained state. Order
+	// matters: base customizations first, then terrain, then POIs and the highlight
+	// on top. Nothing here reframes the camera — a mode toggle keeps the view.
+	function reapplyAfterStyle(): void {
+		if (appliedMode === "3d") {
+			customizeBasemap(map);
+		}
+		applyTerrain(terrainEnabled);
+		if (currentPois) {
+			renderPois(currentPois);
+		}
+		renderHighlight(selectedEntry, false);
 	}
 
 	function renderPois(pois: Poi[]): void {
@@ -347,7 +377,12 @@ export function createRouteMap(
 		// already selected when the POIs load, its Mentions show too. Same call the
 		// highlight path uses, so there is one place the filter is built.
 		applyPoiVisibility();
-		wireInteractions();
+		// Wire interactions once (handlers are map-level and survive setStyle); the
+		// layer is re-created on every base-map swap but the handlers still match it.
+		if (!interactionsWired) {
+			wireInteractions();
+			interactionsWired = true;
+		}
 	}
 
 	// Ease/fit the camera to the highlighted POI set. Single point eases to a
@@ -399,7 +434,9 @@ export function createRouteMap(
 		);
 	}
 
-	function renderHighlight(entry: Entry | null): void {
+	// `refit` reframes the camera to the highlighted set; pass false when merely
+	// rebuilding the layer after a base-map swap, so a 2D↔3D toggle keeps the view.
+	function renderHighlight(entry: Entry | null, refit = true): void {
 		// The selection drives both layers through this one door (route-map/CLAUDE.md
 		// rule 4): the highlight overlay below, and the base layer's mention-reveal
 		// filter. Update the reveal first so it swaps atomically with the highlight.
@@ -452,7 +489,7 @@ export function createRouteMap(
 		}
 		// Only reframe when there is something to frame; a cleared or empty set
 		// must not yank the camera (route-map/CLAUDE.md rule 3 — honest rendering).
-		if (set) {
+		if (set && refit) {
 			fitToPois([...set.targets, ...set.mentions]);
 		}
 	}
@@ -497,6 +534,9 @@ export function createRouteMap(
 			entriesByPoiId = index;
 			placePoiIds = placeIds;
 			pendingPois = pois;
+			// Retain the set so it can be re-rendered after a base-map swap (setStyle
+			// wipes the runtime POI layer).
+			currentPois = pois;
 			whenStyleReady(() => {
 				if (pendingPois) {
 					renderPois(pendingPois);
@@ -517,9 +557,22 @@ export function createRouteMap(
 		},
 		setTerrain(enabled: boolean): void {
 			terrainEnabled = enabled;
-			whenStyleReady(() => {
-				applyTerrain(terrainEnabled);
-			});
+			const targetMode = enabled ? "3d" : "2d";
+			if (targetMode === appliedMode) {
+				// Same base map already applied — just toggle the terrain mesh.
+				whenStyleReady(() => applyTerrain(terrainEnabled));
+				return;
+			}
+			// Mode changed: swap the whole base map (2D OpenTopoMap ↔ 3D VersaTiles).
+			// setStyle wipes runtime sources/layers, so re-apply them once the new
+			// style has loaded. NOTE: right after setStyle, map.isStyleLoaded() still
+			// reports the OLD style as loaded (the new one loads async), so calling
+			// whenStyleReady synchronously would run against the outgoing style and
+			// its work would be wiped. Wait for the new style's first `styledata`,
+			// then gate on full readiness.
+			appliedMode = targetMode;
+			map.setStyle(enabled ? basemapStyle3d : basemapStyle2d);
+			map.once("styledata", () => whenStyleReady(reapplyAfterStyle));
 		},
 		destroy() {
 			map.remove();

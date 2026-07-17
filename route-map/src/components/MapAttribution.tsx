@@ -1,9 +1,17 @@
-import { BASEMAP_CREDITS, type MapCredit, TERRAIN_CREDIT } from "../map";
+import {
+	BASEMAP_CREDITS,
+	BASEMAP_CREDITS_3D,
+	type MapCredit,
+	TERRAIN_CREDIT,
+} from "../map";
 
 interface MapAttributionProps {
-	// The terrain credit is shown only while terrain is enabled: the Mapterhorn
-	// DEM tiles are not loaded on the flat map, so crediting them there would be
-	// dishonest (route-map/CLAUDE.md rule 3 — render honestly).
+	// Terrain-enabled is also the 3D-base-map flag: enabling terrain swaps the
+	// flat OpenTopoMap for the VersaTiles landcover map and adds the Mapterhorn
+	// relief, so the credits change with it. The terrain credit is shown only
+	// while terrain is enabled — the Mapterhorn DEM tiles are not loaded on the
+	// flat map, so crediting them there would be dishonest (route-map/CLAUDE.md
+	// rule 3 — render honestly).
 	terrainEnabled: boolean;
 }
 
@@ -17,7 +25,7 @@ interface MapAttributionProps {
 // source of truth), so the two can never drift.
 export function MapAttribution({ terrainEnabled }: MapAttributionProps) {
 	const credits: readonly MapCredit[] = terrainEnabled
-		? [...BASEMAP_CREDITS, TERRAIN_CREDIT]
+		? [...BASEMAP_CREDITS_3D, TERRAIN_CREDIT]
 		: BASEMAP_CREDITS;
 	return (
 		<details className="map-attribution">
