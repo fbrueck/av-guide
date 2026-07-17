@@ -6,10 +6,14 @@ body,
 }
 
 :root {
-	/* The bottom-sheet peek height (route-map/CLAUDE.md rule 8). Single source of
-	 * truth: the sheet is this tall when collapsed below 768px, and the on-map
-	 * scale + attribution are offset up by it so they clear the sheet (#103). */
+	/* The bottom-sheet peek height (route-map/CLAUDE.md rule 8) — the middle of
+	 * the sheet's three heights. Single source of truth: the on-map scale +
+	 * attribution are offset up by it so they clear the peeked sheet (#103), and
+	 * the map camera reserves it as the bottom inset when framing selections. */
 	--sheet-peek-height: 42vh;
+	/* The sheet's handle height — also its height when fully collapsed, where only
+	 * the handle shows. Content inside the sheet starts below this. */
+	--sheet-header-height: 2.75rem;
 }
 
 /* Two-column shell: the map pane is the main surface, the Entry panel docks on
@@ -522,14 +526,13 @@ body,
  * via its .sheet-header (CSS transition — no drag physics, no sheet library). */
 @media (max-width: 768px) {
 	/* The panel leaves the flex flow and docks to the bottom as a sheet. Its
-	 * height is the peek height by default and grows to full when expanded; the
-	 * height transition is the whole peek <-> full animation. The map-pane keeps
-	 * flex: 1 and fills the viewport underneath (map-primary). */
+	 * height is one of three modes (collapsed / peek / full, set by the modifier
+	 * classes below); the height transition is the whole animation between them.
+	 * The map-pane keeps flex: 1 and fills the viewport underneath (map-primary). */
 	.route-panel {
 		position: absolute;
 		inset: auto 0 0 0;
 		width: auto;
-		height: var(--sheet-peek-height);
 		border-left: none;
 		border-top: 1px solid #ccc;
 		border-radius: 12px 12px 0 0;
@@ -539,23 +542,31 @@ body,
 		z-index: 2;
 	}
 
-	/* Full: the sheet grows to (almost) the whole viewport. */
-	.route-panel--expanded {
+	/* Three sheet heights (rule 8). Collapsed shows only the handle; peek is the
+	 * middle browsing height; full grows to (almost) the whole viewport. */
+	.route-panel--collapsed {
+		height: var(--sheet-header-height);
+	}
+
+	.route-panel--peek {
+		height: var(--sheet-peek-height);
+	}
+
+	.route-panel--full {
 		height: 92vh;
 	}
 
-	/* The grabber becomes a real, full-width tap target at the top of the sheet. */
+	/* The handle: a full-width bar at the top of the sheet holding the chevron
+	 * step buttons, centered with a small gap when both show (peek mode). */
 	.sheet-header {
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		gap: 1.5rem;
 		width: 100%;
-		height: 2.75rem;
-		padding: 0;
-		border: none;
+		height: var(--sheet-header-height);
 		border-radius: 12px 12px 0 0;
 		background: #fff;
-		cursor: pointer;
 		/* Sit above the absolute-filling sidebar/detail so it stays tappable. */
 		position: absolute;
 		top: 0;
@@ -564,24 +575,31 @@ body,
 		z-index: 3;
 	}
 
-	/* A chevron, not a drag pill: it signals the header is a TAP toggle. It points
-	 * up to expand the sheet and rotates to point down when expanded, in step with
-	 * the sheet's own height transition (same 0.28s ease). */
-	.sheet-header__chevron {
+	/* Each chevron step button: a ≥44px tap target with a bare, centered glyph
+	 * that darkens on press/hover. Chevrons (not a drag pill) signal a TAP. */
+	.sheet-header__chevron-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 44px;
+		height: var(--sheet-header-height);
+		padding: 0;
+		border: none;
+		background: none;
 		color: #999;
-		transition: transform 0.28s ease;
+		cursor: pointer;
 	}
 
-	.sheet-header[aria-expanded="true"] .sheet-header__chevron {
-		transform: rotate(180deg);
+	.sheet-header__chevron-btn:hover {
+		color: #555;
 	}
 
-	/* Reserve the header's height: the sidebar and any detail panel fill the
-	 * sheet (inset: 0) but must start below the header so it is never covered.
+	/* Reserve the handle's height: the sidebar and any detail panel fill the
+	 * sheet (inset: 0) but must start below the handle so it is never covered.
 	 * Both scroll their own content, so peek shows the top and full shows all. */
 	.route-panel .sidebar,
 	.route-panel .detail {
-		top: 2.75rem;
+		top: var(--sheet-header-height);
 	}
 
 	/* Content-aware peek (#102): the peek (42vh) shows whatever sits at the top of

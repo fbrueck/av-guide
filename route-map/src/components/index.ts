@@ -6,5 +6,6 @@ export { MapAttribution } from "./MapAttribution";
 export { PlaceDetail } from "./PlaceDetail";
 export { PoiLegend } from "./PoiLegend";
 export { RouteDetail } from "./RouteDetail";
+export { SheetHandle, type SheetMode } from "./SheetHandle";
 export { Sidebar } from "./Sidebar";
 export { TerrainToggle } from "./TerrainToggle";

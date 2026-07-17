@@ -5,6 +5,8 @@ import {
 	PlaceDetail,
 	PoiLegend,
 	RouteDetail,
+	SheetHandle,
+	type SheetMode,
 	Sidebar,
 	TerrainToggle,
 } from "./components";
@@ -31,13 +33,15 @@ export function App() {
 	const [searchText, setSearchText] = useState("");
 	// The third state atom (route-map/CLAUDE.md rule 5): 2D vs 3D terrain.
 	const [terrainEnabled, setTerrainEnabled] = useState(false);
-	// Mobile-only state atom (route-map/CLAUDE.md rules 5 & 8): whether the
-	// bottom sheet is expanded (full) or collapsed (peek). Below 768px the
-	// route-panel becomes a sheet that taps peek <-> full through this flag; above
-	// it the flag is inert (the panel is the docked desktop column). The reader
-	// drives it via the sheet header — a selection (sidebar or map tap) never
-	// forces it open, so the flag stays reader-owned.
-	const [sheetExpanded, setSheetExpanded] = useState(false);
+	// Mobile-only state atom (route-map/CLAUDE.md rules 5 & 8): the bottom sheet's
+	// height, one of three modes — collapsed (only the handle shows), peek (the
+	// middle browsing height), full (nearly the whole viewport). Below 768px the
+	// route-panel is this sheet, stepped through the modes by its handle; above it
+	// the atom is inert (the panel is the docked desktop column). The reader drives
+	// it via the handle; the one exception is that a fresh selection snaps it to
+	// peek (see handleSelectEntry) so the tapped detail is visible. Default peek so
+	// content is visible on load.
+	const [sheetMode, setSheetMode] = useState<SheetMode>("peek");
 
 	const currentEntry = selection[selection.length - 1] ?? null;
 
@@ -45,11 +49,13 @@ export function App() {
 	// stable useCallback so the map-creation effect below does not re-create the
 	// map. The map calls this too, so a marker-tap selection goes through the exact
 	// same door as a sidebar click — the map never owns selection (rule 4). On
-	// mobile it does NOT auto-expand the bottom sheet: a tap only selects; the
-	// reader opens the sheet themselves via its header (the peek already shows the
-	// selected detail's header — #102).
+	// mobile a fresh selection always snaps the sheet to peek (the half height), so
+	// the tapped detail is visible without covering the map — never to full, and it
+	// lifts the sheet out of collapsed. Inert on desktop (setSheetMode is a no-op
+	// for the docked column).
 	const handleSelectEntry = useCallback((entry: Entry) => {
 		setSelection([entry]);
+		setSheetMode("peek");
 	}, []);
 	// Drill into a related Entry from within a detail panel (a Place's route,
 	// a Route's Destination or a further target Place, a resolved Reference
@@ -63,10 +69,14 @@ export function App() {
 	const handleClose = useCallback(() => {
 		setSelection([]);
 	}, []);
-	// Tapping the sheet header flips peek <-> full (CSS transition, no drag). Only
-	// wired below 768px where the header is shown; inert on desktop (rule 8).
-	const handleToggleSheet = useCallback(() => {
-		setSheetExpanded((expanded) => !expanded);
+	// Step the sheet one height taller / shorter through collapsed <-> peek <->
+	// full (CSS height transition, no drag). Only wired below 768px where the
+	// handle is shown; inert on desktop (rule 8).
+	const handleSheetExpand = useCallback(() => {
+		setSheetMode((mode) => (mode === "collapsed" ? "peek" : "full"));
+	}, []);
+	const handleSheetCollapse = useCallback(() => {
+		setSheetMode((mode) => (mode === "full" ? "peek" : "collapsed"));
 	}, []);
 
 	// Create the map instance once and keep it in a ref for effects to drive.
@@ -161,40 +171,15 @@ export function App() {
 				<TerrainToggle enabled={terrainEnabled} onToggle={setTerrainEnabled} />
 				<MapAttribution terrainEnabled={terrainEnabled} />
 			</div>
-			<div
-				className={
-					sheetExpanded ? "route-panel route-panel--expanded" : "route-panel"
-				}
-			>
-				{/* Bottom-sheet toggle: shown only below 768px (rule 8), taps peek <->
-				    full. On desktop it is display:none and the panel is the docked
-				    column. Smart peek content is #102 — this is just the tap target.
-				    A chevron (not a drag pill) signals the interaction is a TAP: it
-				    points up to expand and rotates to point down to collapse. */}
-				<button
-					type="button"
-					className="sheet-header"
-					aria-expanded={sheetExpanded}
-					aria-label={sheetExpanded ? "Collapse panel" : "Expand panel"}
-					onClick={handleToggleSheet}
-				>
-					<svg
-						className="sheet-header__chevron"
-						viewBox="0 0 24 24"
-						width="22"
-						height="22"
-						aria-hidden="true"
-					>
-						<path
-							d="M6 15l6-6 6 6"
-							fill="none"
-							stroke="currentColor"
-							strokeWidth="2"
-							strokeLinecap="round"
-							strokeLinejoin="round"
-						/>
-					</svg>
-				</button>
+			<div className={`route-panel route-panel--${sheetMode}`}>
+				{/* The mobile sheet's handle: chevron buttons that step through the
+				    three heights (rule 8). Hidden on desktop, where the panel is the
+				    docked column. Smart peek content is #102. */}
+				<SheetHandle
+					mode={sheetMode}
+					onExpand={handleSheetExpand}
+					onCollapse={handleSheetCollapse}
+				/>
 				<Sidebar
 					places={guideData?.places ?? []}
 					unfiledRoutes={guideData?.unfiledRoutes ?? []}
