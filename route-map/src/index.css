@@ -207,12 +207,11 @@ body,
 	font-size: 1.05rem;
 }
 
-.detail__kind {
-	margin: 0.1rem 0 0;
-	font-size: 0.72rem;
-	text-transform: uppercase;
-	letter-spacing: 0.04em;
-	color: #888;
+/* An inline, secondary qualifier after the title (a Place's elevation): normal
+ * weight and muted so the name still leads the heading. */
+.detail__title-suffix {
+	font-weight: 400;
+	color: #666;
 }
 
 .detail__close {

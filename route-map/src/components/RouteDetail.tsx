@@ -70,7 +70,7 @@ export function RouteDetail({ route, nav }: RouteDetailProps) {
 
 	return (
 		<section className="detail" aria-label="Routendetails">
-			<DetailHeader title={route.name} kind="Route" nav={nav} />
+			<DetailHeader title={route.name} nav={nav} />
 
 			{rows.length > 0 ? (
 				<dl className="detail__meta">

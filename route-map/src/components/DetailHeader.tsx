@@ -11,14 +11,19 @@ export interface DetailNav {
 
 interface DetailHeaderProps {
 	title: string;
-	/** The Entry kind label, "Ort" or "Route". */
-	kind: string;
+	/**
+	 * Optional muted qualifier rendered inline after the title, e.g. a Place's
+	 * elevation so the heading reads "Kreuzjoch, 1719 m". Part of the <h2> so it
+	 * belongs to the heading semantically; styled secondary so the name leads.
+	 */
+	titleSuffix?: string;
 	nav: DetailNav;
 }
 
 // Shared header for the Place and Route detail panels: an optional Back button
-// (up the selection stack), the Entry name + its kind label, and a close button.
-export function DetailHeader({ title, kind, nav }: DetailHeaderProps) {
+// (up the selection stack), the Entry name (with an optional muted suffix), and
+// a close button.
+export function DetailHeader({ title, titleSuffix, nav }: DetailHeaderProps) {
 	return (
 		<header className="detail__header">
 			<div className="detail__header-titles">
@@ -32,8 +37,12 @@ export function DetailHeader({ title, kind, nav }: DetailHeaderProps) {
 						‹ Zurück
 					</button>
 				) : null}
-				<h2 className="detail__title">{title}</h2>
-				<p className="detail__kind">{kind}</p>
+				<h2 className="detail__title">
+					{title}
+					{titleSuffix ? (
+						<span className="detail__title-suffix">, {titleSuffix}</span>
+					) : null}
+				</h2>
 			</div>
 			<button
 				type="button"
