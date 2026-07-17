@@ -4,8 +4,11 @@ The web app that renders a guide's mapped route data on an interactive
 topographic map, so the digitizer can *see* and QA the pipeline's output (#17).
 It runs in two modes over one static frontend: a **local-live** QA tool (Vite
 dev server, live pipeline artifacts) and a **deployed read-only snapshot**
-published to GitHub Pages (ADR-0003) — see rules 1 and 6. Repo-wide rules
-(contribution workflow, module layout, domain language) live in the root
+published to GitHub Pages (ADR-0003) — see rules 1 and 6. The one frontend is
+**responsive**: the desktop two-column shell above `768px`, a map-primary
+**bottom-sheet** layout below it for smartphones (rule 8). Only the deployed
+snapshot is held to the mobile-quality bar; local-live QA stays desktop. Repo-wide
+rules (contribution workflow, module layout, domain language) live in the root
 `CLAUDE.md`; this file owns everything specific to the webapp.
 
 It is a **read-only consumer** of committed pipeline artifacts under
@@ -98,8 +101,11 @@ Load-bearing. Breaking one needs a deliberate, called-out reason.
 
 5. **Minimal state.** The app's state is: the selection (a small stack of
    Entries for drill-in/back through the place→route→reference graph), search
-   text, terrain on/off. Plain React state (lifted to `App`, or one context) —
-   **no router, no global-state library** (Redux/Zustand/etc.).
+   text, terrain on/off, and — on mobile — whether the bottom sheet is expanded
+   (a selection made from the map auto-expands it, so it must be real state, not
+   pure CSS). The selection stays `Entry[]`: a POI is **never** selected (rule
+   9), so the stack is not widened. Plain React state (lifted to `App`, or one
+   context) — **no router, no global-state library** (Redux/Zustand/etc.).
 
 6. **Data access: dev-live vs deployed-snapshot.** Two sources answer the same
    `/guide-data/` URL scheme by design (ADR-0003); the `src/data` adapter's
@@ -135,6 +141,28 @@ Load-bearing. Breaking one needs a deliberate, called-out reason.
 7. **Domain vocabulary in code and UI.** Use the root `CONTEXT.md` terms —
    Entry, Place, Route, POI, Destination, Mention, Reference, Gazetteer — in
    identifiers, comments, and user-facing copy. ("Anchor" is retired — ADR-0002.)
+
+8. **Responsive: one frontend, two layouts, one breakpoint.** A single
+   `max-width: 768px` media query is the only line. **Above it:** the desktop
+   two-column shell (map + docked 340px panel), unchanged. **Below it:**
+   **map-primary + bottom sheet** — the map fills the screen and the panel
+   becomes a sheet that **taps between peek ↔ full** (CSS transition; **no drag
+   physics, no sheet library** — the dependency bar in "Adding to route-map"
+   holds). Support down to **360px** wide, portrait-primary; landscape must not
+   break, but gets no dedicated design, and there is no separate tablet layout.
+   On mobile the on-map controls are de-conflicted with the sheet: the legend
+   collapses to a button, attribution uses MapLibre's **compact** `ⓘ` (license
+   compliance is non-negotiable — OSM + OpenTopoMap CC-BY-SA + Mapterhorn), the
+   zoom buttons are hidden (pinch covers them), and scale + attribution sit above
+   the sheet's peek. Terrain (rule 4) stays available and default-off on mobile.
+
+9. **POIs are display-only (ADR-0004).** A POI is rendered but is **never a
+   selection target** — there is no POI popup and no POI detail view. Tapping a
+   Place-coordinate marker selects that Place (an Entry); a mention-only marker
+   is inert. This is why the selection stack stays `Entry[]` (rule 5) and
+   navigation is one-directional (Entry → its POIs, no POI → Entries reverse
+   lookup). Do not re-add a POI popup or a selectable POI without revisiting
+   ADR-0004.
 
 ## Data contract
 
@@ -186,6 +214,13 @@ open the app in Chrome, and confirm with DevTools:
 - the rendered map and DOM match the criteria — markers, highlighted POI set
   (target Places distinct from Mentions), detail panel, terrain toggle —
   inspected via the Elements panel and screenshots.
+
+For **mobile** work (rule 8), verify in **DevTools device mode at 360px and
+768px**: the layout flips at the breakpoint, the bottom sheet taps peek ↔ full,
+the on-map controls don't overlap and don't hide the attribution, and tap
+targets are ≥44px. DevTools device mode is the agent's proof-of-done here; real
+finger-gesture feel (pinch/pitch, sheet tap under a thumb) is a manual real-phone
+check the digitizer does against the deployed snapshot — not an agent gate.
 
 State plainly in the PR what was checked this way and the result; "verified by
 eye" is not a pass unless it was actually done in DevTools.

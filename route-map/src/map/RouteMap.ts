@@ -7,7 +7,6 @@ import {
 	LngLatBounds,
 	Map as MapLibreMap,
 	NavigationControl,
-	Popup,
 	ScaleControl,
 } from "maplibre-gl";
 import type { Entry, Poi } from "../domain";
@@ -46,6 +45,12 @@ const SINGLE_POINT_ZOOM = 14;
 const FIT_PADDING = 64;
 const FIT_MAX_ZOOM = 15;
 
+// Mirrors the single `max-width: 768px` CSS breakpoint (route-map/CLAUDE.md
+// rule 8) so the maplibre controls constructed here agree with the responsive
+// layout. Not a second breakpoint — the CSS query stays the sole one; this only
+// lets the imperative map read the same threshold at construction.
+const MOBILE_BREAKPOINT = 768;
+
 const EMPTY_FEATURE_COLLECTION: FeatureCollection = {
 	type: "FeatureCollection",
 	features: [],
@@ -59,9 +64,11 @@ export interface RouteMap {
 	 *  coordinate of a Place, `placePoiIds`) are the **primary** markers — drawn
 	 *  larger with a dark ring — so the place-first model reads at a glance;
 	 *  mention-only / gazetteer POIs recede. Also supply the poi_id ->
-	 *  referencing-Entries index the popup cross-links read. All three arrive with
-	 *  the data (from the loaded GuideData), so they are passed here rather than at
-	 *  construction. Idempotent — calling again replaces the rendered set. */
+	 *  referencing-Entries index used to resolve a tapped Place-coordinate marker
+	 *  back to its Place (ADR-0004: POIs are display-only, so this is the only
+	 *  Entry lookup a POI tap does). All three arrive with the data (from the
+	 *  loaded GuideData), so they are passed here rather than at construction.
+	 *  Idempotent — calling again replaces the rendered set. */
 	showPois(
 		pois: Poi[],
 		entriesByPoiId: Map<string, Entry[]>,
@@ -88,123 +95,13 @@ export interface RouteMap {
 	destroy(): void;
 }
 
-// The GeoJSON feature properties the POI layer + popup read. Kept flat and
-// primitive because maplibre only carries JSON-serialisable feature properties.
-// Extends PoiVisibilityFeature (which owns `id` + `isPlace`) so the base-layer
-// feature shape the visibility rule reads has a single source of truth.
+// The GeoJSON feature properties the POI layer reads. Kept flat and primitive
+// because maplibre only carries JSON-serialisable feature properties. `type`
+// drives the data-driven colour paint; `id`/`isPlace` (from PoiVisibilityFeature,
+// the single source of truth for the base-layer shape) drive the visibility
+// filter and the display-only tap → Place resolution (ADR-0004).
 interface PoiFeatureProps extends PoiVisibilityFeature {
-	name: string;
 	type: string;
-	ele: number | null;
-	osmUrl: string;
-}
-
-function escapeHtml(value: string): string {
-	return value
-		.replace(/&/g, "&amp;")
-		.replace(/</g, "&lt;")
-		.replace(/>/g, "&gt;")
-		.replace(/"/g, "&quot;");
-}
-
-// Popup body = POI identity + a link to verify the match on openstreetmap.org
-// (#21 AC) + the Entries referencing this POI as clickable cross-links (#44).
-// Built as a real DOM element (returned to setDOMContent, not setHTML) so each
-// Entry can carry a live click handler that calls back into React via
-// onSelectEntry — a string popup could not carry safe handlers. This is the one
-// place popup content is built.
-function buildPoiPopupElement(
-	props: PoiFeatureProps,
-	entries: Entry[],
-	onSelectEntry: (entry: Entry) => void,
-	onNavigate: () => void,
-): HTMLElement {
-	const root = document.createElement("div");
-	root.className = "poi-popup";
-
-	const name = props.name || "(unnamed POI)";
-	const type = props.type || "—";
-	const ele = props.ele != null ? `${Math.round(props.ele)} m` : "keine Angabe";
-
-	// Identity block + OSM verify link is static, so an escaped HTML string stays
-	// the readable option here; the interactive Entry list below is real DOM.
-	root.innerHTML = `
-		<strong class="poi-popup__name">${escapeHtml(name)}</strong>
-		<dl class="poi-popup__meta">
-			<div><dt>Typ</dt><dd>${escapeHtml(type)}</dd></div>
-			<div><dt>Höhe</dt><dd>${escapeHtml(ele)}</dd></div>
-		</dl>
-		<a class="poi-popup__osm" href="${escapeHtml(props.osmUrl)}" target="_blank" rel="noopener noreferrer">
-			Auf OpenStreetMap prüfen ↗
-		</a>
-	`;
-
-	root.appendChild(buildEntryCrossLinks(entries, onSelectEntry, onNavigate));
-	return root;
-}
-
-// The cross-link section: the Entries that reference this POI — a Place whose
-// coordinate it is, or any Entry that Mentions it (via entriesByPoiId). Each is
-// a button whose click selects the Entry through the SAME handler a sidebar
-// click uses, so the highlight + fit + detail panel all fire for free. A POI no
-// Entry names (possible for gazetteer POIs) shows an honest empty line.
-function buildEntryCrossLinks(
-	entries: Entry[],
-	onSelectEntry: (entry: Entry) => void,
-	onNavigate: () => void,
-): HTMLElement {
-	const section = document.createElement("div");
-	section.className = "poi-popup__entries";
-
-	if (entries.length === 0) {
-		const empty = document.createElement("p");
-		empty.className = "poi-popup__entries-empty";
-		empty.textContent = "Kein Eintrag nennt diesen POI.";
-		section.appendChild(empty);
-		return section;
-	}
-
-	const title = document.createElement("p");
-	title.className = "poi-popup__entries-title";
-	title.textContent = `Einträge zu diesem POI (${entries.length})`;
-	section.appendChild(title);
-
-	const list = document.createElement("ul");
-	list.className = "poi-popup__entries-list";
-	for (const entry of entries) {
-		const item = document.createElement("li");
-		const button = document.createElement("button");
-		button.type = "button";
-		button.className = "poi-popup__entry";
-
-		const entryName = document.createElement("span");
-		entryName.className = "poi-popup__entry-name";
-		// textContent escapes for free — no manual escaping needed on DOM nodes.
-		entryName.textContent = entry.name;
-		button.appendChild(entryName);
-
-		const meta = document.createElement("span");
-		meta.className = "poi-popup__entry-meta";
-		const kind = document.createElement("span");
-		kind.textContent = entry.kind === "place" ? "Ort" : "Route";
-		const detail = document.createElement("span");
-		detail.className = "poi-popup__entry-grade";
-		detail.textContent =
-			entry.kind === "place"
-				? (entry.placeType ?? "—")
-				: (entry.grade ?? entry.peak ?? "—");
-		meta.append(kind, detail);
-		button.appendChild(meta);
-
-		button.addEventListener("click", () => {
-			onSelectEntry(entry);
-			onNavigate();
-		});
-		item.appendChild(button);
-		list.appendChild(item);
-	}
-	section.appendChild(list);
-	return section;
 }
 
 function toFeatureCollection(
@@ -216,10 +113,7 @@ function toFeatureCollection(
 		features: pois.map((poi) => {
 			const props: PoiFeatureProps = {
 				id: poi.id,
-				name: poi.name,
 				type: poi.type,
-				ele: poi.ele,
-				osmUrl: poi.osmUrl,
 				isPlace: placePoiIds.has(poi.id),
 			};
 			return {
@@ -284,9 +178,9 @@ function toHighlightFeatureCollection(set: HighlightSet): FeatureCollection {
 }
 
 // Options passed at construction (before the guide data loads). onSelectEntry is
-// App's single selection entry point (a stable useCallback), so an Entry clicked
-// in a POI popup selects it identically to a sidebar click — the map never owns
-// selection, it just calls back (route-map/CLAUDE.md rule 4).
+// App's single selection entry point (a stable useCallback), so a tapped
+// Place-coordinate marker selects its Place identically to a sidebar click — the
+// map never owns selection, it just calls back (route-map/CLAUDE.md rule 4).
 export interface CreateRouteMapOptions {
 	onSelectEntry: (entry: Entry) => void;
 }
@@ -301,19 +195,31 @@ export function createRouteMap(
 		bounds: WETTERSTEIN_BOUNDS,
 		fitBoundsOptions: { padding: 32 },
 		maxZoom: BASEMAP_MAX_ZOOM,
-		// Add the attribution control explicitly (compact: false) so the OSM +
-		// OpenTopoMap credits are always visible, not hidden behind a toggle.
+		// Add the attribution control explicitly (below) so we control its compact
+		// mode per viewport rather than take the map default.
 		attributionControl: false,
 	});
 
-	map.addControl(new AttributionControl({ compact: false }), "bottom-right");
+	// Attribution compactness is fixed at construction (maplibre reads it once),
+	// so we pick it from the viewport width here — approach (a) of #103. On mobile
+	// (≤768px) the control renders MapLibre's compact `ⓘ` toggle so the credits do
+	// not steal map space or hide behind the bottom sheet; the OSM + OpenTopoMap
+	// (CC-BY-SA) + Mapterhorn credits stay reachable one tap behind the `ⓘ`. Above
+	// the breakpoint `compact: false` keeps the full, always-visible attribution
+	// desktop has always had — license compliance holds in both modes.
+	const compactAttribution = window.innerWidth <= MOBILE_BREAKPOINT;
+	map.addControl(
+		new AttributionControl({ compact: compactAttribution }),
+		"bottom-right",
+	);
 	map.addControl(new NavigationControl(), "top-right");
 	map.addControl(new ScaleControl(), "bottom-left");
 
-	let popup: Popup | null = null;
-	// The poi_id -> referencing-Entries index the popup reads, supplied with the
-	// POIs via showPois (both come from the loaded GuideData). Empty until then;
-	// a click before data loads simply finds no cross-links.
+	// The poi_id -> referencing-Entries index, supplied with the POIs via showPois
+	// (both come from the loaded GuideData). Used to resolve a tapped
+	// Place-coordinate marker back to its Place (ADR-0004: POIs are display-only,
+	// so this is the sole POI → Entry lookup). Empty until showPois runs; a tap
+	// before data loads simply resolves nothing.
 	let entriesByPoiId: Map<string, Entry[]> = new Map();
 	// The set of poi_ids that are a Place's coordinate — the primary markers, and
 	// the POIs whose click selects a Place directly. Supplied with the POIs.
@@ -517,39 +423,27 @@ export function createRouteMap(
 	}
 
 	function wireInteractions(): void {
+		// POIs are display-only (ADR-0004): a POI is never a selection target and
+		// there is no popup. The only tap behaviour is that a Place-coordinate
+		// marker selects its Place — the same door a sidebar click uses, so the
+		// highlight + fit + detail panel fire for free. A mention-only / gazetteer
+		// marker has no Place of its own, so its tap is inert — navigation is
+		// one-directional (Entry → its POIs), never POI → Entries.
 		map.on("click", POI_LAYER_ID, (event) => {
 			const feature = event.features?.[0];
 			if (!feature) {
 				return;
 			}
 			const props = feature.properties as PoiFeatureProps;
-			const geometry = feature.geometry;
-			if (geometry.type !== "Point") {
+			if (!props.isPlace) {
 				return;
 			}
-			const [lon, lat] = geometry.coordinates as [number, number];
-			popup?.remove();
-			const referencingEntries = entriesByPoiId.get(props.id) ?? [];
-			// Place POIs are the primary markers: clicking one selects that Place
-			// directly (its detail panel carries the OSM-verify link + routes
-			// leading here), per the spec's "selecting a Place selects it". A
-			// mention-only / gazetteer POI has no Place of its own, so it opens the
-			// cross-link popup instead — the Entries that name it.
-			if (props.isPlace) {
-				const place = referencingEntries.find((e) => e.kind === "place");
-				if (place) {
-					onSelectEntry(place);
-					return;
-				}
+			const place = entriesByPoiId
+				.get(props.id)
+				?.find((entry) => entry.kind === "place");
+			if (place) {
+				onSelectEntry(place);
 			}
-			popup = new Popup({ offset: 10, closeButton: true })
-				.setLngLat([lon, lat])
-				.setDOMContent(
-					buildPoiPopupElement(props, referencingEntries, onSelectEntry, () =>
-						popup?.remove(),
-					),
-				)
-				.addTo(map);
 		});
 		map.on("mouseenter", POI_LAYER_ID, () => {
 			map.getCanvas().style.cursor = "pointer";
@@ -593,7 +487,6 @@ export function createRouteMap(
 			});
 		},
 		destroy() {
-			popup?.remove();
 			map.remove();
 		},
 	};
