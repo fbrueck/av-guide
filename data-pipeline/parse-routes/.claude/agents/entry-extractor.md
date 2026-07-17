@@ -78,10 +78,14 @@ Report `entry_id_raw` — your best literal reading of the printed Randziffer
 **number** (and any lowercase letter suffix), as a string:
 
 - `•55` → `"55"`; `•376 A` → `"376 A"`; `•1096b` → `"1096b"`.
-- The OCR often mangles the bullet (`•`, `°`, `«`, `*`, or read as a stray `9`,
-  `0`, or dropped entirely). Strip the bullet — report only the number (+ suffix
-  if present). Do **not** invent a number: if the Randziffer is unrecoverable,
-  set `entry_id_raw` to `null` (merge assigns a flagged synthetic id).
+- The OCR often mangles the bullet (`•`, `°`, `«`, `*`, a leading `>`/arrow, a
+  stray Roman `I` or `l`, `9`, `0`, or dropped entirely — some books mark route
+  entries with a filled arrow that reads as `I`/`>`, e.g. `I 281`, `>301`).
+  Strip that marker — report only the number (+ suffix if present). A leading
+  standalone `I`/`l`/`>`/arrow before the number is the **Randziffer marker, not
+  a climbing grade**: never carry it into the route `grade` field. Do **not**
+  invent a number: if the Randziffer is unrecoverable, set `entry_id_raw` to
+  `null` (merge assigns a flagged synthetic id).
 - Do **not** add the `R` sigil and do **not** normalize — merge does that.
 
 Book-internal cross-references (`Wie R 43`, `siehe R 243`, `Wie dort`) live in
@@ -136,7 +140,10 @@ entry has the shared fields plus the fields for its `kind`:
 paraphrase, infer, or invent; `null` if absent):
 
 - `peak` — mountain/massif the route is on if stated nearby, as printed.
-- `grade` — difficulty as printed, e.g. `"V+, A0"` or `"IV"`.
+- `grade` — the UIAA/aid difficulty from the route's *Beschreibungskopf*, as
+  printed, e.g. `"V+, A0"` or `"IV"`. A plain waymarked walk-up (`Bez.`, a time,
+  no climbing) has **no** grade → `null`. Do **not** mistake the leading
+  Randziffer marker (`I`/`>`/arrow before the entry number) for a grade.
 - `first_ascent` — first-ascent party and/or date, as printed.
 - `time` — climbing time, e.g. `"4-5 Std."`.
 - `height_m` — route height, e.g. `"400 mH"`.
