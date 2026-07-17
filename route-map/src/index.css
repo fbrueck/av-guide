@@ -454,6 +454,68 @@ body,
 	flex: none;
 }
 
+/* Map attribution (src/components/MapAttribution.tsx) — the license-required
+ * credits, rendered as our own React overlay rather than a maplibre control so
+ * they can be collapsed by default. A native <details> in the bottom-right
+ * corner: closed it is a small ⓘ; open it pops the credits up above itself. */
+.map-attribution {
+	position: absolute;
+	right: 0.5rem;
+	bottom: 0.5rem;
+	z-index: 1;
+	font:
+		11px / 1.4 system-ui,
+		sans-serif;
+}
+
+/* The ⓘ toggle. The default <details> disclosure triangle is removed so only the
+ * glyph shows; it reads as a round, map-control-styled button. */
+.map-attribution__toggle {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.5rem;
+	height: 1.5rem;
+	border-radius: 50%;
+	background: rgba(255, 255, 255, 0.92);
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+	color: #333;
+	font-size: 0.95rem;
+	cursor: pointer;
+	list-style: none;
+}
+
+.map-attribution__toggle::-webkit-details-marker {
+	display: none;
+}
+
+.map-attribution__toggle:hover {
+	background: #fff;
+}
+
+/* The credits panel, popped up above the ⓘ (bottom: 100%) so it never runs off
+ * the bottom edge, right-aligned to the corner. */
+.map-attribution__body {
+	position: absolute;
+	right: 0;
+	bottom: 100%;
+	margin-bottom: 0.35rem;
+	padding: 0.4rem 0.6rem;
+	border-radius: 6px;
+	background: rgba(255, 255, 255, 0.95);
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+	color: #333;
+	max-width: min(80vw, 26rem);
+}
+
+.map-attribution__credit {
+	display: block;
+}
+
+.map-attribution__credit a {
+	color: #1a5fb4;
+}
+
 /* Responsive: one frontend, two layouts, ONE breakpoint (route-map/CLAUDE.md
  * rule 8). This single `max-width: 768px` query is the ONLY responsive line in
  * the app — there is no second breakpoint. Above it the desktop two-column
@@ -555,12 +617,15 @@ body,
 		display: none;
 	}
 
-	/* Scale (bottom-left) + attribution (bottom-right, MapLibre's compact `ⓘ` on
-	 * mobile — set in src/map/RouteMap.ts) are offset UP by the sheet's peek height
-	 * plus a margin, so they sit above the collapsed sheet and are never hidden
-	 * behind it. Tied to the single peek-height variable. */
-	.maplibregl-ctrl-bottom-left,
-	.maplibregl-ctrl-bottom-right {
+	/* Scale (bottom-left, maplibre) + our attribution overlay (bottom-right, the
+	 * ⓘ toggle) are offset UP by the sheet's peek height plus a margin, so they sit
+	 * above the collapsed sheet and are never hidden behind it. Tied to the single
+	 * peek-height variable. */
+	.maplibregl-ctrl-bottom-left {
+		bottom: calc(var(--sheet-peek-height) + 0.5rem);
+	}
+
+	.map-attribution {
 		bottom: calc(var(--sheet-peek-height) + 0.5rem);
 	}
 

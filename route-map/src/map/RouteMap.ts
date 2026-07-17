@@ -1,6 +1,5 @@
 import type { FeatureCollection } from "geojson";
 import {
-	AttributionControl,
 	type ExpressionSpecification,
 	type FilterSpecification,
 	type GeoJSONSource,
@@ -44,12 +43,6 @@ const SINGLE_POINT_ZOOM = 14;
 // Fit padding + a ceiling so a tight multi-POI cluster does not slam to max zoom.
 const FIT_PADDING = 64;
 const FIT_MAX_ZOOM = 15;
-
-// Mirrors the single `max-width: 768px` CSS breakpoint (route-map/CLAUDE.md
-// rule 8) so the maplibre controls constructed here agree with the responsive
-// layout. Not a second breakpoint — the CSS query stays the sole one; this only
-// lets the imperative map read the same threshold at construction.
-const MOBILE_BREAKPOINT = 768;
 
 const EMPTY_FEATURE_COLLECTION: FeatureCollection = {
 	type: "FeatureCollection",
@@ -195,23 +188,13 @@ export function createRouteMap(
 		bounds: WETTERSTEIN_BOUNDS,
 		fitBoundsOptions: { padding: 32 },
 		maxZoom: BASEMAP_MAX_ZOOM,
-		// Add the attribution control explicitly (below) so we control its compact
-		// mode per viewport rather than take the map default.
+		// The app renders its own attribution as a React overlay
+		// (src/components/MapAttribution.tsx) rather than a maplibre control, so
+		// it can be collapsed-by-default declaratively — which the library's
+		// AttributionControl does not support. Suppress the built-in one here.
 		attributionControl: false,
 	});
 
-	// Attribution compactness is fixed at construction (maplibre reads it once),
-	// so we pick it from the viewport width here — approach (a) of #103. On mobile
-	// (≤768px) the control renders MapLibre's compact `ⓘ` toggle so the credits do
-	// not steal map space or hide behind the bottom sheet; the OSM + OpenTopoMap
-	// (CC-BY-SA) + Mapterhorn credits stay reachable one tap behind the `ⓘ`. Above
-	// the breakpoint `compact: false` keeps the full, always-visible attribution
-	// desktop has always had — license compliance holds in both modes.
-	const compactAttribution = window.innerWidth <= MOBILE_BREAKPOINT;
-	map.addControl(
-		new AttributionControl({ compact: compactAttribution }),
-		"bottom-right",
-	);
 	map.addControl(new NavigationControl(), "top-right");
 	map.addControl(new ScaleControl(), "bottom-left");
 

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
 	type DetailNav,
+	MapAttribution,
 	PlaceDetail,
 	PoiLegend,
 	RouteDetail,
@@ -170,6 +171,7 @@ export function App() {
 				<div ref={containerRef} className="map-root" />
 				<PoiLegend />
 				<TerrainToggle enabled={terrainEnabled} onToggle={setTerrainEnabled} />
+				<MapAttribution terrainEnabled={terrainEnabled} />
 			</div>
 			<div
 				className={
