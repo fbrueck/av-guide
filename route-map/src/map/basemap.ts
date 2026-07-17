@@ -7,13 +7,37 @@ import type {
 // to it so we never request tiles that don't exist.
 const OPENTOPO_MAX_ZOOM = 17;
 
+// A single map credit: the linked source name plus the plain text that frames
+// it. Structured (not an HTML string) so the React attribution component
+// (src/components/MapAttribution.tsx) renders real anchors — this module is the
+// single source of truth for the credits, and it no longer feeds a maplibre
+// AttributionControl (the app owns attribution in the DOM, not the library).
+export interface MapCredit {
+	/** Text before the linked source name, e.g. "Kartendaten: © ". */
+	readonly prefix: string;
+	readonly name: string;
+	readonly href: string;
+	/** Text after the linked source name, e.g. " (CC-BY-SA)". */
+	readonly suffix: string;
+}
+
 // Attribution required by the fetch-pois README: OpenStreetMap contributors +
 // the OpenTopoMap (CC-BY-SA) rendering credit. The English "© OpenStreetMap
 // contributors" wording is kept alongside the German original.
-export const BASEMAP_ATTRIBUTION =
-	'Kartendaten: © <a href="https://openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende ' +
-	"(© OpenStreetMap contributors), SRTM | " +
-	'Kartendarstellung: © <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)';
+export const BASEMAP_CREDITS: readonly MapCredit[] = [
+	{
+		prefix: "Kartendaten: © ",
+		name: "OpenStreetMap",
+		href: "https://openstreetmap.org/copyright",
+		suffix: "-Mitwirkende (© OpenStreetMap contributors), SRTM",
+	},
+	{
+		prefix: "Kartendarstellung: © ",
+		name: "OpenTopoMap",
+		href: "https://opentopomap.org",
+		suffix: " (CC-BY-SA)",
+	},
+];
 
 const OPENTOPO_SOURCE_ID = "opentopomap";
 
@@ -29,7 +53,6 @@ export const topoBasemapStyle: StyleSpecification = {
 			],
 			tileSize: 256,
 			maxzoom: OPENTOPO_MAX_ZOOM,
-			attribution: BASEMAP_ATTRIBUTION,
 		},
 	},
 	layers: [
@@ -49,10 +72,15 @@ export const BASEMAP_MAX_ZOOM = OPENTOPO_MAX_ZOOM;
 // flat map is restored by clearing the terrain, so no separate 3D style exists.
 export const TERRAIN_SOURCE_ID = "mapterhorn-terrain";
 
-// Attribution set ON the source so the existing AttributionControl surfaces the
-// terrain credit automatically alongside the OSM/OpenTopoMap ones.
-export const TERRAIN_ATTRIBUTION =
-	'Gelände: © <a href="https://mapterhorn.com/attribution">Mapterhorn</a>';
+// The terrain credit, surfaced by the React attribution component only while
+// terrain is enabled (the DEM tiles are not loaded otherwise, so crediting them
+// on the flat map would be dishonest).
+export const TERRAIN_CREDIT: MapCredit = {
+	prefix: "Gelände: © ",
+	name: "Mapterhorn",
+	href: "https://mapterhorn.com/attribution",
+	suffix: "",
+};
 
 // A modest vertical exaggeration reads as relief without caricaturing the Alps.
 export const TERRAIN_EXAGGERATION = 1.4;
@@ -65,5 +93,4 @@ export const terrainSource: RasterDEMSourceSpecification = {
 	tiles: ["https://tiles.mapterhorn.com/{z}/{x}/{y}.webp"],
 	tileSize: 512,
 	encoding: "terrarium",
-	attribution: TERRAIN_ATTRIBUTION,
 };

@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
 	type DetailNav,
+	MapAttribution,
 	PlaceDetail,
 	PoiLegend,
 	RouteDetail,
+	SheetHandle,
+	type SheetMode,
 	Sidebar,
 	TerrainToggle,
 } from "./components";
@@ -30,38 +33,30 @@ export function App() {
 	const [searchText, setSearchText] = useState("");
 	// The third state atom (route-map/CLAUDE.md rule 5): 2D vs 3D terrain.
 	const [terrainEnabled, setTerrainEnabled] = useState(false);
-	// Mobile-only state atom (route-map/CLAUDE.md rules 5 & 8): whether the
-	// bottom sheet is expanded (full) or collapsed (peek). Below 768px the
-	// route-panel becomes a sheet that taps peek <-> full through this flag; above
-	// it the flag is inert (the panel is the docked desktop column). A selection
-	// made FROM THE MAP auto-expands it (#102, see handleSelectEntryFromMap) —
-	// which is exactly why this is real state, not pure CSS (rule 5).
-	const [sheetExpanded, setSheetExpanded] = useState(false);
+	// Mobile-only state atom (route-map/CLAUDE.md rules 5 & 8): the bottom sheet's
+	// height, one of three modes — collapsed (only the handle shows), peek (the
+	// middle browsing height), full (nearly the whole viewport). Below 768px the
+	// route-panel is this sheet, stepped through the modes by its handle; above it
+	// the atom is inert (the panel is the docked desktop column). The reader drives
+	// it via the handle; the one exception is that a fresh selection snaps it to
+	// peek (see handleSelectEntry) so the tapped detail is visible. Default peek so
+	// content is visible on load.
+	const [sheetMode, setSheetMode] = useState<SheetMode>("peek");
 
 	const currentEntry = selection[selection.length - 1] ?? null;
 
 	// Start a fresh selection (sidebar click, or a Place-coordinate marker tap). A
 	// stable useCallback so the map-creation effect below does not re-create the
 	// map. The map calls this too, so a marker-tap selection goes through the exact
-	// same door as a sidebar click — the map never owns selection (rule 4).
+	// same door as a sidebar click — the map never owns selection (rule 4). On
+	// mobile a fresh selection always snaps the sheet to peek (the half height), so
+	// the tapped detail is visible without covering the map — never to full, and it
+	// lifts the sheet out of collapsed. Inert on desktop (setSheetMode is a no-op
+	// for the docked column).
 	const handleSelectEntry = useCallback((entry: Entry) => {
 		setSelection([entry]);
+		setSheetMode("peek");
 	}, []);
-	// Auto-expand on MAP selection (#102, rules 5 & 8): tapping a Place-coordinate
-	// marker selects its Place AND expands the sheet to full, so on a phone the
-	// reader immediately sees the detail they tapped for. This is the map-only
-	// door — the sidebar's onSelectEntry does NOT force-expand (the reader is
-	// already inside the sheet when they tap a row there). Two explicit doors,
-	// rather than an effect that guesses a selection's origin, keeps this to the
-	// existing sheetExpanded atom (no new state — rule 5). Above 768px
-	// sheetExpanded is inert, so the expand is a harmless no-op on desktop.
-	const handleSelectEntryFromMap = useCallback(
-		(entry: Entry) => {
-			handleSelectEntry(entry);
-			setSheetExpanded(true);
-		},
-		[handleSelectEntry],
-	);
 	// Drill into a related Entry from within a detail panel (a Place's route,
 	// a Route's Destination or a further target Place, a resolved Reference
 	// target): push onto the stack.
@@ -74,32 +69,36 @@ export function App() {
 	const handleClose = useCallback(() => {
 		setSelection([]);
 	}, []);
-	// Tapping the sheet header flips peek <-> full (CSS transition, no drag). Only
-	// wired below 768px where the header is shown; inert on desktop (rule 8).
-	const handleToggleSheet = useCallback(() => {
-		setSheetExpanded((expanded) => !expanded);
+	// Step the sheet one height taller / shorter through collapsed <-> peek <->
+	// full (CSS height transition, no drag). Only wired below 768px where the
+	// handle is shown; inert on desktop (rule 8).
+	const handleSheetExpand = useCallback(() => {
+		setSheetMode((mode) => (mode === "collapsed" ? "peek" : "full"));
+	}, []);
+	const handleSheetCollapse = useCallback(() => {
+		setSheetMode((mode) => (mode === "full" ? "peek" : "collapsed"));
 	}, []);
 
 	// Create the map instance once and keep it in a ref for effects to drive.
-	// Pass handleSelectEntryFromMap at construction so a Place-coordinate marker
-	// tap selects its Place (POIs are display-only, ADR-0004) and, on mobile,
-	// auto-expands the sheet (#102). It funnels into the same handleSelectEntry
-	// the sidebar uses, so selection stays single-doored (rule 4). It is a stable
-	// useCallback, available before data loads.
+	// Pass handleSelectEntry at construction so a Place-coordinate marker tap
+	// selects its Place (POIs are display-only, ADR-0004) through the same door the
+	// sidebar uses — selection stays single-doored (rule 4) and the map never owns
+	// selection or the sheet. It is a stable useCallback, available before data
+	// loads.
 	useEffect(() => {
 		const container = containerRef.current;
 		if (!container) {
 			return;
 		}
 		const map = createRouteMap(container, {
-			onSelectEntry: handleSelectEntryFromMap,
+			onSelectEntry: handleSelectEntry,
 		});
 		mapRef.current = map;
 		return () => {
 			mapRef.current = null;
 			map.destroy();
 		};
-	}, [handleSelectEntryFromMap]);
+	}, [handleSelectEntry]);
 
 	// Load + join the guide's artifacts once through the src/data boundary, then
 	// hold the result in state so the sidebar, search, and detail panels all read
@@ -170,24 +169,17 @@ export function App() {
 				<div ref={containerRef} className="map-root" />
 				<PoiLegend />
 				<TerrainToggle enabled={terrainEnabled} onToggle={setTerrainEnabled} />
+				<MapAttribution terrainEnabled={terrainEnabled} />
 			</div>
-			<div
-				className={
-					sheetExpanded ? "route-panel route-panel--expanded" : "route-panel"
-				}
-			>
-				{/* Bottom-sheet grabber: shown only below 768px (rule 8), taps peek <->
-				    full. On desktop it is display:none and the panel is the docked
-				    column. Smart peek content is #102 — this is just the tap target. */}
-				<button
-					type="button"
-					className="sheet-header"
-					aria-expanded={sheetExpanded}
-					aria-label={sheetExpanded ? "Collapse panel" : "Expand panel"}
-					onClick={handleToggleSheet}
-				>
-					<span className="sheet-header__grabber" />
-				</button>
+			<div className={`route-panel route-panel--${sheetMode}`}>
+				{/* The mobile sheet's handle: chevron buttons that step through the
+				    three heights (rule 8). Hidden on desktop, where the panel is the
+				    docked column. Smart peek content is #102. */}
+				<SheetHandle
+					mode={sheetMode}
+					onExpand={handleSheetExpand}
+					onCollapse={handleSheetCollapse}
+				/>
 				<Sidebar
 					places={guideData?.places ?? []}
 					unfiledRoutes={guideData?.unfiledRoutes ?? []}

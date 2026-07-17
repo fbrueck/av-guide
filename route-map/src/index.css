@@ -6,10 +6,14 @@ body,
 }
 
 :root {
-	/* The bottom-sheet peek height (route-map/CLAUDE.md rule 8). Single source of
-	 * truth: the sheet is this tall when collapsed below 768px, and the on-map
-	 * scale + attribution are offset up by it so they clear the sheet (#103). */
+	/* The bottom-sheet peek height (route-map/CLAUDE.md rule 8) — the middle of
+	 * the sheet's three heights. Single source of truth: the on-map scale +
+	 * attribution are offset up by it so they clear the peeked sheet (#103), and
+	 * the map camera reserves it as the bottom inset when framing selections. */
 	--sheet-peek-height: 42vh;
+	/* The sheet's handle height — also its height when fully collapsed, where only
+	 * the handle shows. Content inside the sheet starts below this. */
+	--sheet-header-height: 2.75rem;
 }
 
 /* Two-column shell: the map pane is the main surface, the Entry panel docks on
@@ -179,55 +183,53 @@ body,
 .detail__header {
 	position: sticky;
 	top: 0;
-	display: flex;
-	align-items: flex-start;
-	justify-content: space-between;
-	gap: 0.5rem;
-	padding: 1rem 0 0.5rem;
+	padding: 0.5rem 0;
 	border-bottom: 1px solid #ddd;
 	background: #fff;
 }
 
-.detail__header-titles {
-	min-width: 0;
+/* Top-left row of icon actions: search first, then the optional back arrow. */
+.detail__header-actions {
+	display: flex;
+	align-items: center;
+	gap: 0.25rem;
+	margin-bottom: 0.35rem;
 }
 
-.detail__back {
-	padding: 0;
+/* An icon action button (search / back): a bare, centered hit area whose SVG
+ * inherits currentColor and darkens on hover. */
+.detail__action {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0.25rem;
 	border: none;
 	background: none;
-	font: inherit;
-	font-size: 0.8rem;
-	color: #2563eb;
-	cursor: pointer;
-}
-
-.detail__title {
-	margin: 0.1rem 0 0;
-	font-size: 1.05rem;
-}
-
-.detail__kind {
-	margin: 0.1rem 0 0;
-	font-size: 0.72rem;
-	text-transform: uppercase;
-	letter-spacing: 0.04em;
-	color: #888;
-}
-
-.detail__close {
-	flex: none;
-	padding: 0 0.25rem;
-	border: none;
-	background: none;
-	font-size: 1.5rem;
-	line-height: 1;
 	color: #666;
 	cursor: pointer;
 }
 
-.detail__close:hover {
-	color: #000;
+.detail__action:hover:not(:disabled) {
+	color: #222;
+}
+
+/* Back with no history left: kept in place (stable layout) but greyed and
+ * non-interactive rather than removed. */
+.detail__action:disabled {
+	color: #ccc;
+	cursor: default;
+}
+
+.detail__title {
+	margin: 0;
+	font-size: 1.05rem;
+}
+
+/* An inline, secondary qualifier after the title (a Place's elevation): normal
+ * weight and muted so the name still leads the heading. */
+.detail__title-suffix {
+	font-weight: 400;
+	color: #666;
 }
 
 .detail__meta {
@@ -454,6 +456,68 @@ body,
 	flex: none;
 }
 
+/* Map attribution (src/components/MapAttribution.tsx) — the license-required
+ * credits, rendered as our own React overlay rather than a maplibre control so
+ * they can be collapsed by default. A native <details> in the bottom-right
+ * corner: closed it is a small ⓘ; open it pops the credits up above itself. */
+.map-attribution {
+	position: absolute;
+	right: 0.5rem;
+	bottom: 0.5rem;
+	z-index: 1;
+	font:
+		11px / 1.4 system-ui,
+		sans-serif;
+}
+
+/* The ⓘ toggle. The default <details> disclosure triangle is removed so only the
+ * glyph shows; it reads as a round, map-control-styled button. */
+.map-attribution__toggle {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.5rem;
+	height: 1.5rem;
+	border-radius: 50%;
+	background: rgba(255, 255, 255, 0.92);
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+	color: #333;
+	font-size: 0.95rem;
+	cursor: pointer;
+	list-style: none;
+}
+
+.map-attribution__toggle::-webkit-details-marker {
+	display: none;
+}
+
+.map-attribution__toggle:hover {
+	background: #fff;
+}
+
+/* The credits panel, popped up above the ⓘ (bottom: 100%) so it never runs off
+ * the bottom edge, right-aligned to the corner. */
+.map-attribution__body {
+	position: absolute;
+	right: 0;
+	bottom: 100%;
+	margin-bottom: 0.35rem;
+	padding: 0.4rem 0.6rem;
+	border-radius: 6px;
+	background: rgba(255, 255, 255, 0.95);
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+	color: #333;
+	max-width: min(80vw, 26rem);
+}
+
+.map-attribution__credit {
+	display: block;
+}
+
+.map-attribution__credit a {
+	color: #1a5fb4;
+}
+
 /* Responsive: one frontend, two layouts, ONE breakpoint (route-map/CLAUDE.md
  * rule 8). This single `max-width: 768px` query is the ONLY responsive line in
  * the app — there is no second breakpoint. Above it the desktop two-column
@@ -462,14 +526,13 @@ body,
  * via its .sheet-header (CSS transition — no drag physics, no sheet library). */
 @media (max-width: 768px) {
 	/* The panel leaves the flex flow and docks to the bottom as a sheet. Its
-	 * height is the peek height by default and grows to full when expanded; the
-	 * height transition is the whole peek <-> full animation. The map-pane keeps
-	 * flex: 1 and fills the viewport underneath (map-primary). */
+	 * height is one of three modes (collapsed / peek / full, set by the modifier
+	 * classes below); the height transition is the whole animation between them.
+	 * The map-pane keeps flex: 1 and fills the viewport underneath (map-primary). */
 	.route-panel {
 		position: absolute;
 		inset: auto 0 0 0;
 		width: auto;
-		height: var(--sheet-peek-height);
 		border-left: none;
 		border-top: 1px solid #ccc;
 		border-radius: 12px 12px 0 0;
@@ -479,44 +542,93 @@ body,
 		z-index: 2;
 	}
 
-	/* Full: the sheet grows to (almost) the whole viewport. */
-	.route-panel--expanded {
+	/* Three sheet heights (rule 8). Collapsed shows only the handle; peek is the
+	 * middle browsing height; full grows to (almost) the whole viewport. */
+	.route-panel--collapsed {
+		height: var(--sheet-header-height);
+	}
+
+	.route-panel--peek {
+		height: var(--sheet-peek-height);
+	}
+
+	.route-panel--full {
 		height: 92vh;
 	}
 
-	/* The grabber becomes a real, full-width tap target at the top of the sheet. */
+	/* The handle: a full-width band at the top of the sheet holding the chevron
+	 * step buttons, centered with a small gap when both show (peek mode). It is
+	 * transparent and click-through (pointer-events: none) so a detail panel's
+	 * action row can sit in the SAME band to its left — only the chevron buttons
+	 * (pointer-events: auto) intercept taps; taps elsewhere fall through to the
+	 * detail actions beneath. The sheet's white/rounded top comes from
+	 * .route-panel, so the band needs no background of its own. */
 	.sheet-header {
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		gap: 1.5rem;
 		width: 100%;
-		height: 2.75rem;
-		padding: 0;
-		border: none;
-		border-radius: 12px 12px 0 0;
-		background: #fff;
-		cursor: pointer;
-		/* Sit above the absolute-filling sidebar/detail so it stays tappable. */
+		height: var(--sheet-header-height);
+		/* Sit above the absolute-filling sidebar/detail so the chevron stays on top. */
 		position: absolute;
 		top: 0;
 		left: 0;
 		right: 0;
 		z-index: 3;
+		pointer-events: none;
 	}
 
-	.sheet-header__grabber {
-		width: 2.5rem;
-		height: 0.25rem;
-		border-radius: 999px;
-		background: #ccc;
+	/* Each chevron step button: a ≥44px tap target with a bare, centered glyph
+	 * that darkens on press/hover. Chevrons (not a drag pill) signal a TAP. */
+	.sheet-header__chevron-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 44px;
+		height: var(--sheet-header-height);
+		padding: 0;
+		border: none;
+		background: none;
+		color: #999;
+		cursor: pointer;
+		pointer-events: auto;
 	}
 
-	/* Reserve the header's height: the sidebar and any detail panel fill the
-	 * sheet (inset: 0) but must start below the grabber so it is never covered.
-	 * Both scroll their own content, so peek shows the top and full shows all. */
-	.route-panel .sidebar,
+	.sheet-header__chevron-btn:hover {
+		color: #555;
+	}
+
+	/* The sidebar starts below the handle band so its search box is never covered
+	 * by the chevron. It scrolls its own content (peek shows the top, full all). */
+	.route-panel .sidebar {
+		top: var(--sheet-header-height);
+	}
+
+	/* A detail panel instead fills the WHOLE sheet (top: 0): its sticky action row
+	 * shares the handle band with the chevron (search + back to the left, chevron
+	 * centered), so the detail spends no extra row on the actions and more content
+	 * shows in peek. */
 	.route-panel .detail {
-		top: 2.75rem;
+		top: 0;
+	}
+
+	/* The action row occupies the handle band, vertically centered to line up with
+	 * the chevron; the title follows below it. */
+	.route-panel .detail__header {
+		padding-top: 0;
+	}
+
+	.route-panel .detail__header-actions {
+		height: var(--sheet-header-height);
+		margin-bottom: 0;
+	}
+
+	/* Fully collapsed: only the up chevron shows. Hide the whole detail panel so
+	 * neither its actions nor its title rise into the minimized band (the sidebar
+	 * already shows nothing here — it starts below the band). */
+	.route-panel--collapsed .detail {
+		display: none;
 	}
 
 	/* Content-aware peek (#102): the peek (42vh) shows whatever sits at the top of
@@ -527,21 +639,12 @@ body,
 	 * already puts the right content first. Full (92vh) shows the whole panel. */
 
 	/* ≥44px tap targets on mobile (#102, rule 8): the sheet header is already
-	 * 2.75rem (44px). The detail Back and Close controls are small text/icon hit
-	 * areas on desktop, so give them a comfortable 44px touch box inside the
-	 * sheet — the reader walks the Place -> Route -> Reference stack with these. */
-	.detail__back {
-		min-height: 44px;
-		padding: 0.5rem 0;
-	}
-
-	.detail__close {
-		display: flex;
-		align-items: center;
-		justify-content: center;
+	 * 2.75rem (44px). The detail search/back icon actions are small hit areas on
+	 * desktop, so give them a comfortable 44px touch box inside the sheet — the
+	 * reader walks the Place -> Route -> Reference stack with these. */
+	.detail__action {
 		min-width: 44px;
 		min-height: 44px;
-		padding: 0;
 	}
 
 	/* On-map controls de-conflicted with the bottom sheet (#103, rule 8). Nothing
@@ -555,12 +658,15 @@ body,
 		display: none;
 	}
 
-	/* Scale (bottom-left) + attribution (bottom-right, MapLibre's compact `ⓘ` on
-	 * mobile — set in src/map/RouteMap.ts) are offset UP by the sheet's peek height
-	 * plus a margin, so they sit above the collapsed sheet and are never hidden
-	 * behind it. Tied to the single peek-height variable. */
-	.maplibregl-ctrl-bottom-left,
-	.maplibregl-ctrl-bottom-right {
+	/* Scale (bottom-left, maplibre) + our attribution overlay (bottom-right, the
+	 * ⓘ toggle) are offset UP by the sheet's peek height plus a margin, so they sit
+	 * above the collapsed sheet and are never hidden behind it. Tied to the single
+	 * peek-height variable. */
+	.maplibregl-ctrl-bottom-left {
+		bottom: calc(var(--sheet-peek-height) + 0.5rem);
+	}
+
+	.map-attribution {
 		bottom: calc(var(--sheet-peek-height) + 0.5rem);
 	}
 

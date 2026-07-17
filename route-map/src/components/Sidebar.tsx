@@ -30,13 +30,17 @@ export function Sidebar({
 	const needle = searchText.trim().toLowerCase();
 
 	const filteredPlaces = useMemo(() => {
-		if (!needle) {
-			return places;
-		}
-		return places.filter((place) => {
-			const haystack = `${place.name} ${place.placeType ?? ""}`.toLowerCase();
-			return haystack.includes(needle);
-		});
+		const matched = needle
+			? places.filter((place) => {
+					const haystack =
+						`${place.name} ${place.placeType ?? ""}`.toLowerCase();
+					return haystack.includes(needle);
+				})
+			: places;
+		// Order by how many Routes lead here, most first — the busiest Places lead
+		// the place-first list (#44). Copy before sorting so the `places` prop is
+		// never mutated; ties keep the source order (Array.sort is stable).
+		return [...matched].sort((a, b) => b.routes.length - a.routes.length);
 	}, [places, needle]);
 
 	const filteredUnfiled = useMemo(() => {

@@ -7,27 +7,21 @@ interface PlaceDetailProps {
 }
 
 // The detail panel for a selected Place (#44, #72): the book's data for the
-// target feature — name, Typ/Höhe, summary — then the list of **Routes leading
-// here** (routes that target this Place; selecting one drills into that Route's
-// detail), the verbatim "Original Text" description, and the Place's **Mentions**
-// (same non-clickable chip pattern as the Route detail view). A Place that
-// resolved to no POI renders honestly (route-map/CLAUDE.md rule 3): a note says
-// so rather than hiding, so an unresolved Place is visible, not silent.
+// target feature — name with its elevation next to it (e.g. "Kreuzjoch, 1719 m"),
+// summary — then the list of **Routes leading here** (routes that target this
+// Place; selecting one drills into that Route's detail), the verbatim "Original
+// Text" description, and the Place's **Mentions** (same non-clickable chip
+// pattern as the Route detail view). A Place that resolved to no POI renders
+// honestly (route-map/CLAUDE.md rule 3): a note says so rather than hiding, so an
+// unresolved Place is visible, not silent.
 export function PlaceDetail({ place, nav }: PlaceDetailProps) {
 	return (
 		<section className="detail" aria-label="Ortsdetails">
-			<DetailHeader title={place.name} kind="Ort" nav={nav} />
-
-			<dl className="detail__meta">
-				<div className="detail__row">
-					<dt>Typ</dt>
-					<dd>{place.placeType ?? "—"}</dd>
-				</div>
-				<div className="detail__row">
-					<dt>Höhe</dt>
-					<dd>{place.elevation ?? "—"}</dd>
-				</div>
-			</dl>
+			<DetailHeader
+				title={place.name}
+				titleSuffix={place.elevation ?? undefined}
+				nav={nav}
+			/>
 
 			{place.poi ? null : (
 				<div className="detail__poi">

@@ -1,4 +1,4 @@
-export { BASEMAP_ATTRIBUTION } from "./basemap";
+export { BASEMAP_CREDITS, type MapCredit, TERRAIN_CREDIT } from "./basemap";
 export {
 	POI_DEFAULT_COLOR,
 	POI_TYPE_STYLES,
