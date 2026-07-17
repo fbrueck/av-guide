@@ -407,3 +407,124 @@ def test_merge_reports_entry_whose_anchors_are_not_found(cfg):
     # No silently wrong slice — description is null and the entry is still written.
     assert entries[0]["id"] == "R55"
     assert entries[0]["description"] is None
+
+
+def test_merge_writes_unsliced_report_with_reason_buckets(cfg):
+    # Two entries fail to slice for different reasons; the report identifies each
+    # (id/source_page/name/kind) and tags its reason bucket (#110).
+    write_clean_page(cfg, "page_0051", "55\nKreuzeckhaus, 1652 m\nEin kurzer Text.")
+    write_part(
+        cfg,
+        "page_0051",
+        [
+            # Start anchor is absent from the page → start_not_found.
+            place(
+                "•55", "Kreuzeckhaus", start_quote="Gibt es nicht", end_quote="Text."
+            ),
+            # A missing end anchor → empty_anchor.
+            route("•56", "Weg", start_quote="Ein kurzer", end_quote=None),
+        ],
+    )
+
+    merge(cfg)
+
+    report = load_jsonl(cfg.unsliced_report)
+    by_id = {r["id"]: r for r in report}
+    assert by_id["R55"]["reason"] == "start_not_found"
+    assert by_id["R55"]["kind"] == "place"
+    assert by_id["R55"]["name"] == "Kreuzeckhaus"
+    assert by_id["R55"]["source_page"] == 51
+    assert by_id["R56"]["reason"] == "empty_anchor"
+    # Every reason is a known bucket, one per record; the total matches the count
+    # of entries that ended up with a null description.
+    assert all(
+        r["reason"]
+        in {
+            "empty_anchor",
+            "stub",
+            "start_not_found",
+            "start_ambiguous",
+            "end_mismatch",
+        }
+        for r in report
+    )
+    entries = load_jsonl(cfg.routes_jsonl)
+    assert len(report) == sum(1 for e in entries if e["description"] is None)
+
+
+def test_merge_writes_empty_unsliced_report_when_everything_slices(cfg):
+    # Absent/empty-safe: the artifact is rebuilt every run, empty when nothing is
+    # unsliced (no stale records carried over).
+    write_clean_page(cfg, "page_0051", "55\nKreuzeckhaus, 1652 m\nGanzer Text hier.")
+    write_part(
+        cfg,
+        "page_0051",
+        [
+            place(
+                "•55",
+                "Kreuzeckhaus",
+                start_quote="Kreuzeckhaus, 1652 m",
+                end_quote="Ganzer Text hier.",
+            )
+        ],
+    )
+
+    merge(cfg)
+
+    assert cfg.unsliced_report.exists()
+    assert load_jsonl(cfg.unsliced_report) == []
+
+
+def test_merge_description_source_provenance_sliced_stub_none(cfg):
+    # Three entries exercising each provenance value (#114): one slices verbatim,
+    # one is a body-less stub (start == end), one cannot be located at all.
+    write_clean_page(
+        cfg,
+        "page_0051",
+        "55\nKreuzeckhaus, 1652 m\nGroße Hütte, ganzer Text.\n"
+        "56\nDurch das Große Ödkar, I\nWie R 55, weiter rechts.\n"
+        "57\nZustieg\nEin dritter Text.",
+    )
+    write_part(
+        cfg,
+        "page_0051",
+        [
+            # Sliceable → "sliced".
+            place(
+                "•55",
+                "Kreuzeckhaus",
+                start_quote="Kreuzeckhaus, 1652 m",
+                end_quote="ganzer Text.",
+            ),
+            # Body-less stub: start == end → "stub", keeps its one-line heading.
+            route(
+                "•56",
+                "Durch das Große Ödkar",
+                start_quote="Durch das Große Ödkar, I",
+                end_quote="Durch das Große Ödkar, I",
+            ),
+            # Anchors not on the page → null description, "none".
+            route("•57", "Zustieg", start_quote="Gibt", end_quote="es nicht"),
+        ],
+    )
+
+    merge(cfg)
+
+    entries = {e["id"]: e for e in load_jsonl(cfg.routes_jsonl)}
+    assert entries["R55"]["description_source"] == "sliced"
+    assert entries["R55"]["description"].startswith("Kreuzeckhaus, 1652 m")
+
+    assert entries["R56"]["description_source"] == "stub"
+    assert entries["R56"]["description"] == "Durch das Große Ödkar, I"
+
+    assert entries["R57"]["description_source"] == "none"
+    assert entries["R57"]["description"] is None
+
+    # The stub and the unlocatable entry are both surfaced in the unsliced report,
+    # tagged with their buckets; the sliced one is not.
+    report = {r["id"]: r["reason"] for r in load_jsonl(cfg.unsliced_report)}
+    assert report == {"R56": "stub", "R57": "start_not_found"}
+
+    # The provenance field is part of the route-map contract too.
+    contract = {e["id"]: e for e in json.loads(cfg.routes_json.read_text("utf-8"))}
+    assert contract["R56"]["description_source"] == "stub"

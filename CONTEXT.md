@@ -12,6 +12,14 @@ The entry id is the Entry's identity across the whole pipeline; when the number
 is unrecoverable (OCR loss, unnumbered heading) a deterministic synthetic id is
 assigned and flagged (`id_source: book | synthetic`). Places and Routes share
 one id namespace, so a [[Reference]] resolves to whichever kind carries that id.
+
+An Entry's **description** is its verbatim book prose, cut from the cleaned page
+between two boundary anchors. Its **`description_source`** records the provenance
+so verbatim and non-verbatim text are never silently mixed: `sliced` (cut
+verbatim between the anchors), `stub` (a body-less `□` cross-ref's one-line
+heading — start and end anchors coincide, so there is no span to cut), or `none`
+(no description recovered). Verbatim-by-construction: the pipeline never emits a
+guessed or fuzzily-matched description.
 _Avoid_: record, item.
 
 ## Place

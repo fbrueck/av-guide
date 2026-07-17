@@ -66,6 +66,12 @@ export function PlaceDetail({ place, nav }: PlaceDetailProps) {
 				<>
 					<h3 className="detail__subtitle">Original Text</h3>
 					<p className="detail__description">{place.description}</p>
+					{place.descriptionSource === "stub" ? (
+						<p className="detail__note detail__note--unlinked">
+							Nur eine Verweiszeile — dieser Eintrag hat keinen eigenen
+							Beschreibungstext.
+						</p>
+					) : null}
 				</>
 			) : null}
 

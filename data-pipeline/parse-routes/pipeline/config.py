@@ -73,6 +73,14 @@ class GuideConfig:
         return self.struct_dir / "routes.json"
 
     @property
+    def unsliced_report(self) -> Path:  # one record per unsliceable entry (#110)
+        return self.struct_dir / "unsliced.jsonl"
+
+    @property
+    def repairs_dir(self) -> Path:  # one corrected-anchor file per entry (#113)
+        return self.struct_dir / "repairs"
+
+    @property
     def manifest(self) -> Path:  # one JSON record per page (metadata)
         return self.raw_dir / "manifest.jsonl"
 

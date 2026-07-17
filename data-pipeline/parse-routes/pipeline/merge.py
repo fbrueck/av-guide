@@ -40,13 +40,14 @@ import json
 import shutil
 import sys
 from dataclasses import dataclass, field, replace
+from typing import Any
 
 from .config import GuideConfig, load_guide
 from .export import write_routes_json
 from .ids import entry_id_number, infer_sequence_ids, normalize_entry_id, synthetic_id
-from .records import Entry, PartEntry
+from .records import DescriptionSource, Entry, PartEntry
 from .references import parse_references
-from .slicing import slice_description
+from .slicing import slice_description, unsliced_reason
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,6 +66,29 @@ class DanglingRef:
     ref_id: str
 
 
+@dataclass(frozen=True, slots=True)
+class UnslicedEntry:
+    """An entry whose verbatim description could not be sliced, tagged with the
+    reason bucket classifying why (#110). Identifies the entry (id, source page,
+    name, kind) so the recovery passes can target it and every ticket can measure
+    its effect; persisted one-per-line to the unsliced-report artifact."""
+
+    id: str
+    source_page: int | None
+    name: str | None
+    kind: str
+    reason: str  # see slicing.unsliced_reason — the buckets partition the set
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "source_page": self.source_page,
+            "name": self.name,
+            "kind": self.kind,
+            "reason": self.reason,
+        }
+
+
 @dataclass(slots=True)
 class MergeReport:
     """What the assembly passes surface for the caller to warn about. Mutable
@@ -77,7 +101,9 @@ class MergeReport:
     unresolved_places: list[UnresolvedPlace] = field(default_factory=list)
     missing_destination: list[str] = field(default_factory=list)  # no parent Place
     dangling_refs: list[DanglingRef] = field(default_factory=list)
-    unsliced: list[str] = field(default_factory=list)  # anchors not found in page text
+    # Entries whose description could not be sliced, each tagged with its reason
+    # bucket (#110); persisted to the unsliced-report artifact.
+    unsliced: list[UnslicedEntry] = field(default_factory=list)
 
 
 def _norm_name(name: str) -> str:
@@ -146,12 +172,19 @@ def _pick_id(
 
 
 def _build_entry(
-    raw: PartEntry, entry_id: str, id_source: str, page: int, description: str | None
+    raw: PartEntry,
+    entry_id: str,
+    id_source: str,
+    page: int,
+    description: str | None,
+    description_source: DescriptionSource,
 ) -> Entry:
     """One parsed per-page part entry -> an Entry, targets still unresolved. A
     Place carries place_type/elevation; a Route the climbing metadata — each
     leaves the other kind's verbatim fields None. `description` is the verbatim
-    text merge sliced from the cleaned page between the entry's anchors."""
+    text merge sliced from the cleaned page between the entry's anchors;
+    `description_source` records whether it was sliced, a stub one-liner, or
+    absent (#114)."""
     is_place = raw.kind == "place"
     return Entry(
         id=entry_id,
@@ -160,6 +193,7 @@ def _build_entry(
         source_page=page,
         name=raw.name,
         description=description,
+        description_source=description_source,
         summary=raw.summary,
         references=parse_references(description),
         place_type=raw.place_type if is_place else None,
@@ -170,6 +204,41 @@ def _build_entry(
         time=None if is_place else raw.time,
         height_m=None if is_place else raw.height_m,
     )
+
+
+def _resolve_description(
+    raw: PartEntry,
+    entry_id: str,
+    page: int,
+    text: str,
+    next_text: str | None,
+    report: MergeReport,
+) -> tuple[str | None, DescriptionSource]:
+    """Slice the entry's verbatim description and tag its provenance (#114).
+
+    A successful slice is `sliced`. On failure the reason is classified and the
+    entry recorded in the unsliced report (#110); a body-less `stub` (start ==
+    end, no gap to cut) then keeps its one-line heading text — honest, verbatim,
+    flagged `stub` — rather than dropping it; anything else stays `none`."""
+    description = slice_description(text, next_text, raw.start_quote, raw.end_quote)
+    if description is not None:
+        return description, "sliced"
+
+    reason = unsliced_reason(text, next_text, raw.start_quote, raw.end_quote)
+    report.unsliced.append(
+        UnslicedEntry(
+            id=entry_id,
+            source_page=page,
+            name=raw.name,
+            kind=raw.kind,
+            reason=reason,
+        )
+    )
+    if reason == "stub":
+        # No span between the identical anchors — store the entry's one-line text
+        # (its verbatim heading) so the stub is not left empty (#114).
+        return raw.start_quote, "stub"
+    return None, "none"
 
 
 def _place_index(records: list[Entry]) -> dict[str, str]:
@@ -242,12 +311,14 @@ def assemble_entries(
         next_text = page_texts.get(page + 1)
         for raw in entries:
             entry_id, id_source = next(assignments)
-            description = slice_description(
-                text, next_text, raw.start_quote, raw.end_quote
+            description, description_source = _resolve_description(
+                raw, entry_id, page, text, next_text, report
             )
-            if description is None:
-                report.unsliced.append(entry_id)
-            records.append(_build_entry(raw, entry_id, id_source, page, description))
+            records.append(
+                _build_entry(
+                    raw, entry_id, id_source, page, description, description_source
+                )
+            )
             place_names.append([] if raw.kind == "place" else raw.place_names)
 
     # Pass 2 — place-name index.
@@ -329,7 +400,19 @@ def merge(cfg: GuideConfig) -> None:
     # from the index (#17).
     write_routes_json(cfg, records)
 
+    # Persist the unsliced-entry report (#110): rebuilt from scratch each run, so
+    # it never carries stale records; an empty file when nothing is unsliced.
+    _write_unsliced_report(cfg, report.unsliced)
+
     _print_summary(cfg, records, report, bad)
+
+
+def _write_unsliced_report(cfg: GuideConfig, unsliced: list[UnslicedEntry]) -> None:
+    """Write one JSON record per unsliceable entry to the report artifact,
+    truncating any prior run's file (empty when nothing is unsliced)."""
+    with cfg.unsliced_report.open("w", encoding="utf-8") as f:
+        for entry in unsliced:
+            f.write(json.dumps(entry.to_dict(), ensure_ascii=False) + "\n")
 
 
 def _print_summary(
@@ -373,9 +456,13 @@ def _print_summary(
             file=sys.stderr,
         )
     if report.unsliced:
+        buckets: dict[str, int] = {}
+        for u in report.unsliced:
+            buckets[u.reason] = buckets.get(u.reason, 0) + 1
+        by_reason = ", ".join(f"{r}={n}" for r, n in sorted(buckets.items()))
         print(
             f"  WARN: {len(report.unsliced)} entries with no sliceable "
-            "description (anchors not found in the cleaned page; stored null)",
+            f"description ({by_reason}); see {cfg.unsliced_report}",
             file=sys.stderr,
         )
 

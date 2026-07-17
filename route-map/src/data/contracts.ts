@@ -36,6 +36,11 @@ export interface RawEntry {
 	// Shared prose.
 	summary: string | null;
 	description: string | null;
+	// Provenance of `description` (#114): "sliced" verbatim page text, "stub" a
+	// body-less cross-ref's one-line heading, or "none". Optional so an older
+	// snapshot without the field still loads (the join infers it from
+	// `description`); a value the pipeline doesn't emit is narrowed at the join.
+	description_source?: "sliced" | "stub" | "none";
 }
 
 // --- fetch-pois: 04_final/pois.geojson (GeoJSON FeatureCollection) ---

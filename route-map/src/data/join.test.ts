@@ -198,6 +198,25 @@ describe("joinGuideData — Places and their POI", () => {
 		expect(data.entries).toHaveLength(3);
 	});
 
+	it("threads description_source through, honouring it and inferring when absent (#114)", () => {
+		const data = joinGuideData(
+			artifacts(
+				[],
+				[
+					// Explicit provenance is honoured.
+					place("R1", { description: "…verweis…", description_source: "stub" }),
+					// Absent + a description present → inferred "sliced".
+					route("R2", { description: "Voller Text." }),
+					// Absent + no description → inferred "none".
+					place("R3"),
+				],
+			),
+		);
+		expect(placeById(data, "R1").descriptionSource).toBe("stub");
+		expect(data.routes[0]?.descriptionSource).toBe("sliced");
+		expect(placeById(data, "R3").descriptionSource).toBe("none");
+	});
+
 	it("resolves a Place to its single POI via a place_pois link", () => {
 		const data = joinGuideData(
 			artifacts(
