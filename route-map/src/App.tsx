@@ -34,9 +34,9 @@ export function App() {
 	// Mobile-only state atom (route-map/CLAUDE.md rules 5 & 8): whether the
 	// bottom sheet is expanded (full) or collapsed (peek). Below 768px the
 	// route-panel becomes a sheet that taps peek <-> full through this flag; above
-	// it the flag is inert (the panel is the docked desktop column). A selection
-	// made FROM THE MAP auto-expands it (#102, see handleSelectEntryFromMap) —
-	// which is exactly why this is real state, not pure CSS (rule 5).
+	// it the flag is inert (the panel is the docked desktop column). The reader
+	// drives it via the sheet header — a selection (sidebar or map tap) never
+	// forces it open, so the flag stays reader-owned.
 	const [sheetExpanded, setSheetExpanded] = useState(false);
 
 	const currentEntry = selection[selection.length - 1] ?? null;
@@ -44,25 +44,13 @@ export function App() {
 	// Start a fresh selection (sidebar click, or a Place-coordinate marker tap). A
 	// stable useCallback so the map-creation effect below does not re-create the
 	// map. The map calls this too, so a marker-tap selection goes through the exact
-	// same door as a sidebar click — the map never owns selection (rule 4).
+	// same door as a sidebar click — the map never owns selection (rule 4). On
+	// mobile it does NOT auto-expand the bottom sheet: a tap only selects; the
+	// reader opens the sheet themselves via its header (the peek already shows the
+	// selected detail's header — #102).
 	const handleSelectEntry = useCallback((entry: Entry) => {
 		setSelection([entry]);
 	}, []);
-	// Auto-expand on MAP selection (#102, rules 5 & 8): tapping a Place-coordinate
-	// marker selects its Place AND expands the sheet to full, so on a phone the
-	// reader immediately sees the detail they tapped for. This is the map-only
-	// door — the sidebar's onSelectEntry does NOT force-expand (the reader is
-	// already inside the sheet when they tap a row there). Two explicit doors,
-	// rather than an effect that guesses a selection's origin, keeps this to the
-	// existing sheetExpanded atom (no new state — rule 5). Above 768px
-	// sheetExpanded is inert, so the expand is a harmless no-op on desktop.
-	const handleSelectEntryFromMap = useCallback(
-		(entry: Entry) => {
-			handleSelectEntry(entry);
-			setSheetExpanded(true);
-		},
-		[handleSelectEntry],
-	);
 	// Drill into a related Entry from within a detail panel (a Place's route,
 	// a Route's Destination or a further target Place, a resolved Reference
 	// target): push onto the stack.
@@ -82,25 +70,25 @@ export function App() {
 	}, []);
 
 	// Create the map instance once and keep it in a ref for effects to drive.
-	// Pass handleSelectEntryFromMap at construction so a Place-coordinate marker
-	// tap selects its Place (POIs are display-only, ADR-0004) and, on mobile,
-	// auto-expands the sheet (#102). It funnels into the same handleSelectEntry
-	// the sidebar uses, so selection stays single-doored (rule 4). It is a stable
-	// useCallback, available before data loads.
+	// Pass handleSelectEntry at construction so a Place-coordinate marker tap
+	// selects its Place (POIs are display-only, ADR-0004) through the same door the
+	// sidebar uses — selection stays single-doored (rule 4) and the map never owns
+	// selection or the sheet. It is a stable useCallback, available before data
+	// loads.
 	useEffect(() => {
 		const container = containerRef.current;
 		if (!container) {
 			return;
 		}
 		const map = createRouteMap(container, {
-			onSelectEntry: handleSelectEntryFromMap,
+			onSelectEntry: handleSelectEntry,
 		});
 		mapRef.current = map;
 		return () => {
 			mapRef.current = null;
 			map.destroy();
 		};
-	}, [handleSelectEntryFromMap]);
+	}, [handleSelectEntry]);
 
 	// Load + join the guide's artifacts once through the src/data boundary, then
 	// hold the result in state so the sidebar, search, and detail panels all read
