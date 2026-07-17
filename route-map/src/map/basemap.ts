@@ -1,10 +1,20 @@
 import type {
+	Map as MapLibreMap,
 	RasterDEMSourceSpecification,
 	StyleSpecification,
 } from "maplibre-gl";
 
-// OpenTopoMap raster tiles. maxzoom 17 is the service's limit; the map clamps
-// to it so we never request tiles that don't exist.
+// The app renders two base maps depending on the view mode (RouteMap.setTerrain):
+//
+//   2D (flat)    — OpenTopoMap: a topographic raster whose baked hillshade reads
+//                  well on a flat map.
+//   3D (terrain) — VersaTiles "colorful": a keyless landcover VECTOR basemap with
+//                  NO baked shading. Draped over the tilted terrain mesh it lets
+//                  MapLibre's own hillshade (computed from the Mapterhorn DEM by
+//                  customizeBasemap) be the only relief, so the light agrees with
+//                  the geometry. OpenTopoMap's baked shading would double up on the
+//                  3D surface, which is why the flat basemap is swapped out in 3D.
+
 const OPENTOPO_MAX_ZOOM = 17;
 
 // A single map credit: the linked source name plus the plain text that frames
@@ -21,9 +31,9 @@ export interface MapCredit {
 	readonly suffix: string;
 }
 
-// Attribution required by the fetch-pois README: OpenStreetMap contributors +
-// the OpenTopoMap (CC-BY-SA) rendering credit. The English "© OpenStreetMap
-// contributors" wording is kept alongside the German original.
+// Credits for the 2D base map (OpenTopoMap): OpenStreetMap data + the OpenTopoMap
+// (CC-BY-SA) rendering credit. The English "© OpenStreetMap contributors" wording
+// is kept alongside the German original.
 export const BASEMAP_CREDITS: readonly MapCredit[] = [
 	{
 		prefix: "Kartendaten: © ",
@@ -39,9 +49,28 @@ export const BASEMAP_CREDITS: readonly MapCredit[] = [
 	},
 ];
 
+// Credits for the 3D base map (VersaTiles "colorful"): OpenStreetMap data +
+// VersaTiles rendering. Shown in place of BASEMAP_CREDITS while terrain is on,
+// because in 3D the OpenTopoMap tiles are not loaded (see MapAttribution).
+export const BASEMAP_CREDITS_3D: readonly MapCredit[] = [
+	{
+		prefix: "Kartendaten: © ",
+		name: "OpenStreetMap",
+		href: "https://openstreetmap.org/copyright",
+		suffix: "-Mitwirkende (© OpenStreetMap contributors)",
+	},
+	{
+		prefix: "Kartendarstellung: © ",
+		name: "VersaTiles",
+		href: "https://versatiles.org",
+		suffix: "",
+	},
+];
+
 const OPENTOPO_SOURCE_ID = "opentopomap";
 
-export const topoBasemapStyle: StyleSpecification = {
+// 2D flat base map — the default.
+export const basemapStyle2d: StyleSpecification = {
 	version: 8,
 	sources: {
 		[OPENTOPO_SOURCE_ID]: {
@@ -64,12 +93,19 @@ export const topoBasemapStyle: StyleSpecification = {
 	],
 };
 
-export const BASEMAP_MAX_ZOOM = OPENTOPO_MAX_ZOOM;
+// 3D landcover base map — a keyless VersaTiles vector style, loaded by URL.
+// customizeBasemap post-processes it (strip labels, recolour forest, add the
+// calculated hillshade) once it has loaded.
+export const basemapStyle3d =
+	"https://tiles.versatiles.org/assets/styles/colorful/style.json";
+
+// Camera zoom cap. OpenTopoMap (source maxzoom 17) and the VersaTiles vector
+// tiles both overzoom past this, so 18 is safe for either base map.
+export const BASEMAP_MAX_ZOOM = 18;
 
 // 3D terrain (#23). Mapterhorn's free terrarium-encoded DEM tiles — the exact
 // source MapLibre's own 3D-terrain example streams. The raster-dem source is
-// added on demand by RouteMap.setTerrain and draped under the 2D basemap; the
-// flat map is restored by clearing the terrain, so no separate 3D style exists.
+// added on demand by RouteMap.setTerrain and draped under the base map.
 export const TERRAIN_SOURCE_ID = "mapterhorn-terrain";
 
 // The terrain credit, surfaced by the React attribution component only while
@@ -94,3 +130,53 @@ export const terrainSource: RasterDEMSourceSpecification = {
 	tileSize: 512,
 	encoding: "terrarium",
 };
+
+// Separate raster-dem source id for the hillshade layer, kept independent of the
+// terrain mesh source (TERRAIN_SOURCE_ID) — MapLibre recommends distinct sources
+// for terrain and hillshade for render quality.
+const HILLSHADE_SOURCE_ID = "mapterhorn-hillshade";
+
+// Post-process the freshly-loaded VersaTiles (3D) style: drop its labels, give
+// forest a legible green, and drape MapLibre's calculated hillshade. Idempotent,
+// so it is safe to run each time the 3D style (re)loads.
+export function customizeBasemap(map: MapLibreMap): void {
+	// 1. Strip every label (symbol) layer — labels render awkwardly on the tilted
+	//    3D surface.
+	for (const layer of map.getStyle().layers ?? []) {
+		if (layer.type === "symbol") {
+			map.removeLayer(layer.id);
+		}
+	}
+
+	// 2. Forest: a legible green at reduced opacity so the hillshade relief still
+	//    reads through the tree cover. VersaTiles renders forest at only 0.1
+	//    opacity by default, so the opacity must be raised for the colour to show.
+	if (map.getLayer("land-forest")) {
+		map.setPaintProperty("land-forest", "fill-color", "#43a047");
+		map.setPaintProperty("land-forest", "fill-opacity", 0.6);
+	}
+
+	// 3. Client-side hillshade computed on the GPU from the Mapterhorn DEM. Light
+	//    locked to the compass (anchor "map") from the south-west (225°) so it does
+	//    not swing with the camera, draped over the landcover fills.
+	if (!map.getSource(HILLSHADE_SOURCE_ID)) {
+		map.addSource(HILLSHADE_SOURCE_ID, {
+			type: "raster-dem",
+			tiles: ["https://tiles.mapterhorn.com/{z}/{x}/{y}.webp"],
+			tileSize: 512,
+			encoding: "terrarium",
+		});
+	}
+	if (!map.getLayer(HILLSHADE_SOURCE_ID)) {
+		map.addLayer({
+			id: HILLSHADE_SOURCE_ID,
+			type: "hillshade",
+			source: HILLSHADE_SOURCE_ID,
+			paint: {
+				"hillshade-illumination-anchor": "map",
+				"hillshade-illumination-direction": 225,
+				"hillshade-exaggeration": 0.5,
+			},
+		});
+	}
+}
