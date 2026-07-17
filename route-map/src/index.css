@@ -556,8 +556,13 @@ body,
 		height: 92vh;
 	}
 
-	/* The handle: a full-width bar at the top of the sheet holding the chevron
-	 * step buttons, centered with a small gap when both show (peek mode). */
+	/* The handle: a full-width band at the top of the sheet holding the chevron
+	 * step buttons, centered with a small gap when both show (peek mode). It is
+	 * transparent and click-through (pointer-events: none) so a detail panel's
+	 * action row can sit in the SAME band to its left — only the chevron buttons
+	 * (pointer-events: auto) intercept taps; taps elsewhere fall through to the
+	 * detail actions beneath. The sheet's white/rounded top comes from
+	 * .route-panel, so the band needs no background of its own. */
 	.sheet-header {
 		display: flex;
 		align-items: center;
@@ -565,14 +570,13 @@ body,
 		gap: 1.5rem;
 		width: 100%;
 		height: var(--sheet-header-height);
-		border-radius: 12px 12px 0 0;
-		background: #fff;
-		/* Sit above the absolute-filling sidebar/detail so it stays tappable. */
+		/* Sit above the absolute-filling sidebar/detail so the chevron stays on top. */
 		position: absolute;
 		top: 0;
 		left: 0;
 		right: 0;
 		z-index: 3;
+		pointer-events: none;
 	}
 
 	/* Each chevron step button: a ≥44px tap target with a bare, centered glyph
@@ -588,18 +592,43 @@ body,
 		background: none;
 		color: #999;
 		cursor: pointer;
+		pointer-events: auto;
 	}
 
 	.sheet-header__chevron-btn:hover {
 		color: #555;
 	}
 
-	/* Reserve the handle's height: the sidebar and any detail panel fill the
-	 * sheet (inset: 0) but must start below the handle so it is never covered.
-	 * Both scroll their own content, so peek shows the top and full shows all. */
-	.route-panel .sidebar,
-	.route-panel .detail {
+	/* The sidebar starts below the handle band so its search box is never covered
+	 * by the chevron. It scrolls its own content (peek shows the top, full all). */
+	.route-panel .sidebar {
 		top: var(--sheet-header-height);
+	}
+
+	/* A detail panel instead fills the WHOLE sheet (top: 0): its sticky action row
+	 * shares the handle band with the chevron (search + back to the left, chevron
+	 * centered), so the detail spends no extra row on the actions and more content
+	 * shows in peek. */
+	.route-panel .detail {
+		top: 0;
+	}
+
+	/* The action row occupies the handle band, vertically centered to line up with
+	 * the chevron; the title follows below it. */
+	.route-panel .detail__header {
+		padding-top: 0;
+	}
+
+	.route-panel .detail__header-actions {
+		height: var(--sheet-header-height);
+		margin-bottom: 0;
+	}
+
+	/* Fully collapsed: only the up chevron shows. Hide the whole detail panel so
+	 * neither its actions nor its title rise into the minimized band (the sidebar
+	 * already shows nothing here — it starts below the band). */
+	.route-panel--collapsed .detail {
+		display: none;
 	}
 
 	/* Content-aware peek (#102): the peek (42vh) shows whatever sits at the top of
