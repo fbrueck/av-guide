@@ -44,6 +44,32 @@ const SINGLE_POINT_ZOOM = 14;
 const FIT_PADDING = 64;
 const FIT_MAX_ZOOM = 15;
 
+// Mirrors the single `max-width: 768px` CSS breakpoint (route-map/CLAUDE.md
+// rule 8): below it the route panel becomes a bottom sheet overlaying the map.
+const MOBILE_BREAKPOINT = 768;
+
+// On mobile the bottom sheet overlays the lower part of the map with its
+// collapsed peek height, so the camera must frame highlighted POIs in the area
+// ABOVE it — otherwise a selection centers behind the sheet. Returns that peek
+// height in pixels (the obscured bottom inset), reading the single source of
+// truth CSS variable so it never drifts from the layout; 0 on desktop, where the
+// panel docks beside the map and nothing overlays it.
+function bottomSheetInsetPx(): number {
+	if (window.innerWidth > MOBILE_BREAKPOINT) {
+		return 0;
+	}
+	const raw = getComputedStyle(document.documentElement)
+		.getPropertyValue("--sheet-peek-height")
+		.trim();
+	if (raw.endsWith("vh")) {
+		return (Number.parseFloat(raw) / 100) * window.innerHeight;
+	}
+	if (raw.endsWith("px")) {
+		return Number.parseFloat(raw);
+	}
+	return 0;
+}
+
 const EMPTY_FEATURE_COLLECTION: FeatureCollection = {
 	type: "FeatureCollection",
 	features: [],
@@ -186,7 +212,16 @@ export function createRouteMap(
 		container,
 		style: topoBasemapStyle,
 		bounds: WETTERSTEIN_BOUNDS,
-		fitBoundsOptions: { padding: 32 },
+		// Reserve the mobile bottom sheet's height so the initial overview frames
+		// above it, not behind it (same rationale as fitToPois).
+		fitBoundsOptions: {
+			padding: {
+				top: 32,
+				right: 32,
+				bottom: 32 + bottomSheetInsetPx(),
+				left: 32,
+			},
+		},
 		maxZoom: BASEMAP_MAX_ZOOM,
 		// The app renders its own attribution as a React overlay
 		// (src/components/MapAttribution.tsx) rather than a maplibre control, so
@@ -323,15 +358,32 @@ export function createRouteMap(
 		if (!first) {
 			return;
 		}
+		// Frame within the map area NOT covered by the mobile bottom sheet.
+		const bottomInset = bottomSheetInsetPx();
 		if (rest.length === 0) {
-			map.easeTo({ center: first.coordinates, zoom: SINGLE_POINT_ZOOM });
+			// A single point centers by offset: shift the target up by half the
+			// obscured height so it lands in the middle of the visible area.
+			map.easeTo({
+				center: first.coordinates,
+				zoom: SINGLE_POINT_ZOOM,
+				offset: [0, -bottomInset / 2],
+			});
 			return;
 		}
 		const bounds = new LngLatBounds();
 		for (const poi of pois) {
 			bounds.extend(poi.coordinates);
 		}
-		map.fitBounds(bounds, { padding: FIT_PADDING, maxZoom: FIT_MAX_ZOOM });
+		// Extra bottom padding keeps the bounds above the sheet.
+		map.fitBounds(bounds, {
+			padding: {
+				top: FIT_PADDING,
+				right: FIT_PADDING,
+				bottom: FIT_PADDING + bottomInset,
+				left: FIT_PADDING,
+			},
+			maxZoom: FIT_MAX_ZOOM,
+		});
 	}
 
 	// Switch the base POI layer's filter to the current selection (#77). A no-op
