@@ -29,6 +29,12 @@ import { WETTERSTEIN_BOUNDS } from "./view";
 const POI_SOURCE_ID = "pois";
 const POI_LAYER_ID = "poi-markers";
 
+// A symbol layer that floats peak names above each summit — 3D only (the flat 2D
+// OpenTopoMap raster carries its own baked labels). See
+// docs/research/2026-07-17-peak-labels-on-3d-map.md (Approach A) for why this is
+// screen-space rather than true metres-above-terrain.
+const PEAK_LABEL_LAYER_ID = "peak-labels";
+
 // A dedicated emphasis source/layer drawn ON TOP of the base poi-markers so a
 // selected Entry's linked POI set stands out without redrawing the base
 // (route-map/CLAUDE.md rule 3: rendering a Route = highlighting its POI set,
@@ -123,6 +129,11 @@ export interface RouteMap {
 // filter and the display-only tap → Place resolution (ADR-0004).
 interface PoiFeatureProps extends PoiVisibilityFeature {
 	type: string;
+	// The peak-label symbol layer (3D) reads these for its text-field; flat and
+	// primitive like the rest, because maplibre only carries JSON-serialisable
+	// feature properties.
+	name: string;
+	ele: number | null;
 }
 
 function toFeatureCollection(
@@ -136,6 +147,8 @@ function toFeatureCollection(
 				id: poi.id,
 				type: poi.type,
 				isPlace: placePoiIds.has(poi.id),
+				name: poi.name,
+				ele: poi.ele,
 			};
 			return {
 				type: "Feature",
@@ -331,6 +344,12 @@ export function createRouteMap(
 		if (currentPois) {
 			renderPois(currentPois);
 		}
+		// Peak labels go on AFTER renderPois (they read POI_SOURCE_ID) and AFTER
+		// customizeBasemap's symbol-strip; 3D only — 2D OpenTopoMap keeps its own
+		// baked labels.
+		if (appliedMode === "3d") {
+			addPeakLabels();
+		}
 		renderHighlight(selectedEntry, false);
 	}
 
@@ -383,6 +402,57 @@ export function createRouteMap(
 			wireInteractions();
 			interactionsWired = true;
 		}
+	}
+
+	// A symbol layer for peak names, floating above each summit marker. Added only
+	// in 3D and only AFTER customizeBasemap() has stripped the basemap's own symbol
+	// layers, so it survives that pass. Reads the
+	// existing `pois` GeoJSON source (POI_SOURCE_ID), filtered to peaks — no new
+	// source/data. Screen-space "above the summit": the true metres-above-terrain
+	// property (symbol-elevation) is not in maplibre 5.24 (style-spec #62 /
+	// gl-js #7827, not shipped), so anchor the label's bottom edge on the summit and
+	// lift it upward in pixels. Idempotent.
+	function addPeakLabels(): void {
+		if (!map.getSource(POI_SOURCE_ID) || map.getLayer(PEAK_LABEL_LAYER_ID)) {
+			return;
+		}
+		map.addLayer({
+			id: PEAK_LABEL_LAYER_ID,
+			type: "symbol",
+			source: POI_SOURCE_ID,
+			filter: ["==", ["get", "type"], "peak"] as unknown as FilterSpecification,
+			layout: {
+				// Name, with elevation on a second (smaller) line when present.
+				"text-field": [
+					"case",
+					["has", "ele"],
+					[
+						"format",
+						["get", "name"],
+						{},
+						["concat", "\n", ["to-string", ["get", "ele"]], " m"],
+						{ "font-scale": 0.8 },
+					],
+					["get", "name"],
+				] as unknown as ExpressionSpecification,
+				"text-anchor": "bottom",
+				"text-offset": [0, -1.2],
+				"text-size": 12,
+				// Declutter ~100 labels: no overlap, highest peaks win placement.
+				"text-allow-overlap": false,
+				"text-optional": false,
+				"symbol-sort-key": [
+					"-",
+					0,
+					["coalesce", ["get", "ele"], 0],
+				] as unknown as ExpressionSpecification,
+			},
+			paint: {
+				"text-color": "#1a1a1a",
+				"text-halo-color": "#ffffff",
+				"text-halo-width": 1.4,
+			},
+		});
 	}
 
 	// Ease/fit the camera to the highlighted POI set. Single point eases to a
