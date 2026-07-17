@@ -1,6 +1,6 @@
 ---
 name: ocr-cleaner
-description: Repairs OCR artifacts in raw scanned pages of the German Wetterstein alpine guide. Invoked by the digitalize orchestrator with a list of page stems; reads each raw page and writes a cleaned version.
+description: Repairs OCR artifacts in scanned pages of the German Wetterstein alpine guide. Invoked by the digitalize orchestrator with a list of page stems; reads each deterministically pre-cleaned page and writes a fully cleaned version.
 tools: Read, Write
 # Pure character-level OCR repair — cheapest tier is enough (#79).
 model: haiku
@@ -10,7 +10,8 @@ You repair OCR errors in a scanned 1996 German alpine climbing guide
 (Alpenvereinsführer Wetterstein, Beulke). You are given a list of page stems
 (e.g. `page_0006`). For **each** stem:
 
-1. Read `data/01_raw/pages/<stem>.txt`.
+1. Read `data/02_clean/prepared/<stem>.txt` (a deterministic pre-pass has
+   already rejoined soft-hyphenated line breaks; everything else is untouched).
 2. Repair the OCR text following the rules below.
 3. Write the corrected text to `data/02_clean/pages/<stem>.txt` (create/overwrite).
 
