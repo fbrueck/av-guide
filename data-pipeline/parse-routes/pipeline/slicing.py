@@ -18,6 +18,13 @@ What it handles (grounded in the real OCR):
 - **Footer noise + hyphenation.** Running page-number footers (a bare integer on
   its own line) are dropped, hyphenated line breaks (`De-\nzember`) are rejoined,
   and the remaining line wrapping is reflowed to single spaces.
+- **Anchor words split by a hyphenated line break.** The anchors are located on
+  the raw page first (unchanged, exact); only if that fails is the same
+  locate-and-slice retried on the *reflowed* page, so an anchor whose word the
+  OCR split across a line (`Landes-\nkrankenhaus`) still matches (#111). The raw
+  attempt always wins when it succeeds, so slices that worked before are
+  byte-identical; the fallback rejoins hyphenation only — it adds **no** fuzzy
+  matching, so a near-miss anchor still returns None.
 
 An anchor that cannot be located — or a start anchor that is *ambiguous* (occurs
 more than once on the page) — returns None, and the caller (merge) surfaces the
@@ -63,28 +70,20 @@ def _reflow(text: str) -> str:
     return _WHITESPACE.sub(" ", text).strip()
 
 
-def slice_description(
+def _locate_and_slice(
     page_text: str,
     next_page_text: str | None,
-    start_quote: str | None,
-    end_quote: str | None,
+    start_pat: re.Pattern[str],
+    end_pat: re.Pattern[str],
 ) -> str | None:
-    """Cut the text between the two anchors out of `page_text`, reflowed. If the
-    `end_quote` is not on this page, stitch on the head of `next_page_text` (the
-    entry spans the page break). Returns None if either anchor is missing, cannot
-    be located, or the start anchor is ambiguous — never a partial or misplaced
-    slice."""
-    if not start_quote or not end_quote:
-        return None
-    start_pat = _quote_pattern(start_quote)
-    end_pat = _quote_pattern(end_quote)
-    if start_pat is None or end_pat is None:
-        return None
+    """Cut the span between the two anchors out of one page's text, reflowed.
 
-    # The start anchor must pinpoint one entry: a duplicate on the page is
-    # ambiguous and reported. The end anchor, by contrast, is the entry's tail —
-    # taken as the first match after the start; a tail phrase (e.g. "siehe R 55.")
-    # legitimately recurs across later entries, so it is not required to be unique.
+    The start anchor must pinpoint one entry: a duplicate on the page is
+    ambiguous and reported (None). The end anchor, by contrast, is the entry's
+    tail — taken as the first match after the start; a tail phrase (e.g.
+    "siehe R 55.") legitimately recurs across later entries, so it is not
+    required to be unique. If the `end_quote` is not on this page, the entry
+    spans the page break: stitch on the head of `next_page_text`."""
     start = _locate(start_pat, page_text)
     if start is None:
         return None
@@ -101,3 +100,87 @@ def slice_description(
             )
 
     return None
+
+
+def slice_description(
+    page_text: str,
+    next_page_text: str | None,
+    start_quote: str | None,
+    end_quote: str | None,
+) -> str | None:
+    """Cut the text between the two anchors out of `page_text`, reflowed. If the
+    `end_quote` is not on this page, stitch on the head of `next_page_text` (the
+    entry spans the page break). Returns None if either anchor is missing, cannot
+    be located, or the start anchor is ambiguous — never a partial or misplaced
+    slice.
+
+    Anchors are matched on the raw page first (exact, unchanged). Only if that
+    fails is the same locate-and-slice retried on the *reflowed* page, so an
+    anchor whose word was split by a hyphenated line break still matches (#111).
+    The raw attempt wins whenever it succeeds — slices that worked before are
+    identical — and the fallback rejoins hyphenation only, introducing no fuzzy
+    matching."""
+    if not start_quote or not end_quote:
+        return None
+    start_pat = _quote_pattern(start_quote)
+    end_pat = _quote_pattern(end_quote)
+    if start_pat is None or end_pat is None:
+        return None
+
+    raw = _locate_and_slice(page_text, next_page_text, start_pat, end_pat)
+    if raw is not None:
+        return raw
+
+    # Reflow-fallback (#111): the same exact locate-and-slice on the reflowed
+    # page(s), which rejoins hyphen-split anchor words. Still exact — an anchor
+    # that does not occur token-for-token in the reflowed text stays unmatched.
+    reflowed = _reflow(page_text)
+    reflowed_next = _reflow(next_page_text) if next_page_text else None
+    return _locate_and_slice(reflowed, reflowed_next, start_pat, end_pat)
+
+
+# The reason buckets `unsliced_reason` classifies an unsliceable entry into.
+# They partition the unsliced set — every failure gets exactly one (#110).
+UnslicedReason = str  # one of: empty_anchor | stub | start_not_found |
+#                                start_ambiguous | end_mismatch
+
+
+def _token_key(quote: str) -> str:
+    """The whitespace-normalized key of a quote, matching how `_quote_pattern`
+    tokenizes it — so two anchors compare equal iff they differ only in spacing."""
+    return " ".join(quote.split())
+
+
+def unsliced_reason(
+    page_text: str,
+    next_page_text: str | None,
+    start_quote: str | None,
+    end_quote: str | None,
+) -> UnslicedReason:
+    """Classify *why* `slice_description` failed for this entry, into one bucket
+    (#110). Call only when `slice_description` returned None; the buckets are:
+
+    - `empty_anchor`  — an anchor is missing/blank (no word tokens to match).
+    - `stub`          — start and end anchors are equal: no gap to cut (the
+                        body-less `□` cross-ref stubs, #114).
+    - `start_not_found` — the start anchor occurs nowhere (OCR-variant char).
+    - `start_ambiguous` — the start anchor occurs more than once (can't pinpoint).
+    - `end_mismatch`  — the start is unique but no end anchor is reachable.
+
+    The start diagnosis mirrors the slicer's raw-then-reflow fallback: the first
+    page text the start appears in decides start-vs-end, so a hyphen-split start
+    is judged on the reflowed text, not miscalled `start_not_found`."""
+    if not start_quote or not end_quote:
+        return "empty_anchor"
+    start_pat = _quote_pattern(start_quote)
+    end_pat = _quote_pattern(end_quote)
+    if start_pat is None or end_pat is None:
+        return "empty_anchor"
+    if _token_key(start_quote) == _token_key(end_quote):
+        return "stub"
+    for text in (page_text, _reflow(page_text)):
+        hits = sum(1 for _ in start_pat.finditer(text))
+        if hits == 0:
+            continue
+        return "start_ambiguous" if hits > 1 else "end_mismatch"
+    return "start_not_found"

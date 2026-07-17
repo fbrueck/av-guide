@@ -25,6 +25,12 @@ from .references import Reference
 # Every Entry/PartEntry is one of these two kinds (CONTEXT.md).
 Kind = Literal["place", "route"]
 
+# Provenance of an Entry's `description` (#114), so verbatim and non-verbatim
+# text are never silently mixed: `sliced` = cut verbatim from the page between
+# the anchors; `stub` = a body-less □ cross-ref's one-line heading (no gap to
+# slice); `none` = no description recovered.
+DescriptionSource = Literal["sliced", "stub", "none"]
+
 # Route-only and Place-only verbatim fields carried through from extraction.
 _ROUTE_FIELDS = ("peak", "grade", "first_ascent", "time", "height_m")
 _PLACE_FIELDS = ("place_type", "elevation")
@@ -41,6 +47,9 @@ class Entry:
     kind: Kind
     name: str | None = None
     description: str | None = None
+    # Where `description` came from — never silently mix verbatim and non-verbatim
+    # text (#114). `none` matches a null description, `stub` a body-less one-liner.
+    description_source: DescriptionSource = "none"
     summary: str | None = None
     references: list[Reference] = field(default_factory=list)
     # Internal bookkeeping — not part of the route-map contract.
@@ -68,6 +77,7 @@ class Entry:
             kind=raw.get("kind", "route"),
             name=raw.get("name"),
             description=raw.get("description"),
+            description_source=raw.get("description_source", "none"),
             summary=raw.get("summary"),
             references=[Reference.from_dict(r) for r in raw.get("references") or []],
             id_source=raw.get("id_source", "book"),
@@ -94,6 +104,7 @@ class Entry:
             "source_page": self.source_page,
             "name": self.name,
             "description": self.description,
+            "description_source": self.description_source,
             "summary": self.summary,
             "references": [r.to_dict() for r in self.references],
         }

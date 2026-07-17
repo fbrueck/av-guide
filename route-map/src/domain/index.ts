@@ -46,6 +46,10 @@ interface EntryBase {
 	/** The book's prose blurb (Übersicht for a Place), if any. */
 	summary: string | null;
 	description: string | null;
+	/** Provenance of `description` (CONTEXT.md): "sliced" verbatim page text,
+	 *  "stub" a body-less cross-ref's one-line heading, or "none". Lets the UI
+	 *  flag non-verbatim descriptions instead of silently mixing them. */
+	descriptionSource: "sliced" | "stub" | "none";
 	/** Place-names in this Entry's prose matched to POIs (CONTEXT.md: Mention). */
 	mentions: Poi[];
 	/** Book-internal cross-references, resolved to Entries (CONTEXT.md: Reference). */

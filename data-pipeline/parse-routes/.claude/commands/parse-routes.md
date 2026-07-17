@@ -66,6 +66,38 @@ If `guides/<id>/data/parse-routes/01_raw/manifest.jsonl` does not exist, run:
    .venv/bin/python -m pipeline.export --guide <id>
    ```
 
+## Stage 4 — Repair unsliceable anchors (subagents: `anchor-repairer`)
+
+Optional recovery pass (#113). `merge` writes an **unsliced report**
+(`03_structured/unsliced.jsonl`) listing every entry whose verbatim description
+could not be sliced, each tagged with a reason bucket. The `end_mismatch`,
+`start_not_found`, and `start_ambiguous` buckets are a fidelity problem — the
+text is on the page but the emitted anchor is not a char-exact copy. This pass
+asks subagents for corrected anchors and re-slices deterministically (the
+exact-by-construction guarantee holds — no fuzzy matching). The `empty_anchor`
+bucket is fixed by re-extracting the page (Stage 3), and `stub` entries have no
+gap to cut — neither is repaired here.
+
+1. Get the repair plan (only the repairable buckets appear):
+   ```
+   .venv/bin/python -m pipeline.repair plan --guide <id> --batch 15
+   ```
+   Each stdout line is a batch: `{"batch": N, "tasks": [ {entry_id, stem, name,
+   reason, start_quote, end_quote}, … ]}`.
+2. For each batch, spawn an `anchor-repairer` subagent with that batch's task
+   list. Same wave discipline as Stage 3: up to 10 at a time. Each subagent reads
+   the cleaned page, copies corrected char-exact anchors, and writes one
+   `03_structured/repairs/<entry_id>.json` per entry it could fix.
+3. Apply the corrected anchors back into the page part files, then re-merge:
+   ```
+   .venv/bin/python -m pipeline.repair apply --guide <id>
+   .venv/bin/python -m pipeline.merge --guide <id>
+   ```
+   Re-running is idempotent — `plan` only lists entries still unsliced, so
+   already-sliceable entries are never touched. Repeat 1–3 if the unsliced count
+   is still dropping; entries the subagents could not place honestly stay in the
+   report.
+
 ## Finish
 
 Report: pages extracted, pages cleaned, entries found (places vs routes), any

@@ -70,6 +70,10 @@ function toEntry(raw: RawEntry): Entry | null {
 		name: raw.name,
 		summary: raw.summary,
 		description: raw.description,
+		// Narrow the optional provenance: honour what the pipeline emitted, else
+		// infer from whether a description is present (older snapshot, #114).
+		descriptionSource:
+			raw.description_source ?? (raw.description !== null ? "sliced" : "none"),
 		mentions: [] as Poi[],
 		references: [] as Reference[],
 	};

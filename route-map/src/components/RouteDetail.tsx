@@ -88,6 +88,12 @@ export function RouteDetail({ route, nav }: RouteDetailProps) {
 			) : null}
 			<h3 className="detail__subtitle">Beschreibung</h3>
 			<p className="detail__description">{route.description ?? "—"}</p>
+			{route.descriptionSource === "stub" ? (
+				<p className="detail__note detail__note--unlinked">
+					Nur eine Verweiszeile — dieser Eintrag hat keinen eigenen
+					Beschreibungstext.
+				</p>
+			) : null}
 
 			<h3 className="detail__subtitle">Ziel</h3>
 			{route.destination === null ? (

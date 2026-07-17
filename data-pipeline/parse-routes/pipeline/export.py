@@ -52,6 +52,7 @@ CONTRACT_FIELDS: tuple[str, ...] = (
     "references",
     "summary",
     "description",
+    "description_source",
 )
 
 
