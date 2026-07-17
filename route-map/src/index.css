@@ -499,4 +499,29 @@ body,
 	.route-panel .detail {
 		top: 2.75rem;
 	}
+
+	/* Content-aware peek (#102): the peek (42vh) shows whatever sits at the top of
+	 * the sheet. With NO selection only the sidebar is mounted, so its search box
+	 * + the top of the Place list show. With a selection the detail panel overlays
+	 * the sidebar (inset: 0, z-index: 2) and its sticky header sits at the top, so
+	 * the peek shows the detail header instead — no extra state, the DOM overlay
+	 * already puts the right content first. Full (92vh) shows the whole panel. */
+
+	/* ≥44px tap targets on mobile (#102, rule 8): the sheet header is already
+	 * 2.75rem (44px). The detail Back and Close controls are small text/icon hit
+	 * areas on desktop, so give them a comfortable 44px touch box inside the
+	 * sheet — the reader walks the Place -> Route -> Reference stack with these. */
+	.detail__back {
+		min-height: 44px;
+		padding: 0.5rem 0;
+	}
+
+	.detail__close {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 44px;
+		min-height: 44px;
+		padding: 0;
+	}
 }
