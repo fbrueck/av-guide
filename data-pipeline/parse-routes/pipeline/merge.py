@@ -38,13 +38,13 @@ import json
 import shutil
 import sys
 from dataclasses import dataclass, field, replace
-from typing import Any
 
 from .config import GuideConfig, load_guide
 from .export import write_routes_json
 from .ids import normalize_entry_id, synthetic_id
-from .records import Entry
+from .records import Entry, PartEntry
 from .references import parse_references
+from .slicing import slice_description
 
 
 @dataclass(frozen=True, slots=True)
@@ -74,6 +74,7 @@ class MergeReport:
     unresolved_places: list[UnresolvedPlace] = field(default_factory=list)
     missing_destination: list[str] = field(default_factory=list)  # no parent Place
     dangling_refs: list[DanglingRef] = field(default_factory=list)
+    unsliced: list[str] = field(default_factory=list)  # anchors not found in page text
 
 
 def _norm_name(name: str) -> str:
@@ -82,14 +83,14 @@ def _norm_name(name: str) -> str:
 
 
 def _assign_id(
-    raw: dict[str, Any], page: int, seq: int, used_ids: set[str], report: MergeReport
+    raw: PartEntry, page: int, seq: int, used_ids: set[str], report: MergeReport
 ) -> tuple[str, str]:
     """A recoverable, unique book number keys the Entry directly
     (`id_source: book`). Otherwise a deterministic synthetic id is assigned for
     one of two reasons, counted apart: the number was unrecoverable from OCR
     (the spec's trigger), or it collided with an earlier Entry (surfaced, not
     silently overwritten)."""
-    book_id = normalize_entry_id(raw.get("entry_id_raw"))
+    book_id = normalize_entry_id(raw.entry_id_raw)
     if book_id and book_id not in used_ids:
         return book_id, "book"
     if book_id in used_ids and book_id is not None:
@@ -100,29 +101,29 @@ def _assign_id(
 
 
 def _build_entry(
-    raw: dict[str, Any], entry_id: str, id_source: str, page: int
+    raw: PartEntry, entry_id: str, id_source: str, page: int, description: str | None
 ) -> Entry:
-    """One raw per-page entry dict -> an Entry, targets still unresolved. A
+    """One parsed per-page part entry -> an Entry, targets still unresolved. A
     Place carries place_type/elevation; a Route the climbing metadata — each
-    leaves the other kind's verbatim fields None."""
-    kind = raw.get("kind", "route")
-    is_place = kind == "place"
+    leaves the other kind's verbatim fields None. `description` is the verbatim
+    text merge sliced from the cleaned page between the entry's anchors."""
+    is_place = raw.kind == "place"
     return Entry(
         id=entry_id,
-        kind=kind,
+        kind=raw.kind,
         id_source=id_source,
         source_page=page,
-        name=raw.get("name"),
-        description=raw.get("description"),
-        summary=raw.get("summary"),
-        references=parse_references(raw.get("description")),
-        place_type=raw.get("place_type") if is_place else None,
-        elevation=raw.get("elevation") if is_place else None,
-        peak=None if is_place else raw.get("peak"),
-        grade=None if is_place else raw.get("grade"),
-        first_ascent=None if is_place else raw.get("first_ascent"),
-        time=None if is_place else raw.get("time"),
-        height_m=None if is_place else raw.get("height_m"),
+        name=raw.name,
+        description=description,
+        summary=raw.summary,
+        references=parse_references(description),
+        place_type=raw.place_type if is_place else None,
+        elevation=raw.elevation if is_place else None,
+        peak=None if is_place else raw.peak,
+        grade=None if is_place else raw.grade,
+        first_ascent=None if is_place else raw.first_ascent,
+        time=None if is_place else raw.time,
+        height_m=None if is_place else raw.height_m,
     )
 
 
@@ -169,31 +170,40 @@ def _report_dangling(records: list[Entry], report: MergeReport) -> None:
 
 
 def assemble_entries(
-    parts: list[tuple[int, list[dict[str, Any]]]],
+    parts: list[tuple[int, list[PartEntry]]],
+    page_texts: dict[int, str],
 ) -> tuple[list[Entry], MergeReport]:
     """Turn per-page entry lists (in book order) into linked Entry records.
 
     `parts` is `[(page, entries)]` already sorted in book (page) order; each
-    entry is the raw wire dict an extractor wrote. Returns `(records, report)`
-    where records are Entries in book order and report collects dangling refs /
-    unresolved place names / destination gaps / synthetic-id and collision
-    counts for the caller to surface.
+    entry is a `PartEntry` parsed from what an extractor wrote. `page_texts` maps
+    a page number to its cleaned text, used to slice each entry's verbatim
+    description between its anchors (the next page is read too, for entries that
+    span a page break). Returns `(records, report)` where records are Entries in
+    book order and report collects dangling refs / unresolved place names /
+    destination gaps / synthetic-id and collision counts / unsliced anchors for
+    the caller to surface.
     """
     report = MergeReport()
 
-    # Pass 1 — assign ids and build Entries (targets still unresolved). Keep each
-    # Route's raw traverse place-names alongside for the target pass.
+    # Pass 1 — assign ids, slice descriptions, build Entries (targets still
+    # unresolved). Keep each Route's raw traverse place-names for the target pass.
     records: list[Entry] = []
     place_names: list[list[str]] = []
     used_ids: set[str] = set()
     for page, entries in parts:
+        text = page_texts.get(page, "")
+        next_text = page_texts.get(page + 1)
         for seq, raw in enumerate(entries, start=1):
             entry_id, id_source = _assign_id(raw, page, seq, used_ids, report)
             used_ids.add(entry_id)
-            records.append(_build_entry(raw, entry_id, id_source, page))
-            place_names.append(
-                [] if raw.get("kind") == "place" else raw.get("place_names") or []
+            description = slice_description(
+                text, next_text, raw.start_quote, raw.end_quote
             )
+            if description is None:
+                report.unsliced.append(entry_id)
+            records.append(_build_entry(raw, entry_id, id_source, page, description))
+            place_names.append([] if raw.kind == "place" else raw.place_names)
 
     # Pass 2 — place-name index.
     index = _place_index(records)
@@ -213,6 +223,22 @@ def assemble_entries(
     return records, report
 
 
+def _load_page_texts(
+    cfg: GuideConfig, parts: list[tuple[int, list[PartEntry]]]
+) -> dict[int, str]:
+    """Read the cleaned text for every page that has entries, plus each one's
+    next page (an entry can spill onto it). Missing pages map to ''."""
+    wanted: set[int] = set()
+    for page, _ in parts:
+        wanted.add(page)
+        wanted.add(page + 1)
+    texts: dict[int, str] = {}
+    for page in wanted:
+        f = cfg.clean_pages / f"page_{page:04d}.txt"
+        texts[page] = f.read_text(encoding="utf-8") if f.exists() else ""
+    return texts
+
+
 def merge(cfg: GuideConfig) -> None:
     if not cfg.struct_parts.exists():
         sys.exit("No parts dir — run the structure stage first.")
@@ -222,7 +248,7 @@ def merge(cfg: GuideConfig) -> None:
         shutil.rmtree(cfg.entries_dir)
     cfg.entries_dir.mkdir(parents=True, exist_ok=True)
 
-    parts: list[tuple[int, list[dict[str, Any]]]] = []
+    parts: list[tuple[int, list[PartEntry]]] = []
     bad = 0
     for part in sorted(cfg.struct_parts.glob("page_*.json")):
         page = int(part.stem.split("_")[1])
@@ -232,9 +258,15 @@ def merge(cfg: GuideConfig) -> None:
             bad += 1
             print(f"  WARN: {part.name} is not valid JSON — skipped", file=sys.stderr)
             continue
-        parts.append((page, data.get("entries", [])))
+        # Convert the wire dicts to typed records once, at the read boundary.
+        entries = [PartEntry.from_dict(e) for e in data.get("entries", [])]
+        parts.append((page, entries))
 
-    records, report = assemble_entries(parts)
+    # Load the cleaned page text merge slices descriptions from — each entry's
+    # start page plus the next (for entries that spill across the page break).
+    page_texts = _load_page_texts(cfg, parts)
+
+    records, report = assemble_entries(parts, page_texts)
 
     # One self-contained JSON file per Entry, plus the combined index — both in
     # book order (page, then in-page sequence).
@@ -292,6 +324,12 @@ def _print_summary(
         print(
             f"  WARN: {len(report.dangling_refs)} dangling references "
             "(ref_id not in id set)",
+            file=sys.stderr,
+        )
+    if report.unsliced:
+        print(
+            f"  WARN: {len(report.unsliced)} entries with no sliceable "
+            "description (anchors not found in the cleaned page; stored null)",
             file=sys.stderr,
         )
 

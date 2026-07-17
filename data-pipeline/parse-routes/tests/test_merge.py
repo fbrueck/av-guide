@@ -1,12 +1,15 @@
 import json
 
 from pipeline.merge import DanglingRef, UnresolvedPlace, assemble_entries, merge
+from pipeline.records import PartEntry
 
 
 def write_part(cfg, stem, entries):
     cfg.struct_parts.mkdir(parents=True, exist_ok=True)
+    # Strip the test-only "_text" scaffolding so the part file looks real.
+    wire = [{k: v for k, v in e.items() if k != "_text"} for e in entries]
     (cfg.struct_parts / f"{stem}.json").write_text(
-        json.dumps({"entries": entries}, ensure_ascii=False), encoding="utf-8"
+        json.dumps({"entries": wire}, ensure_ascii=False), encoding="utf-8"
     )
 
 
@@ -15,20 +18,31 @@ def load_jsonl(path):
         return [json.loads(line) for line in f]
 
 
-def place(entry_id_raw, name, **fields):
+def _anchored(base, name, text, fields):
+    """Attach boundary anchors derived from the entry's body `text` (its first
+    and last words), plus a `_text` scaffold so `assemble` can synthesize the
+    page the slicer reads. Defaults `text` to the heading."""
+    text = text if text is not None else name
+    words = text.split()
+    base["start_quote"] = " ".join(words[:4]) or None
+    base["end_quote"] = " ".join(words[-4:]) or None
+    base["_text"] = text
+    return {**base, **fields}
+
+
+def place(entry_id_raw, name, text=None, **fields):
     base = {
         "kind": "place",
         "entry_id_raw": entry_id_raw,
         "name": name,
-        "description": name,
         "summary": None,
         "place_type": None,
         "elevation": None,
     }
-    return {**base, **fields}
+    return _anchored(base, name, text, fields)
 
 
-def route(entry_id_raw, name, **fields):
+def route(entry_id_raw, name, text=None, **fields):
     base = {
         "kind": "route",
         "entry_id_raw": entry_id_raw,
@@ -38,18 +52,44 @@ def route(entry_id_raw, name, **fields):
         "first_ascent": None,
         "time": None,
         "height_m": None,
-        "description": name,
         "summary": None,
         "place_names": [],
     }
-    return {**base, **fields}
+    return _anchored(base, name, text, fields)
+
+
+def assemble(pages):
+    """Feed dict fixtures through the real parse+slice boundary, as merge does:
+    synthesize each page's text from its entries' bodies, then assemble. Pure
+    tests build wire dicts; the dict->PartEntry + description-slice step lives
+    here."""
+    parts = []
+    page_texts = {}
+    for page, entries in pages:
+        page_texts[page] = "\n\n".join(e["_text"] for e in entries)
+        parts.append((page, [PartEntry.from_dict(e) for e in entries]))
+    return assemble_entries(parts, page_texts)
+
+
+def test_part_entry_from_dict_defaults_and_kind_fields():
+    # Absent fields fall back to defaults; place_names normalizes to [].
+    r = PartEntry.from_dict({"kind": "route", "entry_id_raw": "56", "name": "X"})
+    assert r.kind == "route"
+    assert r.entry_id_raw == "56"
+    assert r.start_quote is None
+    assert r.place_names == []
+
+    p = PartEntry.from_dict({"kind": "place", "name": "Haus", "elevation": "1652 m"})
+    assert p.kind == "place"
+    assert p.elevation == "1652 m"
+    assert p.place_names == []
 
 
 # --- assemble_entries (pure) --------------------------------------------------
 
 
 def test_book_id_normalized_and_flagged():
-    records, report = assemble_entries(
+    records, report = assemble(
         [(51, [place("•55", "Kreuzeckhaus"), route("•56 A", "Nordwestgrat")])]
     )
     assert [r.id for r in records] == ["R55", "R56A"]
@@ -58,7 +98,7 @@ def test_book_id_normalized_and_flagged():
 
 
 def test_synthetic_id_when_randziffer_unrecoverable():
-    records, report = assemble_entries([(51, [route(None, "Nameless")])])
+    records, report = assemble([(51, [route(None, "Nameless")])])
     assert records[0].id == "p0051_01"
     assert records[0].id_source == "synthetic"
     assert report.synthetic == 1
@@ -66,7 +106,7 @@ def test_synthetic_id_when_randziffer_unrecoverable():
 
 def test_destination_is_structural_parent_place():
     # Place then two routes filed under it → both take the place as Destination.
-    records, _ = assemble_entries(
+    records, _ = assemble(
         [
             (
                 51,
@@ -84,14 +124,14 @@ def test_destination_is_structural_parent_place():
 
 
 def test_destination_carries_across_pages():
-    records, _ = assemble_entries(
+    records, _ = assemble(
         [(51, [place("•55", "Haus")]), (52, [route("•56", "Zustieg")])]
     )
     assert records[1].destination_id == "R55"
 
 
 def test_orphan_route_has_null_destination_surfaced():
-    records, report = assemble_entries([(51, [route("•56", "Von Hammersbach")])])
+    records, report = assemble([(51, [route("•56", "Von Hammersbach")])])
     assert records[0].destination_id is None
     assert records[0].place_ids == []
     # The gap is surfaced in the merge report, never invented.
@@ -99,7 +139,7 @@ def test_orphan_route_has_null_destination_surfaced():
 
 
 def test_traverse_place_resolved_by_name_disjoint_from_destination():
-    records, report = assemble_entries(
+    records, report = assemble(
         [
             (
                 51,
@@ -122,7 +162,7 @@ def test_traverse_place_resolved_by_name_disjoint_from_destination():
 def test_traverse_place_naming_the_destination_is_not_duplicated():
     # A traverse whose prose names its own parent Place must not repeat it in
     # place_ids — the two target roles stay disjoint.
-    records, _ = assemble_entries(
+    records, _ = assemble(
         [
             (
                 51,
@@ -139,7 +179,7 @@ def test_traverse_place_naming_the_destination_is_not_duplicated():
 
 
 def test_unresolved_traverse_place_surfaced_not_invented():
-    records, report = assemble_entries(
+    records, report = assemble(
         [(51, [place("•55", "Haus"), route("•56", "Trav", place_names=["Nirgendwo"])])]
     )
     r = next(r for r in records if r.kind == "route")
@@ -149,15 +189,13 @@ def test_unresolved_traverse_place_surfaced_not_invented():
 
 
 def test_references_parsed_and_dangling_reported():
-    records, report = assemble_entries(
+    records, report = assemble(
         [
             (
                 51,
                 [
                     place("•55", "Haus"),
-                    route(
-                        "•56", "R", description="Zustieg wie R 55, dann siehe R 999."
-                    ),
+                    route("•56", "R", text="Zustieg wie R 55, dann siehe R 999."),
                 ],
             )
         ]
@@ -169,9 +207,7 @@ def test_references_parsed_and_dangling_reported():
 
 
 def test_book_id_collision_rekeyed_synthetic():
-    records, report = assemble_entries(
-        [(51, [route("•56", "First"), route("•56", "Dup")])]
-    )
+    records, report = assemble([(51, [route("•56", "First"), route("•56", "Dup")])])
     assert records[0].id == "R56"
     assert records[1].id == "p0051_02"  # collision → synthetic fallback
     assert records[1].id_source == "synthetic"
@@ -217,3 +253,59 @@ def test_merge_rebuilds_from_scratch(cfg):
     assert not (cfg.entries_dir / "STALE.json").exists()
     entries = load_jsonl(cfg.routes_jsonl)
     assert [e["name"] for e in entries] == ["Renamed"]
+
+
+def write_clean_page(cfg, stem, text):
+    cfg.clean_pages.mkdir(parents=True, exist_ok=True)
+    (cfg.clean_pages / f"{stem}.txt").write_text(text, encoding="utf-8")
+
+
+def test_merge_slices_verbatim_description_from_the_cleaned_page(cfg):
+    # An entry that spills across the page break: the footer "61" is dropped, the
+    # "De-\nzember" hyphenation rejoined, wrapping reflowed — description is sliced
+    # deterministically, not carried on the part file.
+    write_clean_page(
+        cfg,
+        "page_0051",
+        "55\nKreuzeckhaus, 1652 m\nGroße Hütte hoch über dem Tal, siehe R 40. "
+        "Bewirtschaftet De-\n61",
+    )
+    write_clean_page(cfg, "page_0052", "zember bis April. Toll.\n62")
+    write_part(
+        cfg,
+        "page_0051",
+        [
+            place(
+                "•55",
+                "Kreuzeckhaus",
+                start_quote="Kreuzeckhaus, 1652 m",
+                end_quote="April. Toll.",
+            )
+        ],
+    )
+
+    merge(cfg)
+
+    entries = load_jsonl(cfg.routes_jsonl)
+    assert entries[0]["description"] == (
+        "Kreuzeckhaus, 1652 m Große Hütte hoch über dem Tal, siehe R 40. "
+        "Bewirtschaftet Dezember bis April. Toll."
+    )
+    # References are still parsed from the sliced description.
+    assert entries[0]["references"] == [{"ref_id": "R40", "surface": "R 40"}]
+
+
+def test_merge_reports_entry_whose_anchors_are_not_found(cfg):
+    write_clean_page(cfg, "page_0051", "55\nKreuzeckhaus, 1652 m\nEin Text.")
+    write_part(
+        cfg,
+        "page_0051",
+        [place("•55", "Kreuzeckhaus", start_quote="Nicht", end_quote="vorhanden")],
+    )
+
+    merge(cfg)
+
+    entries = load_jsonl(cfg.routes_jsonl)
+    # No silently wrong slice — description is null and the entry is still written.
+    assert entries[0]["id"] == "R55"
+    assert entries[0]["description"] is None
