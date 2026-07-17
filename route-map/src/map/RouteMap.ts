@@ -49,11 +49,12 @@ const HIGHLIGHT_LAYER_ID = "entry-highlight-markers";
 
 // Camera framing for the single-point case (most Entries — a Route with just its
 // Destination, or a Place with just its own POI). A degenerate zero-area bounds would
-// over-zoom, so we ease to the point at a sensible massif zoom.
-const SINGLE_POINT_ZOOM = 14;
+// over-zoom, so we ease to the point at a sensible massif zoom — kept deliberately low
+// so the surrounding terrain context stays in frame rather than zooming in tight (#120).
+const SINGLE_POINT_ZOOM = 12;
 // Fit padding + a ceiling so a tight multi-POI cluster does not slam to max zoom.
 const FIT_PADDING = 64;
-const FIT_MAX_ZOOM = 15;
+const FIT_MAX_ZOOM = 13;
 
 // Mirrors the single `max-width: 768px` CSS breakpoint (route-map/CLAUDE.md
 // rule 8): below it the route panel becomes a bottom sheet overlaying the map.
@@ -133,7 +134,9 @@ export interface RouteMap {
 	 *  motion with no full-style-reload flash (#121). On enable the OpenTopoMap
 	 *  raster is hidden, the VersaTiles landcover + hillshade are shown, the
 	 *  Mapterhorn terrain mesh is applied, and the camera pitches up; disable
-	 *  reverses it. Idempotent and safe to call before the style loads. */
+	 *  reverses it and re-locks the angle — 2D fixes the tilt (maxPitch 0), while
+	 *  rotation stays free in both modes (#120). Idempotent and safe to call
+	 *  before the style loads. */
 	setTerrain(enabled: boolean): void;
 	destroy(): void;
 }
@@ -254,6 +257,10 @@ export function createRouteMap(
 			},
 		},
 		maxZoom: BASEMAP_MAX_ZOOM,
+		// Start flat and tilt-locked: the map opens in 2D, where the angle is
+		// fixed (#120). applyMode raises maxPitch when 3D is enabled and drops it
+		// back to 0 on return. Rotation stays free in both modes.
+		maxPitch: 0,
 		// The app renders its own attribution as a React overlay
 		// (src/components/MapAttribution.tsx) rather than a maplibre control, so
 		// it can be collapsed-by-default declaratively — which the library's
@@ -378,6 +385,8 @@ export function createRouteMap(
 	function applyMode(enabled: boolean): void {
 		setBaseVisibility(enabled);
 		if (enabled) {
+			// Unlock tilt before pitching up — maxPitch is 0 while in 2D (#120).
+			map.setMaxPitch(TERRAIN_PITCH);
 			map.setTerrain({
 				source: TERRAIN_SOURCE_ID,
 				exaggeration: TERRAIN_EXAGGERATION,
@@ -386,6 +395,23 @@ export function createRouteMap(
 			map.setTerrain(null);
 		}
 		map.easeTo({ pitch: enabled ? TERRAIN_PITCH : 0 });
+		if (!enabled) {
+			// Re-lock the flat 2D angle so the map can't be tilted (rotation stays
+			// free) (#120). Deferred to the pitch-down's end so the smooth transition
+			// (#121) survives — setMaxPitch would otherwise snap the camera flat. The
+			// getTerrain guard drops a stale lock if 3D was re-enabled meanwhile; when
+			// already flat (no pitch animation, e.g. reapply) it locks immediately.
+			const lock = () => {
+				if (!map.getTerrain()) {
+					map.setMaxPitch(0);
+				}
+			};
+			if (map.getPitch() === 0) {
+				lock();
+			} else {
+				map.once("moveend", lock);
+			}
+		}
 	}
 
 	// Installing the combined style wipes all runtime-added sources/layers, so once
@@ -518,7 +544,10 @@ export function createRouteMap(
 
 	// Ease/fit the camera to the highlighted POI set. Single point eases to a
 	// sensible zoom rather than a degenerate zero-area bounds; an empty set leaves
-	// the camera where it is (nothing to frame).
+	// the camera where it is (nothing to frame). Both paths preserve the current
+	// pitch and bearing so a tilted 3D view survives a selection (#120): easeTo
+	// keeps unspecified camera props, and fitBounds is told the current values
+	// explicitly (else it flattens to pitch-0 / north-up).
 	function fitToPois(pois: Poi[]): void {
 		const [first, ...rest] = pois;
 		if (!first) {
@@ -549,6 +578,9 @@ export function createRouteMap(
 				left: FIT_PADDING,
 			},
 			maxZoom: FIT_MAX_ZOOM,
+			// Keep the current tilt/rotation — fitBounds resets both to 0 otherwise.
+			pitch: map.getPitch(),
+			bearing: map.getBearing(),
 		});
 	}
 
