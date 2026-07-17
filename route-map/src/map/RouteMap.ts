@@ -45,6 +45,12 @@ const SINGLE_POINT_ZOOM = 14;
 const FIT_PADDING = 64;
 const FIT_MAX_ZOOM = 15;
 
+// Mirrors the single `max-width: 768px` CSS breakpoint (route-map/CLAUDE.md
+// rule 8) so the maplibre controls constructed here agree with the responsive
+// layout. Not a second breakpoint — the CSS query stays the sole one; this only
+// lets the imperative map read the same threshold at construction.
+const MOBILE_BREAKPOINT = 768;
+
 const EMPTY_FEATURE_COLLECTION: FeatureCollection = {
 	type: "FeatureCollection",
 	features: [],
@@ -189,12 +195,23 @@ export function createRouteMap(
 		bounds: WETTERSTEIN_BOUNDS,
 		fitBoundsOptions: { padding: 32 },
 		maxZoom: BASEMAP_MAX_ZOOM,
-		// Add the attribution control explicitly (compact: false) so the OSM +
-		// OpenTopoMap credits are always visible, not hidden behind a toggle.
+		// Add the attribution control explicitly (below) so we control its compact
+		// mode per viewport rather than take the map default.
 		attributionControl: false,
 	});
 
-	map.addControl(new AttributionControl({ compact: false }), "bottom-right");
+	// Attribution compactness is fixed at construction (maplibre reads it once),
+	// so we pick it from the viewport width here — approach (a) of #103. On mobile
+	// (≤768px) the control renders MapLibre's compact `ⓘ` toggle so the credits do
+	// not steal map space or hide behind the bottom sheet; the OSM + OpenTopoMap
+	// (CC-BY-SA) + Mapterhorn credits stay reachable one tap behind the `ⓘ`. Above
+	// the breakpoint `compact: false` keeps the full, always-visible attribution
+	// desktop has always had — license compliance holds in both modes.
+	const compactAttribution = window.innerWidth <= MOBILE_BREAKPOINT;
+	map.addControl(
+		new AttributionControl({ compact: compactAttribution }),
+		"bottom-right",
+	);
 	map.addControl(new NavigationControl(), "top-right");
 	map.addControl(new ScaleControl(), "bottom-left");
 

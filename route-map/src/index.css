@@ -5,6 +5,13 @@ body,
 	margin: 0;
 }
 
+:root {
+	/* The bottom-sheet peek height (route-map/CLAUDE.md rule 8). Single source of
+	 * truth: the sheet is this tall when collapsed below 768px, and the on-map
+	 * scale + attribution are offset up by it so they clear the sheet (#103). */
+	--sheet-peek-height: 42vh;
+}
+
 /* Two-column shell: the map pane is the main surface, the Entry panel docks on
  * the right. A real flex layout (not an overlay) keeps the map's own controls —
  * navigation, scale, attribution — inside the map pane and always visible. */
@@ -404,12 +411,24 @@ body,
 	overflow-y: auto;
 }
 
-.poi-legend__title {
+/* The legend title doubles as the collapse toggle (#103). On desktop it reads as
+ * a plain heading (the list below is always shown by the base rules), so the
+ * always-visible desktop legend is unchanged; the mobile media query turns it
+ * into a real tap-open button. */
+.poi-legend__toggle {
+	display: block;
+	width: 100%;
 	margin: 0 0 0.4rem;
+	padding: 0;
+	border: none;
+	background: none;
+	font: inherit;
 	font-size: 0.8rem;
 	text-transform: uppercase;
 	letter-spacing: 0.04em;
 	color: #444;
+	text-align: left;
+	cursor: pointer;
 }
 
 .poi-legend__list {
@@ -450,7 +469,7 @@ body,
 		position: absolute;
 		inset: auto 0 0 0;
 		width: auto;
-		height: 42vh;
+		height: var(--sheet-peek-height);
 		border-left: none;
 		border-top: 1px solid #ccc;
 		border-radius: 12px 12px 0 0;
@@ -523,5 +542,52 @@ body,
 		min-width: 44px;
 		min-height: 44px;
 		padding: 0;
+	}
+
+	/* On-map controls de-conflicted with the bottom sheet (#103, rule 8). Nothing
+	 * may overlap, hide the (legally required) attribution, or sit trapped behind
+	 * the sheet. */
+
+	/* Navigation zoom buttons are hidden on mobile — pinch-zoom covers them, and
+	 * the top-right corner is freed for the terrain toggle below. (Only the
+	 * NavigationControl lives top-right.) */
+	.maplibregl-ctrl-top-right {
+		display: none;
+	}
+
+	/* Scale (bottom-left) + attribution (bottom-right, MapLibre's compact `ⓘ` on
+	 * mobile — set in src/map/RouteMap.ts) are offset UP by the sheet's peek height
+	 * plus a margin, so they sit above the collapsed sheet and are never hidden
+	 * behind it. Tied to the single peek-height variable. */
+	.maplibregl-ctrl-bottom-left,
+	.maplibregl-ctrl-bottom-right {
+		bottom: calc(var(--sheet-peek-height) + 0.5rem);
+	}
+
+	/* Legend collapses to a small tap-open button, default collapsed (#103). The
+	 * toggle becomes a ≥44px tap target; the swatch list is hidden until expanded.
+	 * Expanded, the list drops back in below the button. */
+	.poi-legend__toggle {
+		display: flex;
+		align-items: center;
+		min-height: 44px;
+		margin: 0;
+	}
+
+	.poi-legend--expanded .poi-legend__toggle {
+		margin-bottom: 0.4rem;
+	}
+
+	.poi-legend:not(.poi-legend--expanded) .poi-legend__list {
+		display: none;
+	}
+
+	/* Terrain toggle moves from top-centre to the top-right corner freed by the
+	 * hidden nav zoom, keeping it clear of the collapsed legend (top-left). It
+	 * stays the compact, default-off button it is on desktop. */
+	.terrain-toggle {
+		left: auto;
+		right: 0.75rem;
+		transform: none;
 	}
 }
