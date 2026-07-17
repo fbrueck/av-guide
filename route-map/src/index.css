@@ -34,6 +34,14 @@ body,
 	background: #fff;
 }
 
+/* Bottom-sheet grabber (rule 8): the tappable header that flips the sheet
+ * peek <-> full below 768px. Hidden on desktop, where the panel is docked and
+ * needs no header; the media query at the foot of this file switches it on and
+ * reserves its height so the absolute-filling sidebar/detail start below it. */
+.sheet-header {
+	display: none;
+}
+
 /* Place-first sidebar (#44): search box + a Place list above the Unfiled-routes
  * bucket, both scrolling together. */
 .sidebar {
@@ -425,4 +433,70 @@ body,
 	border: 1.5px solid #fff;
 	box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2);
 	flex: none;
+}
+
+/* Responsive: one frontend, two layouts, ONE breakpoint (route-map/CLAUDE.md
+ * rule 8). This single `max-width: 768px` query is the ONLY responsive line in
+ * the app — there is no second breakpoint. Above it the desktop two-column
+ * shell above is untouched; below it the map fills the viewport (map-primary)
+ * and the .route-panel is relocated into a bottom sheet that taps peek <-> full
+ * via its .sheet-header (CSS transition — no drag physics, no sheet library). */
+@media (max-width: 768px) {
+	/* The panel leaves the flex flow and docks to the bottom as a sheet. Its
+	 * height is the peek height by default and grows to full when expanded; the
+	 * height transition is the whole peek <-> full animation. The map-pane keeps
+	 * flex: 1 and fills the viewport underneath (map-primary). */
+	.route-panel {
+		position: absolute;
+		inset: auto 0 0 0;
+		width: auto;
+		height: 42vh;
+		border-left: none;
+		border-top: 1px solid #ccc;
+		border-radius: 12px 12px 0 0;
+		box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.25);
+		overflow: hidden;
+		transition: height 0.28s ease;
+		z-index: 2;
+	}
+
+	/* Full: the sheet grows to (almost) the whole viewport. */
+	.route-panel--expanded {
+		height: 92vh;
+	}
+
+	/* The grabber becomes a real, full-width tap target at the top of the sheet. */
+	.sheet-header {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 100%;
+		height: 2.75rem;
+		padding: 0;
+		border: none;
+		border-radius: 12px 12px 0 0;
+		background: #fff;
+		cursor: pointer;
+		/* Sit above the absolute-filling sidebar/detail so it stays tappable. */
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		z-index: 3;
+	}
+
+	.sheet-header__grabber {
+		width: 2.5rem;
+		height: 0.25rem;
+		border-radius: 999px;
+		background: #ccc;
+	}
+
+	/* Reserve the header's height: the sidebar and any detail panel fill the
+	 * sheet (inset: 0) but must start below the grabber so it is never covered.
+	 * Both scroll their own content, so peek shows the top and full shows all. */
+	.route-panel .sidebar,
+	.route-panel .detail {
+		top: 2.75rem;
+	}
 }

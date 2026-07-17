@@ -30,6 +30,12 @@ export function App() {
 	const [searchText, setSearchText] = useState("");
 	// The third state atom (route-map/CLAUDE.md rule 5): 2D vs 3D terrain.
 	const [terrainEnabled, setTerrainEnabled] = useState(false);
+	// Mobile-only state atom (route-map/CLAUDE.md rules 5 & 8): whether the
+	// bottom sheet is expanded (full) or collapsed (peek). Below 768px the
+	// route-panel becomes a sheet that taps peek <-> full through this flag; above
+	// it the flag is inert (the panel is the docked desktop column). This ticket
+	// is the mechanics only — auto-expand-on-selection is #102.
+	const [sheetExpanded, setSheetExpanded] = useState(false);
 
 	const currentEntry = selection[selection.length - 1] ?? null;
 
@@ -51,6 +57,11 @@ export function App() {
 	}, []);
 	const handleClose = useCallback(() => {
 		setSelection([]);
+	}, []);
+	// Tapping the sheet header flips peek <-> full (CSS transition, no drag). Only
+	// wired below 768px where the header is shown; inert on desktop (rule 8).
+	const handleToggleSheet = useCallback(() => {
+		setSheetExpanded((expanded) => !expanded);
 	}, []);
 
 	// Create the map instance once and keep it in a ref for effects to drive.
@@ -141,7 +152,23 @@ export function App() {
 				<PoiLegend />
 				<TerrainToggle enabled={terrainEnabled} onToggle={setTerrainEnabled} />
 			</div>
-			<div className="route-panel">
+			<div
+				className={
+					sheetExpanded ? "route-panel route-panel--expanded" : "route-panel"
+				}
+			>
+				{/* Bottom-sheet grabber: shown only below 768px (rule 8), taps peek <->
+				    full. On desktop it is display:none and the panel is the docked
+				    column. Smart peek content is #102 — this is just the tap target. */}
+				<button
+					type="button"
+					className="sheet-header"
+					aria-expanded={sheetExpanded}
+					aria-label={sheetExpanded ? "Collapse panel" : "Expand panel"}
+					onClick={handleToggleSheet}
+				>
+					<span className="sheet-header__grabber" />
+				</button>
 				<Sidebar
 					places={guideData?.places ?? []}
 					unfiledRoutes={guideData?.unfiledRoutes ?? []}
