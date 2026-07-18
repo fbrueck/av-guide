@@ -165,8 +165,11 @@ Load-bearing. Breaking one needs a deliberate, called-out reason.
 
    **The Guide manifest** — `/guide-data/guides.json`, an id-less sibling of the
    per-Guide trees (ADR-0005, #132) — is the committed, hand-maintained list of
-   published Guides as `[{ id, label }]` (**no bbox**; app/maintainer metadata,
-   NOT pipeline output). It is answered the same two ways: the dev middleware
+   published Guides as `[{ id, name, label, bbox }]` (`name` = short massif name
+   titling the overview; `bbox` = `[south, west, north, east]` regional rectangle
+   hand-copied from the guide's `config.yml`, used ONLY to draw the overview
+   rectangle, never for load framing; app/maintainer metadata, NOT pipeline
+   output). It is answered the same two ways: the dev middleware
    serves it from `guides/guides.json` (the root of the shared guides tree,
    beside each `guides/<id>/config.yml`); the build copies it into the snapshot at
    `public/guide-data/guides.json`. The `src/data` adapter loads + guards it

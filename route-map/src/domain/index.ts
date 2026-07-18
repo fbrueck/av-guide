@@ -106,9 +106,16 @@ export type Entry = Place | Route;
 export interface Guide {
 	/** The short guide id keying its data URLs, e.g. "wetterstein". */
 	id: string;
+	/** Short massif name (e.g. "Wetterstein", "Karwendel") — titles the
+	 *  overview boxes/rows, distinct from the fuller edition `label`. */
+	name: string;
 	/** Human copy shown in the switcher (an edition string), never a
 	 *  mechanically-capitalized id. */
 	label: string;
+	/** The Guide's regional rectangle as `[south, west, north, east]`
+	 *  (lat/lon degrees), hand-copied from the guide's config.yml bbox. Used
+	 *  ONLY to draw the overview rectangle, never for load framing. */
+	bbox: [number, number, number, number];
 }
 
 // The whole guide, loaded + joined once at startup by loadGuideData().

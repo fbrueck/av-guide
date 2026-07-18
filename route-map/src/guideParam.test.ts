@@ -13,8 +13,18 @@ import {
 // verified in the browser with DevTools per the ticket.
 
 const guides: Guide[] = [
-	{ id: "wetterstein", label: "Wetterstein (4. Auflage 1996)" },
-	{ id: "karwendel", label: "Karwendel (16. Auflage 2011)" },
+	{
+		id: "wetterstein",
+		name: "Wetterstein",
+		label: "Wetterstein (4. Auflage 1996)",
+		bbox: [47.3, 10.85, 47.55, 11.35],
+	},
+	{
+		id: "karwendel",
+		name: "Karwendel",
+		label: "Karwendel (16. Auflage 2011)",
+		bbox: [47.27, 11.19, 47.6, 11.8],
+	},
 ];
 
 describe("readGuideParam", () => {
