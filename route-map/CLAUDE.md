@@ -108,35 +108,42 @@ Load-bearing. Breaking one needs a deliberate, called-out reason.
    context) — **no router, no global-state library** (Redux/Zustand/etc.).
 
 6. **Data access: dev-live vs deployed-snapshot.** Two sources answer the same
-   `/guide-data/` URL scheme by design (ADR-0003); the `src/data` adapter's
-   contract is identical in both.
-   - **Dev (live):** `vite.config.ts`'s `configureServer` middleware serves the
-     guide's `parse-routes/03_structured` and `fetch-pois/04_final` directories
-     (under the gitignored `guides/<id>/data/`) as static data, so the app
-     always reflects the latest pipeline run with **no copy step**. The guide is
-     selected by the `VITE_GUIDE_ID` env var, defaulting to the single existing
-     guide (`wetterstein`), so `npm run dev` is a genuine one-command start.
-     (This deliberately softens the pipeline's strict "no default `--guide`"
-     rule — a personal QA tool should start with one command.)
+   id-namespaced `/guide-data/<id>/` URL scheme by design (ADR-0003); the
+   `src/data` adapter's contract is identical in both. The Guide id is threaded
+   through the whole data path — `loadGuideData(guideId)` builds its four
+   artifact URLs from the id via a pure, unit-tested URL-construction helper in
+   `src/data/load.ts` (#130). It is a path **segment**, not a query param,
+   because it must key the static snapshot on GitHub Pages (which ignores query
+   strings).
+   - **Dev (live):** `vite.config.ts`'s `configureServer` middleware serves
+     **every** Guide's `parse-routes/03_structured` and `fetch-pois/04_final`
+     directories (under the gitignored `guides/<id>/data/`) as static data,
+     mapping `/guide-data/<id>/…` onto `guides/<id>/data/…`, so the app always
+     reflects the latest pipeline run with **no copy step** and no Guide
+     selection at mount (the id in the URL selects). `npm run dev` is a genuine
+     one-command start.
    - **Build/deploy (snapshot):** a committed copy of the four consumed
-     artifacts lives under Vite's static `public/` directory (mirroring the
-     `/guide-data/` scheme) and is copied into `dist/` verbatim, so the deployed
-     site renders from a **deliberately-updated snapshot**, kept separate from
-     the live gitignored tree so local pipeline reruns never dirty what is
-     published. ADR-0003 owns the full rationale and the gitignore mechanics.
+     artifacts lives under Vite's static `public/guide-data/<id>/` directory
+     (mirroring the id-namespaced `/guide-data/<id>/` scheme) and is copied into
+     `dist/` verbatim, so the deployed site renders from a
+     **deliberately-updated snapshot**, kept separate from the live gitignored
+     tree so local pipeline reruns never dirty what is published. ADR-0003 owns
+     the full rationale and the gitignore mechanics.
    - **Base path is conditional:** `base` is `'/'` in dev and `'/av-guide/'` in
      build; the adapter prefixes its data URLs with `import.meta.env.BASE_URL`
      so the same fetches resolve under the project-site base when deployed and
      stay bare in dev.
 
-   **URL scheme (stable — the `src/data` adapter fetches these):** `/guide-data/`
-   maps onto `guides/<id>/data/`, mirroring the on-disk layout minus the guide
-   prefix. Only the two consumed stage dirs are exposed:
-   `/guide-data/parse-routes/03_structured/routes.json`,
-   `/guide-data/fetch-pois/04_final/pois.geojson`,
-   `/guide-data/fetch-pois/04_final/place_pois.jsonl`,
-   `/guide-data/fetch-pois/04_final/entry_pois.jsonl`. Served by a small
-   `configureServer` middleware in `vite.config.ts` (path-traversal guarded).
+   **URL scheme (stable — the `src/data` adapter fetches these):**
+   `/guide-data/<id>/` maps onto `guides/<id>/data/`, mirroring the on-disk
+   layout. Only the two consumed stage dirs are exposed:
+   `/guide-data/<id>/parse-routes/03_structured/routes.json`,
+   `/guide-data/<id>/fetch-pois/04_final/pois.geojson`,
+   `/guide-data/<id>/fetch-pois/04_final/place_pois.jsonl`,
+   `/guide-data/<id>/fetch-pois/04_final/entry_pois.jsonl`. Served by a small
+   `configureServer` middleware in `vite.config.ts` (path-traversal guarded on
+   both the id segment and the stage-relative path; stage-dir allowlist
+   retained).
 
 7. **Domain vocabulary in code and UI.** Use the root `CONTEXT.md` terms —
    Entry, Place, Route, POI, Destination, Mention, Reference, Gazetteer — in

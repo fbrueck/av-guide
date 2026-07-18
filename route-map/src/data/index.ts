@@ -6,8 +6,10 @@ import { loadRawArtifacts } from "./load";
 // knows the raw on-disk artifact shapes. It loads (load.ts), guards + joins
 // (join.ts) the three artifacts into clean domain objects at startup, exposing
 // one entry point. Every component depends on src/domain/ types, never on file
-// layout.
-export async function loadGuideData(): Promise<GuideData> {
-	const raw = await loadRawArtifacts();
+// layout. The Guide id namespaces the artifact URLs (route-map/CLAUDE.md rule 6)
+// so one deployment can serve multiple Guides; the raw->domain join is
+// unchanged.
+export async function loadGuideData(guideId: string): Promise<GuideData> {
+	const raw = await loadRawArtifacts(guideId);
 	return joinGuideData(raw);
 }

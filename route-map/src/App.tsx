@@ -105,7 +105,9 @@ export function App() {
 	// from one source.
 	useEffect(() => {
 		let cancelled = false;
-		loadGuideData()
+		// Temporary hardcoded id: replaced by the manifest default in the manifest
+		// ticket (#128).
+		loadGuideData("wetterstein")
 			.then((guide) => {
 				if (!cancelled) {
 					setGuideData(guide);
