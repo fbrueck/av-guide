@@ -104,4 +104,8 @@ into the build rather than the dev server's live-data middleware.
 - Producing the Guide data (running the pipeline) and multi-guide publishing
   remain out of scope; only the single `wetterstein` Guide is published, and an
   uncommitted snapshot would deploy an honestly-empty page until the snapshot
-  lands.
+  lands. **(Multi-guide publishing is superseded by route-map ADR-0005:** the
+  deployment now serves multiple Guides from one build via an in-app switcher, a
+  guide-id segment in the `/guide-data/<id>/…` scheme, and a committed
+  `guides/guides.json` manifest. The single-snapshot layout this ADR describes
+  becomes the per-guide `public/guide-data/<id>/…` layout.)
