@@ -13,6 +13,11 @@ import {
 } from "./components";
 import { loadGuideData, loadGuidesManifest } from "./data";
 import type { Entry, Guide, GuideData, Poi } from "./domain";
+import {
+	guideParamSearch,
+	readGuideParam,
+	resolveInitialGuideId,
+} from "./guideParam";
 import { createRouteMap, type RouteMap } from "./map";
 
 // Composition root and the app's minimal state (route-map/CLAUDE.md rule 5):
@@ -32,8 +37,10 @@ export function App() {
 	// The published-Guide manifest (ADR-0005) and the reader's current Guide. The
 	// switcher lets the reader move between massifs in-app; selectedGuideId is a
 	// state atom (route-map/CLAUDE.md rule 5) that drives the lazy reload + reframe
-	// via effects. No `?guide=` URL param yet — that lands with #134 — so the Guide
-	// lives purely in App state and resets to the manifest default on reload.
+	// via effects. The Guide — and only the Guide — is reflected in a `?guide=<id>`
+	// URL param (#134): read once on load to pick the initial Guide, written with
+	// `history.replaceState` on switch (see handleSelectGuide) so a massif is
+	// bookmarkable and survives reload.
 	const [guides, setGuides] = useState<Guide[]>([]);
 	const [selectedGuideId, setSelectedGuideId] = useState<string | null>(null);
 	const [guideData, setGuideData] = useState<GuideData | null>(null);
@@ -86,6 +93,12 @@ export function App() {
 	// (rule 5). The selection stays Entry[] — a Guide is not pushed onto the stack
 	// (ADR-0004); it is the context the stack lives in. Guarded so re-picking the
 	// current Guide is a no-op (no needless reload/reset).
+	//
+	// The switch is reflected in the `?guide=<id>` URL param via
+	// `history.replaceState` (#134): no new history entry (Back does not undo a
+	// Guide switch), no router, and only the Guide is written — selection, search,
+	// terrain, and sheet mode stay ephemeral. The path and hash are preserved so
+	// the write is safe under the GitHub Pages project-site base.
 	const handleSelectGuide = useCallback(
 		(guideId: string) => {
 			if (guideId === selectedGuideId) {
@@ -94,6 +107,12 @@ export function App() {
 			setSelectedGuideId(guideId);
 			setSelection([]);
 			setSearchText("");
+			const { pathname, search, hash } = window.location;
+			window.history.replaceState(
+				null,
+				"",
+				`${pathname}${guideParamSearch(guideId, search)}${hash}`,
+			);
 		},
 		[selectedGuideId],
 	);
@@ -128,24 +147,30 @@ export function App() {
 		};
 	}, [handleSelectEntry]);
 
-	// Load the published-Guide manifest once and select the default Guide. The
-	// default is the manifest's **first entry** (#132): with no `?guide=` param yet
-	// (that lands in #134), dev and deploy both open on manifest order — `npm run
-	// dev` still starts one-command onto a sensible Guide. Setting selectedGuideId
+	// Load the published-Guide manifest once and select the initial Guide. The
+	// `?guide=<id>` param is read ONCE here from `location.search` (#134): a value
+	// naming a manifest Guide opens it (a shared/bookmarked link is honoured, and a
+	// reload — which kept the param via replaceState on the last switch — lands on
+	// the same Guide); an absent or unknown value falls back honestly to the
+	// manifest default (first entry), so a stale or mistyped link still loads a
+	// working map. Dev and deploy behave identically. Setting selectedGuideId
 	// drives the data-load effect below.
 	useEffect(() => {
 		let cancelled = false;
 		loadGuidesManifest()
 			.then((manifest) => {
-				const defaultGuide = manifest[0];
-				if (!defaultGuide) {
+				const initialGuideId = resolveInitialGuideId(
+					readGuideParam(window.location.search),
+					manifest,
+				);
+				if (!initialGuideId) {
 					throw new Error(
 						"guides manifest is empty — no default Guide to load",
 					);
 				}
 				if (!cancelled) {
 					setGuides(manifest);
-					setSelectedGuideId(defaultGuide.id);
+					setSelectedGuideId(initialGuideId);
 				}
 			})
 			.catch((error: unknown) => {

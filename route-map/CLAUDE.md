@@ -114,8 +114,16 @@ Load-bearing. Breaking one needs a deliberate, called-out reason.
    (both reference the old Guide's Entries), while **terrain** and the **mobile
    sheet mode** **persist** (guide-independent display choices). Plain React
    state (lifted to `App`, or one context) — **no router, no global-state
-   library** (Redux/Zustand/etc.). The `?guide=` URL param is a deliberate,
-   narrow future exception (ADR-0005, lands in #134), scoped to the Guide alone.
+   library** (Redux/Zustand/etc.). The **selected Guide — and only the Guide — is
+   reflected in a `?guide=<id>` query param** (#134/ADR-0005): **read once on
+   load** from `location.search` (a valid id opens that Guide; absent/unknown
+   falls back honestly to the manifest default), and **written with
+   `history.replaceState` on switch** (no new history entry, no router; done with
+   the platform `location`/`history` API, not a routing library — see
+   `src/guideParam.ts`). Selection, search, terrain, and sheet mode stay
+   **ephemeral** — never in the URL. A query param (not a path) is deliberate so
+   GitHub Pages serves the single `index.html` and the client reads
+   `location.search`, with no `404.html` SPA redirect hack.
 
 6. **Data access: dev-live vs deployed-snapshot.** Two sources answer the same
    id-namespaced `/guide-data/<id>/` URL scheme by design (ADR-0003); the
