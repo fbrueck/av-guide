@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
 	type DetailNav,
+	GuideSwitcher,
 	MapAttribution,
 	PlaceDetail,
 	PoiLegend,
@@ -11,7 +12,7 @@ import {
 	TerrainToggle,
 } from "./components";
 import { loadGuideData, loadGuidesManifest } from "./data";
-import type { Entry, GuideData, Poi } from "./domain";
+import type { Entry, Guide, GuideData, Poi } from "./domain";
 import { createRouteMap, type RouteMap } from "./map";
 
 // Composition root and the app's minimal state (route-map/CLAUDE.md rule 5):
@@ -28,6 +29,13 @@ import { createRouteMap, type RouteMap } from "./map";
 export function App() {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const mapRef = useRef<RouteMap | null>(null);
+	// The published-Guide manifest (ADR-0005) and the reader's current Guide. The
+	// switcher lets the reader move between massifs in-app; selectedGuideId is a
+	// state atom (route-map/CLAUDE.md rule 5) that drives the lazy reload + reframe
+	// via effects. No `?guide=` URL param yet — that lands with #134 — so the Guide
+	// lives purely in App state and resets to the manifest default on reload.
+	const [guides, setGuides] = useState<Guide[]>([]);
+	const [selectedGuideId, setSelectedGuideId] = useState<string | null>(null);
 	const [guideData, setGuideData] = useState<GuideData | null>(null);
 	const [selection, setSelection] = useState<Entry[]>([]);
 	const [searchText, setSearchText] = useState("");
@@ -69,6 +77,26 @@ export function App() {
 	const handleClose = useCallback(() => {
 		setSelection([]);
 	}, []);
+	// Switch the loaded Guide (#133, ADR-0005). Setting selectedGuideId drives the
+	// lazy reload + reframe effect below; here we reset the two atoms that reference
+	// the *old* Guide — the selection stack (a stale Entry would point at nothing)
+	// and the search text (a query into the old Guide's Entry list is meaningless
+	// against another). Terrain (2D/3D) and the mobile sheet mode PERSIST: both are
+	// guide-independent display choices about *how* to render, not *what* is viewed
+	// (rule 5). The selection stays Entry[] — a Guide is not pushed onto the stack
+	// (ADR-0004); it is the context the stack lives in. Guarded so re-picking the
+	// current Guide is a no-op (no needless reload/reset).
+	const handleSelectGuide = useCallback(
+		(guideId: string) => {
+			if (guideId === selectedGuideId) {
+				return;
+			}
+			setSelectedGuideId(guideId);
+			setSelection([]);
+			setSearchText("");
+		},
+		[selectedGuideId],
+	);
 	// Step the sheet one height taller / shorter through collapsed <-> peek <->
 	// full (CSS height transition, no drag). Only wired below 768px where the
 	// handle is shown; inert on desktop (rule 8).
@@ -100,24 +128,49 @@ export function App() {
 		};
 	}, [handleSelectEntry]);
 
-	// Load the published-Guide manifest, then load + join the default Guide's
-	// artifacts through the src/data boundary and hold the result in state so the
-	// sidebar, search, and detail panels all read from one source. The default is
-	// the manifest's **first entry** (#132): no `?guide=` selection yet (that lands
-	// with the switcher, #128), so dev and deploy both open on manifest order —
-	// `npm run dev` still starts one-command onto a sensible Guide.
+	// Load the published-Guide manifest once and select the default Guide. The
+	// default is the manifest's **first entry** (#132): with no `?guide=` param yet
+	// (that lands in #134), dev and deploy both open on manifest order — `npm run
+	// dev` still starts one-command onto a sensible Guide. Setting selectedGuideId
+	// drives the data-load effect below.
 	useEffect(() => {
 		let cancelled = false;
 		loadGuidesManifest()
-			.then((guides) => {
-				const defaultGuide = guides[0];
+			.then((manifest) => {
+				const defaultGuide = manifest[0];
 				if (!defaultGuide) {
 					throw new Error(
 						"guides manifest is empty — no default Guide to load",
 					);
 				}
-				return loadGuideData(defaultGuide.id);
+				if (!cancelled) {
+					setGuides(manifest);
+					setSelectedGuideId(defaultGuide.id);
+				}
 			})
+			.catch((error: unknown) => {
+				console.error("[app] failed to load guides manifest", error);
+			});
+		return () => {
+			cancelled = true;
+		};
+	}, []);
+
+	// Load + join the selected Guide's artifacts through the src/data boundary and
+	// hold the result in state, so the sidebar, search, and detail panels all read
+	// from one source. Re-invoked on every Guide switch (#133, ADR-0005): loading
+	// is lazy, one Guide at a time — only the current Guide's join is in memory.
+	// Clearing guideData to null first reuses the existing first-load pending state,
+	// so a switch shows the same brief, honest loading state as first load; the
+	// downstream showPois/frameGuide effects then repaint + reframe onto the new
+	// Guide's POIs when its data resolves.
+	useEffect(() => {
+		if (!selectedGuideId) {
+			return;
+		}
+		let cancelled = false;
+		setGuideData(null);
+		loadGuideData(selectedGuideId)
 			.then((guide) => {
 				if (!cancelled) {
 					setGuideData(guide);
@@ -129,7 +182,7 @@ export function App() {
 		return () => {
 			cancelled = true;
 		};
-	}, []);
+	}, [selectedGuideId]);
 
 	// Push the loaded POIs + the poi->Entries index + the set of Place-coordinate
 	// poi_ids (the primary markers) into the imperative map API. showPois buffers
@@ -202,6 +255,18 @@ export function App() {
 				<MapAttribution terrainEnabled={terrainEnabled} />
 			</div>
 			<div className={`route-panel route-panel--${sheetMode}`}>
+				{/* Panel/sheet header: the Guide switcher docks here, right-aligned, in
+				    BOTH layouts (rule 8) — a bordered bar at the top of the desktop
+				    docked panel, and the mobile bottom-sheet header band (reachable at
+				    peek) overlaid on the chevron grabber. It sits above the sidebar and
+				    detail so switching Guides is possible from any view (#133). */}
+				<div className="panel-header">
+					<GuideSwitcher
+						guides={guides}
+						currentGuideId={selectedGuideId}
+						onSelectGuide={handleSelectGuide}
+					/>
+				</div>
 				{/* The mobile sheet's handle: chevron buttons that step through the
 				    three heights (rule 8). Hidden on desktop, where the panel is the
 				    docked column. Smart peek content is #102. */}

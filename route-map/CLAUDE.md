@@ -99,13 +99,23 @@ Load-bearing. Breaking one needs a deliberate, called-out reason.
    sources, and layers are managed imperatively inside `src/map/`. UI components
    never call `maplibre-gl` directly.
 
-5. **Minimal state.** The app's state is: the selection (a small stack of
-   Entries for drill-in/back through the place→route→reference graph), search
-   text, terrain on/off, and — on mobile — whether the bottom sheet is expanded
-   (a selection made from the map auto-expands it, so it must be real state, not
-   pure CSS). The selection stays `Entry[]`: a POI is **never** selected (rule
-   9), so the stack is not widened. Plain React state (lifted to `App`, or one
-   context) — **no router, no global-state library** (Redux/Zustand/etc.).
+5. **Minimal state.** The app's state is: the `selectedGuideId` (which published
+   Guide is loaded), the selection (a small stack of Entries for drill-in/back
+   through the place→route→reference graph), search text, terrain on/off, and —
+   on mobile — whether the bottom sheet is expanded (a selection made from the
+   map auto-expands it, so it must be real state, not pure CSS). The selection
+   stays `Entry[]`: a POI is **never** selected (rule 9), so the stack is not
+   widened; a Guide is **not** pushed onto it either (ADR-0004/0005) — the Guide
+   is the *context* the stack lives in. **On a Guide switch** (`selectedGuideId`
+   changes via the switcher, #133/ADR-0005): the app lazily re-loads that Guide's
+   data — one Guide's join in memory at a time, reusing the first-load pending
+   state for a brief honest loading state — and reframes the map onto the new
+   Guide's POI extent; the **selection** and **search text** are **cleared**
+   (both reference the old Guide's Entries), while **terrain** and the **mobile
+   sheet mode** **persist** (guide-independent display choices). Plain React
+   state (lifted to `App`, or one context) — **no router, no global-state
+   library** (Redux/Zustand/etc.). The `?guide=` URL param is a deliberate,
+   narrow future exception (ADR-0005, lands in #134), scoped to the Guide alone.
 
 6. **Data access: dev-live vs deployed-snapshot.** Two sources answer the same
    id-namespaced `/guide-data/<id>/` URL scheme by design (ADR-0003); the
