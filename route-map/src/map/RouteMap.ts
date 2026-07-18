@@ -157,6 +157,12 @@ export interface RouteMap {
 	 *  geometry, so nothing is invented (route-map/CLAUDE.md rule 3). Idempotent
 	 *  and safe to call before the style loads. */
 	highlightEntry(entry: Entry | null): void;
+	/** Remove the current Guide's POIs (and their peak labels) — App calls this on
+	 *  returning to the overview (#142), so the map is left clean beneath the
+	 *  overview boxes (the two layers never overlap). Symmetric with
+	 *  `clearGuideBoxes`; safe to call when no POIs are drawn or before the style
+	 *  loads. Re-entering a Guide repaints them via `showPois`. */
+	clearPois(): void;
 	/** Flip the map between the flat 2D basemap and 3D terrain (#23). Both base
 	 *  maps live in one combined style, so this is a visibility flip + setTerrain
 	 *  + camera pitch — never a setStyle — which keeps the toggle a single smooth
@@ -937,6 +943,21 @@ export function createRouteMap(
 	// Remove the overview boxes entirely — the DOM label markers plus the fill/line
 	// layers and their source. Left clean for the entered Guide's POIs. Safe when
 	// nothing is drawn.
+	// Tear down the POI marker layer + peak labels + their shared source (#142), so
+	// returning to the overview leaves no stale markers under the boxes. The peak
+	// labels read POI_SOURCE_ID, so they come off before the source. Safe when the
+	// layers/source were never added.
+	function removePois(): void {
+		for (const id of [PEAK_LABEL_LAYER_ID, POI_LAYER_ID]) {
+			if (map.getLayer(id)) {
+				map.removeLayer(id);
+			}
+		}
+		if (map.getSource(POI_SOURCE_ID)) {
+			map.removeSource(POI_SOURCE_ID);
+		}
+	}
+
 	function removeGuideBoxes(): void {
 		for (const marker of guideBoxMarkers.values()) {
 			marker.remove();
@@ -1037,6 +1058,14 @@ export function createRouteMap(
 					pendingPois = null;
 				}
 			});
+		},
+		clearPois(): void {
+			// Drop any buffered/retained set so neither a late whenStyleReady flush
+			// nor a base-style reinstall (onCombinedReady repaints currentPois)
+			// repopulates the layer after this clear.
+			pendingPois = null;
+			currentPois = null;
+			whenStyleReady(() => removePois());
 		},
 		highlightEntry(entry: Entry | null): void {
 			pendingHighlight = entry;

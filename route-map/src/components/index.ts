@@ -3,8 +3,8 @@
 // touching maplibre-gl directly.
 export type { DetailNav } from "./DetailHeader";
 export { GuideList } from "./GuideList";
-export { GuideSwitcher } from "./GuideSwitcher";
 export { MapAttribution } from "./MapAttribution";
+export { OverviewButton } from "./OverviewButton";
 export { PlaceDetail } from "./PlaceDetail";
 export { PoiLegend } from "./PoiLegend";
 export { RouteDetail } from "./RouteDetail";

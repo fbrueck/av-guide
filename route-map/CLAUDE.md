@@ -99,31 +99,43 @@ Load-bearing. Breaking one needs a deliberate, called-out reason.
    sources, and layers are managed imperatively inside `src/map/`. UI components
    never call `maplibre-gl` directly.
 
-5. **Minimal state.** The app's state is: the `selectedGuideId` (which published
-   Guide is loaded), the selection (a small stack of Entries for drill-in/back
-   through the place→route→reference graph), search text, terrain on/off, and —
-   on mobile — whether the bottom sheet is expanded (a selection made from the
-   map auto-expands it, so it must be real state, not pure CSS). The selection
-   stays `Entry[]`: a POI is **never** selected (rule 9), so the stack is not
-   widened; a Guide is **not** pushed onto it either (ADR-0004/0005) — the Guide
-   is the *context* the stack lives in. **On a Guide switch** (`selectedGuideId`
-   changes via the switcher, #133/ADR-0005): the app lazily re-loads that Guide's
+5. **Minimal state.** The app's state is: the `view` (`'overview' | 'guide'` —
+   which of the two top-level modes is showing, #141/#142), the `selectedGuideId`
+   (which published Guide is loaded), the selection (a small stack of Entries for
+   drill-in/back through the place→route→reference graph), search text, terrain
+   on/off, and — on mobile — whether the bottom sheet is expanded (a selection
+   made from the map auto-expands it, so it must be real state, not pure CSS). The
+   **`view` atom** is the app's front door: `overview` shows the clickable Guide
+   list + the map's labelled Guide boxes with no Guide loaded (`guideData` null);
+   `guide` shows the existing Entry app. The selection stays `Entry[]`: a POI is
+   **never** selected (rule 9), so the stack is not widened; a Guide is **not**
+   pushed onto it either (ADR-0004/0005) — the Guide is the *context* the stack
+   lives in. **On a Guide switch/pick** (`selectedGuideId` changes via an overview
+   pick, #141): the app enters the `guide` view, lazily re-loads that Guide's
    data — one Guide's join in memory at a time, reusing the first-load pending
    state for a brief honest loading state — and reframes the map onto the new
    Guide's POI extent; the **selection** and **search text** are **cleared**
    (both reference the old Guide's Entries), while **terrain** and the **mobile
-   sheet mode** **persist** (guide-independent display choices). Plain React
-   state (lifted to `App`, or one context) — **no router, no global-state
-   library** (Redux/Zustand/etc.). The **selected Guide — and only the Guide — is
-   reflected in a `?guide=<id>` query param** (#134/ADR-0005): **read once on
-   load** from `location.search` (a valid id opens that Guide; absent/unknown
-   falls back honestly to the manifest default), and **written with
-   `history.replaceState` on switch** (no new history entry, no router; done with
-   the platform `location`/`history` API, not a routing library — see
-   `src/guideParam.ts`). Selection, search, terrain, and sheet mode stay
-   **ephemeral** — never in the URL. A query param (not a path) is deliberate so
-   GitHub Pages serves the single `index.html` and the client reads
-   `location.search`, with no `404.html` SPA redirect hack.
+   sheet mode** **persist** (guide-independent display choices). **On return to
+   the overview** (the panel/sheet-header **book icon**, #142 — the sole way back):
+   the `view` goes to `overview`, `selectedGuideId` and `guideData` drop to null
+   (the map clears the Guide's POIs so the boxes stand alone), the **selection**
+   and **search text** are **cleared**, and the `?guide=` param is **dropped**
+   from the URL — while **terrain** and the **mobile sheet mode** again **persist**.
+   Plain React state (lifted to `App`, or one context) — **no router, no
+   global-state library** (Redux/Zustand/etc.). The **selected Guide — and only
+   the Guide — is reflected in a `?guide=<id>` query param** (#134/#142/ADR-0005):
+   **read once on load** from `location.search` — a **known id deep-links straight
+   into that guide** (skipping the overview, no flash); **absent or unknown → the
+   overview** (no default Guide: a stale/mistyped link honestly shows the picker,
+   never silently opens some massif — see `deepLinkGuideId` in `src/guideParam.ts`)
+   — and **written with `history.replaceState` on pick** and **cleared with
+   `history.replaceState` on return** (no new history entry, no router; done with
+   the platform `location`/`history` API, not a routing library). Selection,
+   search, terrain, sheet mode, and the `view` itself stay **ephemeral** — never
+   in the URL. A query param (not a path) is deliberate so GitHub Pages serves the
+   single `index.html` and the client reads `location.search`, with no `404.html`
+   SPA redirect hack.
 
 6. **Data access: dev-live vs deployed-snapshot.** Two sources answer the same
    id-namespaced `/guide-data/<id>/` URL scheme by design (ADR-0003); the
@@ -174,9 +186,9 @@ Load-bearing. Breaking one needs a deliberate, called-out reason.
    beside each `guides/<id>/config.yml`); the build copies it into the snapshot at
    `public/guide-data/guides.json`. The `src/data` adapter loads + guards it
    (`manifest.ts`, warn-and-skip malformed entries) into `Guide[]`. There is no
-   `VITE_GUIDE_ID`: `App` picks the **first manifest entry** as the default Guide
-   (a `?guide=` switcher lands later), so dev and deploy open on the same Guide
-   and `npm run dev` stays one-command.
+   `VITE_GUIDE_ID`: `App` opens on the **overview** (#141) — no default Guide —
+   and a `?guide=` deep-link (#142, rule 5) or an overview pick selects one, so
+   dev and deploy behave identically and `npm run dev` stays one-command.
 
 7. **Domain vocabulary in code and UI.** Use the root `CONTEXT.md` terms —
    Entry, Place, Route, POI, Destination, Mention, Reference, Gazetteer — in
@@ -195,6 +207,10 @@ Load-bearing. Breaking one needs a deliberate, called-out reason.
    compliance is non-negotiable — OSM + OpenTopoMap CC-BY-SA + Mapterhorn), the
    zoom buttons are hidden (pinch covers them), and scale + attribution sit above
    the sheet's peek. Terrain (rule 4) stays available and default-off on mobile.
+   In the `guide` view the panel/sheet header carries the **book icon** back to the
+   overview (#142): it rides at the sheet's peek height, right-aligned in the
+   grabber band overlay, with `pointer-events` isolated so the centered chevrons
+   (and a detail's action row) still tap through — only the book button intercepts.
 
 9. **POIs are display-only (ADR-0004).** A POI is rendered but is **never a
    selection target** — there is no POI popup and no POI detail view. Tapping a

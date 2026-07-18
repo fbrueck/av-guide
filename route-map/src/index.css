@@ -50,8 +50,9 @@ body,
  * bordered bar in the panel's normal flow (reserving --sheet-header-height so the
  * absolute-filling sidebar/detail start below it); on mobile the media query at
  * the foot of this file relocates it to overlay the bottom-sheet grabber band, so
- * the switcher is reachable at the sheet's peek height. It sits above the sidebar
- * and detail (z-index) so the reader can switch Guides from any view. */
+ * the book icon is reachable at the sheet's peek height. It sits above the sidebar
+ * and detail (z-index) so the reader can return to the overview from any view
+ * (#142). */
 .panel-header {
 	position: relative;
 	z-index: 4;
@@ -62,37 +63,6 @@ body,
 	padding: 0 0.75rem;
 	border-bottom: 1px solid #ddd;
 	background: #fff;
-}
-
-/* The Guide switcher (#133): a native <select> over the published-Guide manifest,
- * plus a short visible label. The select is width-capped so a long edition label
- * never blows out the panel; the native control truncates it, and the dropdown
- * shows each label in full. */
-.guide-switcher {
-	display: flex;
-	align-items: center;
-	gap: 0.4rem;
-	min-width: 0;
-	font:
-		13px / 1.4 system-ui,
-		sans-serif;
-}
-
-.guide-switcher__label {
-	flex: none;
-	font-size: 0.75rem;
-	color: #555;
-}
-
-.guide-switcher__select {
-	max-width: 13rem;
-	padding: 0.25rem 0.4rem;
-	font: inherit;
-	font-size: 0.8rem;
-	border: 1px solid #bbb;
-	border-radius: 5px;
-	background: #fff;
-	cursor: pointer;
 }
 
 /* Bottom-sheet grabber (rule 8): the tappable header that flips the sheet
@@ -707,12 +677,10 @@ body,
 	}
 
 	/* The panel-header leaves the flow and overlays the grabber band (top:0), so
-	 * the Guide switcher rides at the sheet's peek height (#133, rule 8). It is
-	 * transparent and click-through like .sheet-header so the centered chevrons and
-	 * a detail's action row (both in the same band) still receive taps — only the
-	 * switcher (pointer-events: auto) intercepts. The switcher is capped narrow
-	 * enough to clear the centered chevrons; the native control truncates the long
-	 * edition label, and opening it shows each label in full. */
+	 * the return-to-overview book icon rides at the sheet's peek height (#142, rule
+	 * 8). It is transparent and click-through like .sheet-header so the centered
+	 * chevrons and a detail's action row (both in the same band) still receive taps
+	 * — only the book button (pointer-events: auto, right-aligned) intercepts. */
 	.panel-header {
 		position: absolute;
 		inset: 0 0 auto 0;
@@ -723,19 +691,8 @@ body,
 		pointer-events: none;
 	}
 
-	.panel-header .guide-switcher {
+	.panel-header .detail__action {
 		pointer-events: auto;
-		max-width: calc(50vw - 4rem);
-	}
-
-	.guide-switcher__label {
-		display: none;
-	}
-
-	/* ≥44px tap target on mobile (rule 8): the select fills the grabber band. */
-	.guide-switcher__select {
-		min-height: 44px;
-		max-width: 100%;
 	}
 
 	/* The handle: a full-width band at the top of the sheet holding the chevron

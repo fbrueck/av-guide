@@ -21,19 +21,20 @@ export function readGuideParam(search: string): string | null {
 	return new URLSearchParams(search).get(GUIDE_PARAM);
 }
 
-// Resolve the Guide to open on first load: the requested id when it names a
-// manifest Guide, otherwise the manifest default (first entry) — an absent or
-// unknown value falls back honestly so a stale or mistyped link still loads a
-// working map (#128 story 15). Returns null only for an empty manifest (no Guide
-// to open at all), which App surfaces as an error.
-export function resolveInitialGuideId(
+// Resolve the `?guide=` deep-link on first load (#142, route-map/CLAUDE.md rule
+// 5): the requested id when it names a manifest Guide (open straight into that
+// guide, skipping the overview) — otherwise `null`, meaning stay on the overview.
+// Absent OR unknown both resolve to null: with the overview as the app's front
+// door there is no default Guide, so a stale or mistyped link honestly shows the
+// picker rather than silently opening some arbitrary massif.
+export function deepLinkGuideId(
 	rawParam: string | null,
 	guides: Guide[],
 ): string | null {
 	if (rawParam !== null && guides.some((guide) => guide.id === rawParam)) {
 		return rawParam;
 	}
-	return guides[0]?.id ?? null;
+	return null;
 }
 
 // Build the `location.search` string that reflects the selected Guide, for the
