@@ -45,24 +45,17 @@ body,
 	background: #fff;
 }
 
-/* Panel/sheet header (#133, rule 8): the band at the top of the route-panel that
- * docks the Guide switcher, right-aligned, in BOTH layouts. On desktop it is a
- * bordered bar in the panel's normal flow (reserving --sheet-header-height so the
- * absolute-filling sidebar/detail start below it); on mobile the media query at
- * the foot of this file relocates it to overlay the bottom-sheet grabber band, so
- * the book icon is reachable at the sheet's peek height. It sits above the sidebar
- * and detail (z-index) so the reader can return to the overview from any view
- * (#142). */
+/* Sheet header band (#133/#142, rule 8): the return-to-overview book's home on
+ * MOBILE only. Removed on desktop — there is no header bar; on the Place list the
+ * book docks inline next to the search field (.sidebar__search-row), and in a
+ * detail it rides the detail action row. The mobile media query at the foot of
+ * this file switches this on to overlay the bottom-sheet grabber band, so the book
+ * stays reachable at the sheet's peek height. */
 .panel-header {
-	position: relative;
+	display: none;
 	z-index: 4;
-	display: flex;
 	align-items: center;
 	justify-content: flex-end;
-	height: var(--sheet-header-height);
-	padding: 0 0.75rem;
-	border-bottom: 1px solid #ddd;
-	background: #fff;
 }
 
 /* Bottom-sheet grabber (rule 8): the tappable header that flips the sheet
@@ -77,9 +70,9 @@ body,
  * bucket, both scrolling together. */
 .sidebar {
 	position: absolute;
-	/* Start below the panel-header bar (#133); the grabber band on mobile is the
-	 * same height, so this one offset holds in both layouts. */
-	inset: var(--sheet-header-height) 0 0 0;
+	/* Fill the panel from the top on desktop (no header bar). Mobile drops it below
+	 * the grabber band — see .route-panel .sidebar in the media query. */
+	inset: 0;
 	display: flex;
 	flex-direction: column;
 	font:
@@ -93,9 +86,18 @@ body,
 	border-bottom: 1px solid #ddd;
 }
 
+/* The search field with the return-to-overview book to its left (desktop). The
+ * book is hidden on mobile (media query), where the input reclaims the full row. */
+.sidebar__search-row {
+	display: flex;
+	align-items: center;
+	gap: 0.25rem;
+}
+
 .sidebar__input {
 	box-sizing: border-box;
-	width: 100%;
+	flex: 1;
+	min-width: 0;
 	padding: 0.4rem 0.55rem;
 	font-size: 0.9rem;
 	border: 1px solid #bbb;
@@ -187,11 +189,12 @@ body,
 }
 
 /* Guide overview list (#141): the sidebar in the overview state — a clickable
- * Guide list (massif name + edition label) that fills the panel like .sidebar,
- * starting below the panel-header band in both layouts. */
+ * Guide list (massif name + edition label) that fills the panel like .sidebar.
+ * Fills from the top on desktop (no header bar); mobile drops it below the grabber
+ * band — see .route-panel .guide-list in the media query. */
 .guide-list {
 	position: absolute;
-	inset: var(--sheet-header-height) 0 0 0;
+	inset: 0;
 	display: flex;
 	flex-direction: column;
 	font:
@@ -286,9 +289,9 @@ body,
  * metadata + prose + cross-links into the surrounding Entry graph. */
 .detail {
 	position: absolute;
-	/* Start below the panel-header bar on desktop (#133); mobile overrides this to
-	 * top:0 so the detail fills the sheet and shares the grabber band (#102). */
-	inset: var(--sheet-header-height) 0 0 0;
+	/* Fill the panel (no header bar): the sticky action row (book/back/search) sits
+	 * at the top. Mobile keeps top:0 too, sharing the sheet grabber band (#102). */
+	inset: 0;
 	z-index: 2;
 	display: flex;
 	flex-direction: column;
@@ -308,7 +311,8 @@ body,
 	background: #fff;
 }
 
-/* Top-left row of icon actions: search first, then the optional back arrow. */
+/* Top-left row of icon actions: the book (return to the Guide overview), then the
+ * optional back arrow, then search. */
 .detail__header-actions {
 	display: flex;
 	align-items: center;
@@ -533,14 +537,13 @@ body,
 	overflow-y: auto;
 }
 
-/* The legend title doubles as the collapse toggle (#103). On desktop it reads as
- * a plain heading (the list below is always shown by the base rules), so the
- * always-visible desktop legend is unchanged; the mobile media query turns it
- * into a real tap-open button. */
+/* The legend title doubles as the collapse toggle (#103). DEFAULT COLLAPSED in
+ * both layouts: the list is hidden until the toggle is tapped open; the mobile
+ * media query only enlarges the toggle to a ≥44px tap target. */
 .poi-legend__toggle {
 	display: block;
 	width: 100%;
-	margin: 0 0 0.4rem;
+	margin: 0;
 	padding: 0;
 	border: none;
 	background: none;
@@ -553,10 +556,21 @@ body,
 	cursor: pointer;
 }
 
+/* Expanded spaces the toggle above the revealed list. */
+.poi-legend--expanded .poi-legend__toggle {
+	margin-bottom: 0.4rem;
+}
+
 .poi-legend__list {
 	list-style: none;
 	margin: 0;
 	padding: 0;
+}
+
+/* Collapsed (default) hides the swatch list — kept after the base .poi-legend__list
+ * rule so its higher specificity reads in source order (lint noDescendingSpecificity). */
+.poi-legend:not(.poi-legend--expanded) .poi-legend__list {
+	display: none;
 }
 
 .poi-legend__item {
@@ -682,6 +696,7 @@ body,
 	 * chevrons and a detail's action row (both in the same band) still receive taps
 	 * — only the book button (pointer-events: auto, right-aligned) intercepts. */
 	.panel-header {
+		display: flex;
 		position: absolute;
 		inset: 0 0 auto 0;
 		height: var(--sheet-header-height);
@@ -693,6 +708,12 @@ body,
 
 	.panel-header .detail__action {
 		pointer-events: auto;
+	}
+
+	/* The inline search-field book is desktop-only; on mobile the book rides the
+	 * sheet header band (.panel-header) instead, so the input reclaims the row. */
+	.sidebar__search .detail__action {
+		display: none;
 	}
 
 	/* The handle: a full-width band at the top of the sheet holding the chevron
@@ -738,9 +759,11 @@ body,
 		color: #555;
 	}
 
-	/* The sidebar starts below the handle band so its search box is never covered
-	 * by the chevron. It scrolls its own content (peek shows the top, full all). */
-	.route-panel .sidebar {
+	/* The sidebar and overview list start below the handle band so their top
+	 * content is never covered by the chevron. Each scrolls its own content (peek
+	 * shows the top, full all). */
+	.route-panel .sidebar,
+	.route-panel .guide-list {
 		top: var(--sheet-header-height);
 	}
 
@@ -809,22 +832,12 @@ body,
 		bottom: calc(var(--sheet-peek-height) + 0.5rem);
 	}
 
-	/* Legend collapses to a small tap-open button, default collapsed (#103). The
-	 * toggle becomes a ≥44px tap target; the swatch list is hidden until expanded.
-	 * Expanded, the list drops back in below the button. */
+	/* The legend is collapsible in both layouts (base rules); mobile only enlarges
+	 * the toggle to a ≥44px tap target. */
 	.poi-legend__toggle {
 		display: flex;
 		align-items: center;
 		min-height: 44px;
-		margin: 0;
-	}
-
-	.poi-legend--expanded .poi-legend__toggle {
-		margin-bottom: 0.4rem;
-	}
-
-	.poi-legend:not(.poi-legend--expanded) .poi-legend__list {
-		display: none;
 	}
 
 	/* Terrain toggle moves from top-centre to the top-right corner freed by the

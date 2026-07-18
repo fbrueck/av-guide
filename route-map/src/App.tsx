@@ -337,11 +337,18 @@ export function App() {
 	// offered only when there is somewhere to go back to).
 	const detailNav: DetailNav = useMemo(
 		() => ({
+			onReturnToOverview: handleReturnToOverview,
 			onClose: handleClose,
 			onBack: canGoBack ? handleBack : undefined,
 			onNavigate: handleNavigate,
 		}),
-		[handleClose, canGoBack, handleBack, handleNavigate],
+		[
+			handleReturnToOverview,
+			handleClose,
+			canGoBack,
+			handleBack,
+			handleNavigate,
+		],
 	);
 
 	return (
@@ -353,15 +360,16 @@ export function App() {
 				<MapAttribution terrainEnabled={terrainEnabled} />
 			</div>
 			<div className={`route-panel route-panel--${sheetMode}`}>
-				{/* Panel/sheet header: the return-to-overview book icon docks here,
-				    right-aligned, in BOTH layouts (rule 8) — a bordered bar at the top of
-				    the desktop docked panel, and the mobile bottom-sheet header band
-				    (reachable at peek) overlaid on the chevron grabber. It sits above the
-				    sidebar and detail so returning is possible from any view. Only in the
-				    guide state: the overview is the front door itself (#142), with no Guide
-				    to return away from — it picks its Guide from the list/boxes (#141). */}
+				{/* Sheet header band (MOBILE only — the desktop bar is removed, .panel-header
+				    is display:none >768px): on the plain Place list the return-to-overview
+				    book rides the bottom-sheet grabber band, reachable at peek (rule 8). On
+				    desktop the same book instead docks inline next to the search field
+				    (Sidebar). Only in the guide state with no Entry selected — once a detail
+				    panel is open the book moves into its icon row as the leftmost action
+				    (DetailHeader), so it is never shown twice. The overview state is the front
+				    door itself (#142), with no Guide to return away from (#141). */}
 				<div className="panel-header">
-					{view === "guide" ? (
+					{view === "guide" && !currentEntry ? (
 						<OverviewButton onReturnToOverview={handleReturnToOverview} />
 					) : null}
 				</div>
@@ -392,6 +400,7 @@ export function App() {
 							onSearchChange={setSearchText}
 							selectedEntry={currentEntry}
 							onSelectEntry={handleSelectEntry}
+							onReturnToOverview={handleReturnToOverview}
 						/>
 						{currentEntry?.kind === "place" ? (
 							<PlaceDetail place={currentEntry} nav={detailNav} />
