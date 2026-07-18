@@ -370,6 +370,13 @@ export function createRouteMap(
 		for (const layer of map.getStyle().layers ?? []) {
 			if (layer.id === OPENTOPO_SOURCE_ID) {
 				setVis(layer.id, !enabled);
+			} else if (layer.type === "background") {
+				// VersaTiles' base land colour (rgb 249,244,238) is a source-less
+				// background layer. It must show in 3D so the semi-transparent landcover
+				// fills composite over an opaque pale base — otherwise bare/grassy terrain
+				// (no landcover polygon) and the low-opacity fills render black. Hidden in
+				// 2D, where the OpenTopoMap raster is the base.
+				setVis(layer.id, enabled);
 			} else if ("source" in layer && layer.source === VERSATILES_SOURCE_ID) {
 				setVis(layer.id, enabled);
 			}
