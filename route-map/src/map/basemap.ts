@@ -10,8 +10,10 @@ import type {
 // never calls map.setStyle — it flips layer visibility and setTerrain, avoiding
 // the full-style-reload flash (#121):
 //
-//   2D (flat)    — OpenTopoMap: a topographic raster whose baked hillshade reads
-//                  well on a flat map. The default; the only base visible in 2D.
+//   2D (flat)    — a topographic raster; the digitizer picks WHICH one from a
+//                  small switcher (#135). OpenTopoMap is the default (global
+//                  coverage); Skitourenguru is an Alps-only alternative. Exactly
+//                  one 2D raster is visible in 2D, the other hidden (unloaded).
 //   3D (terrain) — VersaTiles "colorful": a keyless landcover VECTOR basemap with
 //                  NO baked shading. Draped over the tilted terrain mesh it lets
 //                  MapLibre's own hillshade (computed from the Mapterhorn DEM) be
@@ -25,6 +27,15 @@ import type {
 // route-map/CLAUDE.md rule 3) and 2D cheap.
 
 const OPENTOPO_MAX_ZOOM = 17;
+
+// The two selectable flat (2D) base maps (#135). Only ever one is visible at a
+// time; the switcher (src/components/Basemap2dSwitcher.tsx) reports the chosen id
+// and RouteMap.setBaseMap flips visibility. Not a CONTEXT.md domain term — this
+// is a map-rendering concept, so it lives in the map module.
+export type Basemap2dId = "opentopomap" | "skitourenguru";
+
+// The default flat base: OpenTopoMap, the only one with global coverage.
+export const DEFAULT_BASEMAP_2D: Basemap2dId = "opentopomap";
 
 // A single map credit: the linked source name plus the plain text that frames
 // it. Structured (not an HTML string) so the React attribution component
@@ -55,6 +66,18 @@ export const BASEMAP_CREDITS: readonly MapCredit[] = [
 		name: "OpenTopoMap",
 		href: "https://opentopomap.org",
 		suffix: " (CC-BY-SA)",
+	},
+];
+
+// Credits for the Skitourenguru 2D base (#135). A single rendering credit, per
+// the terms the digitizer confirmed — no separate data credit. Shown in place of
+// BASEMAP_CREDITS while the Skitourenguru base is the active 2D map.
+export const BASEMAP_CREDITS_SKITOURENGURU: readonly MapCredit[] = [
+	{
+		prefix: "Kartendarstellung: © ",
+		name: "Skitourenguru",
+		href: "https://skitourenguru.com",
+		suffix: "",
 	},
 ];
 
@@ -90,6 +113,61 @@ const opentopoSource: RasterSourceSpecification = {
 	tileSize: 256,
 	maxzoom: OPENTOPO_MAX_ZOOM,
 };
+
+// The Skitourenguru 2D base (#135), source id doubling as the raster layer id
+// that RouteMap flips. A 256px JPEG raster on a standard XYZ scheme (the `.tms`
+// path segment is the server's, not the tiling convention — verified: y grows
+// southward, so no `scheme: "tms"` flip). Native tiles run past z18, so the
+// source maxzoom is set to the shared camera cap; ALPS-ONLY — tiles 404 outside
+// the range, which MapLibre renders as empty (honest absence, no crash). The
+// server hotlink-guards by Referer, allowing `localhost` and `*.github.io`, so
+// it works in both dev-live and the deployed snapshot (see #135 for the probe).
+export const SKITOURENGURU_SOURCE_ID = "skitourenguru";
+
+const SKITOURENGURU_MAX_ZOOM = 18;
+
+const skitourenguruSource: RasterSourceSpecification = {
+	type: "raster",
+	tiles: [
+		"https://map.skitourenguru.com/AP_SG_TOPO_MINI.tms?x={x}&y={y}&z={z}",
+	],
+	tileSize: 256,
+	maxzoom: SKITOURENGURU_MAX_ZOOM,
+};
+
+// Which of the two 2D raster bases should be visible, given the selected base and
+// the view mode. Pure so it is unit-tested (basemap.test.ts) rather than only
+// exercised through the live map: in 3D neither 2D raster shows (the VersaTiles
+// landcover is the base, draped on the terrain); in 2D exactly the selected one
+// shows and the other is hidden (a hidden layer streams no tiles).
+export function is2dBaseVisible(
+	layerBase: Basemap2dId,
+	selected: Basemap2dId,
+	terrainEnabled: boolean,
+): boolean {
+	if (terrainEnabled) {
+		return false;
+	}
+	return layerBase === selected;
+}
+
+// The license-required credits for the current view — the single source of truth
+// the React attribution overlay (MapAttribution) renders. Pure + unit-tested so
+// the credits can never drift from what is actually on screen: in 3D the 2D bases
+// are hidden and the Mapterhorn DEM is loaded, so the 3D + terrain credits show;
+// in 2D the credit for the active 2D base shows (its tiles are the only base
+// loaded).
+export function mapCreditsFor(
+	base2d: Basemap2dId,
+	terrainEnabled: boolean,
+): readonly MapCredit[] {
+	if (terrainEnabled) {
+		return [...BASEMAP_CREDITS_3D, TERRAIN_CREDIT];
+	}
+	return base2d === "skitourenguru"
+		? BASEMAP_CREDITS_SKITOURENGURU
+		: BASEMAP_CREDITS;
+}
 
 // 2D flat base map — the style the Map is constructed with, for an instant first
 // paint. buildCombinedStyle swaps in the full combined style once it has fetched
@@ -211,16 +289,26 @@ export async function buildCombinedStyle(): Promise<StyleSpecification> {
 		sources: {
 			...versatiles.sources,
 			[OPENTOPO_SOURCE_ID]: opentopoSource,
+			[SKITOURENGURU_SOURCE_ID]: skitourenguruSource,
 			[TERRAIN_SOURCE_ID]: terrainSource,
 			[HILLSHADE_SOURCE_ID]: hillshadeSource,
 		},
 		layers: [
-			// OpenTopoMap raster: the 2D base, at the bottom and visible by default;
-			// hidden when 3D is on.
+			// OpenTopoMap raster: the DEFAULT 2D base, at the bottom and visible by
+			// default; hidden when 3D is on or when the other 2D base is selected.
 			{
 				id: OPENTOPO_SOURCE_ID,
 				type: "raster",
 				source: OPENTOPO_SOURCE_ID,
+			},
+			// Skitourenguru raster: the alternate 2D base, stacked with OpenTopoMap at
+			// the bottom but hidden by default (#135) — so its tiles stream only once
+			// the switcher selects it. RouteMap.setBaseMap flips which of the two shows.
+			{
+				id: SKITOURENGURU_SOURCE_ID,
+				type: "raster",
+				source: SKITOURENGURU_SOURCE_ID,
+				layout: { visibility: "none" },
 			},
 			// VersaTiles landcover: the 3D base, hidden (and thus unloaded) until 3D.
 			...versatilesLayers,

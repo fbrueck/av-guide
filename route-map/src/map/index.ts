@@ -1,7 +1,11 @@
 export {
 	BASEMAP_CREDITS,
 	BASEMAP_CREDITS_3D,
+	BASEMAP_CREDITS_SKITOURENGURU,
+	type Basemap2dId,
+	DEFAULT_BASEMAP_2D,
 	type MapCredit,
+	mapCreditsFor,
 	TERRAIN_CREDIT,
 } from "./basemap";
 export {

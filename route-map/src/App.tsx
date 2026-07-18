@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+	Basemap2dSwitcher,
 	type DetailNav,
 	MapAttribution,
 	PlaceDetail,
@@ -12,7 +13,12 @@ import {
 } from "./components";
 import { loadGuideData } from "./data";
 import type { Entry, GuideData } from "./domain";
-import { createRouteMap, type RouteMap } from "./map";
+import {
+	type Basemap2dId,
+	createRouteMap,
+	DEFAULT_BASEMAP_2D,
+	type RouteMap,
+} from "./map";
 
 // Composition root and the app's minimal state (route-map/CLAUDE.md rule 5):
 // GuideData, the selection, and the search text all live here as plain React
@@ -33,6 +39,11 @@ export function App() {
 	const [searchText, setSearchText] = useState("");
 	// The third state atom (route-map/CLAUDE.md rule 5): 2D vs 3D terrain.
 	const [terrainEnabled, setTerrainEnabled] = useState(false);
+	// The selected flat 2D base map (#135) — a deliberate, small widening of the
+	// rule 5 state list (the ticket authorizes it): OpenTopoMap (default) or the
+	// Alps-only Skitourenguru. Still plain React state, no store. Only meaningful
+	// in 2D; the switcher is unmounted while terrain is on.
+	const [base2d, setBase2d] = useState<Basemap2dId>(DEFAULT_BASEMAP_2D);
 	// Mobile-only state atom (route-map/CLAUDE.md rules 5 & 8): the bottom sheet's
 	// height, one of three modes — collapsed (only the handle shows), peek (the
 	// middle browsing height), full (nearly the whole viewport). Below 768px the
@@ -143,6 +154,12 @@ export function App() {
 		mapRef.current?.setTerrain(terrainEnabled);
 	}, [terrainEnabled]);
 
+	// Drive the selected 2D base into the imperative map API; setBaseMap buffers
+	// until the combined style is installed, so ordering does not matter.
+	useEffect(() => {
+		mapRef.current?.setBaseMap(base2d);
+	}, [base2d]);
+
 	// Highlight the selected Entry's POI set on the map and fit to it. Passing
 	// null (nothing selected) clears the prior highlight. The base all-POIs layer
 	// stays visible underneath — this is an emphasis layer, not a redraw.
@@ -169,7 +186,14 @@ export function App() {
 				<div ref={containerRef} className="map-root" />
 				<PoiLegend />
 				<TerrainToggle enabled={terrainEnabled} onToggle={setTerrainEnabled} />
-				<MapAttribution terrainEnabled={terrainEnabled} />
+				{/* The 2D base switcher is only meaningful on the flat map; while
+				    terrain is on the VersaTiles landcover is the base, so unmount it
+				    (rule 8: keep on-map controls de-conflicted) — the choice is kept in
+				    state and reapplied on the return to 2D. */}
+				{!terrainEnabled ? (
+					<Basemap2dSwitcher active={base2d} onSelect={setBase2d} />
+				) : null}
+				<MapAttribution base2d={base2d} terrainEnabled={terrainEnabled} />
 			</div>
 			<div className={`route-panel route-panel--${sheetMode}`}>
 				{/* The mobile sheet's handle: chevron buttons that step through the

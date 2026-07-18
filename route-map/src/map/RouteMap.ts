@@ -13,10 +13,14 @@ import {
 import type { Entry, Poi } from "../domain";
 import {
 	BASEMAP_MAX_ZOOM,
+	type Basemap2dId,
 	basemapStyle2d,
 	buildCombinedStyle,
+	DEFAULT_BASEMAP_2D,
 	HILLSHADE_SOURCE_ID,
+	is2dBaseVisible,
 	OPENTOPO_SOURCE_ID,
+	SKITOURENGURU_SOURCE_ID,
 	TERRAIN_EXAGGERATION,
 	TERRAIN_PITCH,
 	TERRAIN_SOURCE_ID,
@@ -138,6 +142,14 @@ export interface RouteMap {
 	 *  rotation stays free in both modes (#120). Idempotent and safe to call
 	 *  before the style loads. */
 	setTerrain(enabled: boolean): void;
+	/** Choose which flat 2D base map is shown — OpenTopoMap (default) or
+	 *  Skitourenguru (#135). Like setTerrain this is a pure visibility flip inside
+	 *  the one combined style, never a setStyle: the non-selected 2D raster is
+	 *  hidden and streams no tiles. A no-op on the visible base while 3D is on (the
+	 *  VersaTiles landcover is the base there), but the choice is remembered and
+	 *  applied on the next return to 2D. Idempotent and safe to call before the
+	 *  style loads (buffered, applied once the combined style is installed). */
+	setBaseMap(base: Basemap2dId): void;
 	destroy(): void;
 }
 
@@ -314,6 +326,11 @@ export function createRouteMap(
 	// setTerrain has the same race; buffer the latest desired state and apply it
 	// once the combined style is installed.
 	let terrainEnabled = false;
+	// The selected flat 2D base map (#135), read by setBaseVisibility to decide
+	// which of the two 2D rasters shows in 2D. Buffered like terrainEnabled: a
+	// choice made before the combined style is in (only OpenTopoMap exists on the
+	// bootstrap style) is applied by onCombinedReady via applyMode.
+	let base2d: Basemap2dId = DEFAULT_BASEMAP_2D;
 	// The map boots on the 2D-only style for an instant first paint, then the
 	// combined style (both base maps + the DEM) is installed once its remote
 	// VersaTiles part has been fetched (buildCombinedStyle). Until then a 2D↔3D
@@ -356,11 +373,13 @@ export function createRouteMap(
 		map.on("idle", attempt);
 	}
 
-	// Flip which base map is shown, without a setStyle: 2D shows the OpenTopoMap
-	// raster; 3D shows the VersaTiles landcover + hillshade + the floating peak
-	// labels. A hidden layer streams no tiles, so 2D loads neither the VersaTiles
-	// nor the DEM tiles (attribution stays honest). Leaves the POI + highlight
-	// layers untouched — they show in both modes.
+	// Flip which base map is shown, without a setStyle: in 2D exactly the SELECTED
+	// flat raster shows (OpenTopoMap or Skitourenguru, #135) and the other is
+	// hidden; in 3D both flat rasters hide and the VersaTiles landcover + hillshade
+	// + floating peak labels show. A hidden layer streams no tiles, so 2D loads
+	// neither the unselected raster, the VersaTiles, nor the DEM tiles (attribution
+	// stays honest). Leaves the POI + highlight layers untouched — they show in
+	// both modes. `enabled` is the 3D/terrain flag.
 	function setBaseVisibility(enabled: boolean): void {
 		const setVis = (id: string, visible: boolean) => {
 			if (map.getLayer(id)) {
@@ -369,7 +388,9 @@ export function createRouteMap(
 		};
 		for (const layer of map.getStyle().layers ?? []) {
 			if (layer.id === OPENTOPO_SOURCE_ID) {
-				setVis(layer.id, !enabled);
+				setVis(layer.id, is2dBaseVisible("opentopomap", base2d, enabled));
+			} else if (layer.id === SKITOURENGURU_SOURCE_ID) {
+				setVis(layer.id, is2dBaseVisible("skitourenguru", base2d, enabled));
 			} else if ("source" in layer && layer.source === VERSATILES_SOURCE_ID) {
 				setVis(layer.id, enabled);
 			}
@@ -754,6 +775,19 @@ export function createRouteMap(
 				return;
 			}
 			whenStyleReady(() => applyMode(terrainEnabled));
+		},
+		setBaseMap(base: Basemap2dId): void {
+			base2d = base;
+			// Before the combined style is in, only OpenTopoMap exists (the bootstrap
+			// style) — buffer the choice; onCombinedReady's applyMode reads base2d.
+			// After that, flipping the 2D base is a pure visibility swap; the current
+			// mode's applyMode path (setBaseVisibility) already reads base2d, so in 3D
+			// nothing changes on screen and the choice is honoured on the next 2D
+			// return.
+			if (!combinedInstalled) {
+				return;
+			}
+			whenStyleReady(() => setBaseVisibility(terrainEnabled));
 		},
 		destroy() {
 			map.remove();

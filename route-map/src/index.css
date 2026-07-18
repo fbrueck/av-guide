@@ -396,6 +396,54 @@ body,
 	border-color: #7aa7e0;
 }
 
+/* 2D base-map switcher (#135). A segmented control sitting on its own row just
+ * below the top control row — clear of the legend (top-left), terrain toggle
+ * (top-centre desktop / top-right mobile), navigation (top-right) and the
+ * bottom controls. Rendered only in 2D (App unmounts it in 3D). */
+.basemap-switcher {
+	position: absolute;
+	top: 3.75rem;
+	left: 50%;
+	transform: translateX(-50%);
+	z-index: 1;
+	display: flex;
+	/* Reset the <fieldset> default chrome (it is a semantic group, not a box). */
+	margin: 0;
+	padding: 0;
+	border: none;
+	min-inline-size: 0;
+	border-radius: 6px;
+	overflow: hidden;
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+	font:
+		12px / 1.4 system-ui,
+		sans-serif;
+}
+
+.basemap-switcher__option {
+	padding: 0.4rem 0.75rem;
+	border: 1px solid #bbb;
+	background: rgba(255, 255, 255, 0.92);
+	font: inherit;
+	font-weight: 600;
+	color: #1a1a1a;
+	cursor: pointer;
+}
+
+/* Collapse the shared 1px seam between the two segments into one line. */
+.basemap-switcher__option + .basemap-switcher__option {
+	border-left: none;
+}
+
+.basemap-switcher__option:hover {
+	background: #fff;
+}
+
+.basemap-switcher__option[aria-pressed="true"] {
+	background: #dbeafe;
+	border-color: #7aa7e0;
+}
+
 /* Legend of the POI type colours, so the map reads without clicking. */
 .poi-legend {
 	position: absolute;
@@ -695,5 +743,22 @@ body,
 		left: auto;
 		right: 0.75rem;
 		transform: none;
+	}
+
+	/* On mobile the top row is taken by the (expandable) legend at top-left and the
+	 * terrain toggle at top-right, and an expanded legend reaches well into the
+	 * centre — so the 2D base switcher moves to the bottom-centre, lifted above the
+	 * sheet's peek exactly like the scale + attribution, where it never overlaps any
+	 * other control in any state (rule 8). Its segments grow to the ≥44px mobile
+	 * tap-target bar. */
+	.basemap-switcher {
+		top: auto;
+		bottom: calc(var(--sheet-peek-height) + 0.5rem);
+	}
+
+	.basemap-switcher__option {
+		min-height: 44px;
+		display: flex;
+		align-items: center;
 	}
 }
