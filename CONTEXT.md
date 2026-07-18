@@ -1,5 +1,17 @@
 # CONTEXT — av-guide ubiquitous language
 
+## Guide
+A single digitized *Alpenvereinsführer* volume — the outermost container the
+whole model hangs under. Identified by a short **guide id** (`wetterstein`,
+`karwendel`) that keys its config (`guides/<id>/config.yml`), its per-pipeline
+artifacts (`guides/<id>/data/…`), and its coordinates (a bounding box the
+[[Gazetteer]] fetch is scoped to). Each Guide owns its own [[Entry]]s,
+[[POI]]s, and [[Gazetteer]] — ids are unique **within** a Guide, not across
+Guides. In route-map a Guide is a selectable thing carrying an id and a
+human **label**; the published set is listed in a committed `guides/guides.json`
+manifest, and the reader switches between Guides in-app (route-map ADR-0005).
+_Avoid_: book, volume, dataset.
+
 ## Entry
 A single numbered item in the Alpenvereinsführer, identified by the book's own
 **entry id**. The book prints this as a bulleted bare number in the margin
