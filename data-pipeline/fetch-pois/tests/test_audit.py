@@ -76,6 +76,14 @@ def test_excerpt_falls_back_to_head_and_is_cell_safe():
     assert audit._excerpt(long, "absent", 40) == "x" * 40 + "…"
 
 
+def test_excerpt_and_cell_tolerate_a_none_description():
+    # An Entry with no prose (a Place whose Übersicht is empty) serializes
+    # `description: null`; the audit must render it as missing, not crash.
+    assert audit._excerpt(None, None, 40) == "—"
+    assert audit._excerpt(None, "needle", 40) == "—"
+    assert audit._cell(None) == "—"
+
+
 # --- seeded oversampling ---------------------------------------------------
 
 

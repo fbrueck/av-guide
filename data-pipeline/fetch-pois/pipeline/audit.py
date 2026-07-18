@@ -94,10 +94,11 @@ class MatchContext:
     cfg: GuideConfig
 
 
-def _norm_ws(text: str) -> str:
+def _norm_ws(text: str | None) -> str:
     """Collapse all whitespace (newlines included) to single spaces — a
-    Markdown table cell is one line."""
-    return " ".join(text.split())
+    Markdown table cell is one line. A `None` (an Entry with no prose, e.g. a
+    Place whose Übersicht is empty) reads as the empty string."""
+    return " ".join((text or "").split())
 
 
 def _esc(text: str) -> str:
@@ -105,7 +106,7 @@ def _esc(text: str) -> str:
     return text.replace("\\", "\\\\").replace("|", "\\|")
 
 
-def _cell(text: str) -> str:
+def _cell(text: str | None) -> str:
     return _esc(_norm_ws(text)) or _MISSING
 
 
@@ -121,7 +122,7 @@ def _elev_delta(book: float | None, osm: float | None) -> str:
     return f"{book - osm:+.0f} m"
 
 
-def _excerpt(text: str, needle: str | None, width: int) -> str:
+def _excerpt(text: str | None, needle: str | None, width: int) -> str:
     """A one-line, cell-safe excerpt of `text`, at most `width` chars: a window
     centered on `needle` when given and found (so a mention shows in context),
     otherwise the head of the text (a Place's Übersicht)."""
