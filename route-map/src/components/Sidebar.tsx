@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import type { Entry, Place, Route } from "../domain";
+import { OverviewButton } from "./OverviewButton";
 
 interface SidebarProps {
 	places: Place[];
@@ -8,6 +9,10 @@ interface SidebarProps {
 	onSearchChange: (text: string) => void;
 	selectedEntry: Entry | null;
 	onSelectEntry: (entry: Entry) => void;
+	/** Return to the Guide overview. On desktop the book docks inline next to the
+	 *  search field (there is no header bar); on mobile it is hidden here and rides
+	 *  the sheet header band instead (App's .panel-header). */
+	onReturnToOverview: () => void;
 }
 
 // Place-first navigation (#44): the guide is browsed by its target Places, not a
@@ -26,6 +31,7 @@ export function Sidebar({
 	onSearchChange,
 	selectedEntry,
 	onSelectEntry,
+	onReturnToOverview,
 }: SidebarProps) {
 	const needle = searchText.trim().toLowerCase();
 
@@ -56,15 +62,20 @@ export function Sidebar({
 	return (
 		<aside className="sidebar" aria-label="Orte und Routen">
 			<div className="sidebar__search">
-				<input
-					type="search"
-					name="entry-search"
-					className="sidebar__input"
-					placeholder="Orte durchsuchen (Name, Typ)…"
-					value={searchText}
-					onChange={(event) => onSearchChange(event.target.value)}
-					aria-label="Orte durchsuchen"
-				/>
+				<div className="sidebar__search-row">
+					{/* The book docks left of the search field on desktop; hidden on mobile
+					    (CSS), where it rides the sheet header band instead. */}
+					<OverviewButton onReturnToOverview={onReturnToOverview} />
+					<input
+						type="search"
+						name="entry-search"
+						className="sidebar__input"
+						placeholder="Orte durchsuchen (Name, Typ)…"
+						value={searchText}
+						onChange={(event) => onSearchChange(event.target.value)}
+						aria-label="Orte durchsuchen"
+					/>
+				</div>
 				<p className="sidebar__count">
 					{filteredPlaces.length} von {places.length} Orten
 				</p>

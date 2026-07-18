@@ -5,10 +5,9 @@ import { POI_TYPE_STYLES } from "../map";
 // clicking (#21 AC helper). It reads the SAME style table the map paints from,
 // so the two can never drift.
 //
-// It is collapsible (#103): the title is a tap-open button. On mobile (≤768px)
-// the legend is DEFAULT COLLAPSED — a small button that would otherwise cover the
-// map — and taps open; on desktop the media query forces the list open and hides
-// the toggle, so the always-visible desktop behaviour is unchanged.
+// It is collapsible (#103): the title is a tap-open button, DEFAULT COLLAPSED in
+// BOTH layouts — a small button that would otherwise cover the map — and opens on
+// tap. The mobile media query only enlarges the toggle to a ≥44px tap target.
 //
 // Collapse is view-local UI state, so it lives HERE in a local `useState`, not in
 // App's atoms: route-map/CLAUDE.md rule 5 governs *app-level* state (selection,
@@ -19,7 +18,7 @@ export function PoiLegend() {
 	return (
 		<aside
 			className={expanded ? "poi-legend poi-legend--expanded" : "poi-legend"}
-			aria-label="POI-Typen"
+			aria-label="Legende"
 		>
 			<button
 				type="button"
@@ -27,7 +26,7 @@ export function PoiLegend() {
 				aria-expanded={expanded}
 				onClick={() => setExpanded((open) => !open)}
 			>
-				POI-Typen
+				Legende
 			</button>
 			<ul className="poi-legend__list">
 				{POI_TYPE_STYLES.map((style) => (

@@ -1,10 +1,14 @@
 [
   {
     "id": "wetterstein",
-    "label": "Alpenvereinsführer Wetterstein (Beulke, 4. Auflage 1996)"
+    "name": "Wetterstein",
+    "label": "Alpenvereinsführer Wetterstein (Beulke, 4. Auflage 1996)",
+    "bbox": [47.30, 10.85, 47.55, 11.35]
   },
   {
     "id": "karwendel",
-    "label": "Alpenvereinsführer Karwendel (Klier/Walter, 16. Auflage 2011)"
+    "name": "Karwendel",
+    "label": "Alpenvereinsführer Karwendel (Klier/Walter, 16. Auflage 2011)",
+    "bbox": [47.27, 11.19, 47.60, 11.80]
   }
 ]

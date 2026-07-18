@@ -1,9 +1,12 @@
 import type { Entry } from "../domain";
+import { OverviewButton } from "./OverviewButton";
 
 // The navigation callbacks every detail panel needs, bundled so they travel as
-// one type rather than three repeated props: close to the sidebar, optionally
-// go back up the selection stack, and drill into a related Entry (a cross-link).
+// one type rather than repeated props: return to the Guide overview, close to
+// the sidebar, optionally go back up the selection stack, and drill into a
+// related Entry (a cross-link).
 export interface DetailNav {
+	onReturnToOverview: () => void;
 	onClose: () => void;
 	onBack?: () => void;
 	onNavigate: (entry: Entry) => void;
@@ -21,13 +24,17 @@ interface DetailHeaderProps {
 }
 
 // Shared header for the Place and Route detail panels: a top-left row of icon
-// actions — a back arrow (up the selection stack; disabled when there is no
-// history) then search (close the detail back to the searchable list) — above
-// the Entry name (with an optional muted suffix).
+// actions — the book (return to the Guide overview), then a back arrow (up the
+// selection stack; disabled when there is no history), then search (close the
+// detail back to the searchable list) — above the Entry name (with an optional
+// muted suffix).
 export function DetailHeader({ title, titleSuffix, nav }: DetailHeaderProps) {
 	return (
 		<header className="detail__header">
 			<div className="detail__header-actions">
+				{/* Return to the Guide overview — the leftmost action so it reads as the
+				    outermost "up" step, above back (within the Guide) and search. */}
+				<OverviewButton onReturnToOverview={nav.onReturnToOverview} />
 				{/* The back arrow is always present so the header layout is stable;
 				    when there is nowhere to go back to (nav.onBack undefined) it is
 				    disabled and greyed rather than hidden. */}

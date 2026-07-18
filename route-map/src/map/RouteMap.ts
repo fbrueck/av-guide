@@ -6,11 +6,12 @@ import {
 	LngLatBounds,
 	type LngLatLike,
 	Map as MapLibreMap,
+	Marker,
 	NavigationControl,
 	type PointLike,
 	ScaleControl,
 } from "maplibre-gl";
-import type { Entry, Poi } from "../domain";
+import type { Entry, Guide, Poi } from "../domain";
 import {
 	BASEMAP_MAX_ZOOM,
 	basemapStyle2d,
@@ -22,6 +23,7 @@ import {
 	TERRAIN_SOURCE_ID,
 	VERSATILES_SOURCE_ID,
 } from "./basemap";
+import { boundsForGuideBoxes } from "./overview";
 import { poiColorExpression } from "./poiStyle";
 import {
 	type PoiVisibilityFeature,
@@ -29,6 +31,7 @@ import {
 } from "./poiVisibility";
 import {
 	boundsForPois,
+	type CameraFrame,
 	DEFAULT_CENTER,
 	DEFAULT_ZOOM,
 	SINGLE_POINT_ZOOM,
@@ -36,6 +39,24 @@ import {
 
 const POI_SOURCE_ID = "pois";
 const POI_LAYER_ID = "poi-markers";
+
+// The Guide overview layer (#141): each published Guide's manifest bbox drawn as
+// a labelled rectangle so a reader can pick a Guide from the map itself. A
+// dedicated source/layers, entirely separate from the POI layer — the boxes are
+// overview chrome, never POIs and never a selection target (ADR-0004 untouched).
+const GUIDE_BOX_SOURCE_ID = "guide-boxes";
+const GUIDE_BOX_FILL_LAYER_ID = "guide-box-fill";
+const GUIDE_BOX_LINE_LAYER_ID = "guide-box-line";
+
+// A small palette cycled across the boxes so adjacent Guides read as distinct at
+// a glance; the labels carry the actual identity.
+const GUIDE_BOX_COLORS = [
+	"#2563eb",
+	"#dc2626",
+	"#059669",
+	"#d97706",
+	"#7c3aed",
+];
 
 // A symbol layer that floats peak names above each summit — 3D only (the flat 2D
 // OpenTopoMap raster carries its own baked labels). See
@@ -136,6 +157,12 @@ export interface RouteMap {
 	 *  geometry, so nothing is invented (route-map/CLAUDE.md rule 3). Idempotent
 	 *  and safe to call before the style loads. */
 	highlightEntry(entry: Entry | null): void;
+	/** Remove the current Guide's POIs (and their peak labels) — App calls this on
+	 *  returning to the overview (#142), so the map is left clean beneath the
+	 *  overview boxes (the two layers never overlap). Symmetric with
+	 *  `clearGuideBoxes`; safe to call when no POIs are drawn or before the style
+	 *  loads. Re-entering a Guide repaints them via `showPois`. */
+	clearPois(): void;
 	/** Flip the map between the flat 2D basemap and 3D terrain (#23). Both base
 	 *  maps live in one combined style, so this is a visibility flip + setTerrain
 	 *  + camera pitch — never a setStyle — which keeps the toggle a single smooth
@@ -155,7 +182,37 @@ export interface RouteMap {
 	 *  into place (no pan animation) and respects the mobile bottom-sheet inset,
 	 *  like the selection framing (fitToPois). */
 	frameGuide(pois: Poi[]): void;
+	/** Draw the Guide overview boxes (#141): each Guide's manifest bbox as a
+	 *  distinct, labelled rectangle, on a source/layers separate from the POI
+	 *  layer. The boxes are display-only overview chrome — a click calls back
+	 *  `onSelectGuide` (construction option), never a selection (ADR-0004). App
+	 *  calls this while in the overview state. Idempotent (replaces the drawn set)
+	 *  and safe to call before the style loads. */
+	showGuideBoxes(guides: Guide[]): void;
+	/** Remove the overview boxes — App calls this on entering a Guide, so the map
+	 *  is left clean for that Guide's POIs. Safe to call when none are drawn. */
+	clearGuideBoxes(): void;
+	/** Hover-highlight one overview box by guide id (or `null` to clear), so the
+	 *  sidebar Guide list and the map read as one picker (#141): hovering a row
+	 *  emphasizes its box. The reverse — hovering a box emphasizing its row —
+	 *  flows the other way via the `onHoverGuide` construction callback. */
+	highlightGuideBox(guideId: string | null): void;
+	/** Frame the camera to fit ALL Guide overview boxes (#141) — the overview
+	 *  opening view, computed by boundsForGuideBoxes (pure). No boxes → a default
+	 *  overview, never a zero-area frame. Snaps into place, respecting the mobile
+	 *  bottom-sheet inset, like frameGuide. */
+	frameOverview(guides: Guide[]): void;
 	destroy(): void;
+}
+
+// The GeoJSON feature properties the overview box layers read. Flat + primitive
+// (maplibre carries only JSON-serialisable props): `id` resolves a clicked/hovered
+// box back to its Guide, `color` drives the per-box paint, `name` is unused by the
+// layers (the DOM label markers show it) but kept for debuggability.
+interface GuideBoxFeatureProps {
+	id: string;
+	name: string;
+	color: string;
 }
 
 // The GeoJSON feature properties the POI layer reads. Kept flat and primitive
@@ -247,17 +304,61 @@ function toHighlightFeatureCollection(set: HighlightSet): FeatureCollection {
 	return { type: "FeatureCollection", features };
 }
 
+// A Guide's manifest bbox (`[south, west, north, east]`, lat/lon) as a closed
+// rectangle polygon in `[lng, lat]` — the order maplibre geometry uses. The one
+// place the lat/lon-ordered bbox is turned into map geometry (boundsForGuideBoxes
+// does the same conversion for the camera frame).
+function toGuideBoxFeatureCollection(guides: Guide[]): FeatureCollection {
+	return {
+		type: "FeatureCollection",
+		features: guides.map((guide, index) => {
+			const [south, west, north, east] = guide.bbox;
+			const props: GuideBoxFeatureProps = {
+				id: guide.id,
+				name: guide.name,
+				// The modulo keeps the index in range; the ?? satisfies the
+				// noUncheckedIndexedAccess strictness with an equivalent default.
+				color: GUIDE_BOX_COLORS[index % GUIDE_BOX_COLORS.length] ?? "#2563eb",
+			};
+			return {
+				type: "Feature",
+				// String feature id so feature-state (the hover emphasis) keys on it.
+				id: guide.id,
+				geometry: {
+					type: "Polygon",
+					coordinates: [
+						[
+							[west, south],
+							[east, south],
+							[east, north],
+							[west, north],
+							[west, south],
+						],
+					],
+				},
+				properties: props,
+			};
+		}),
+	};
+}
+
 // Options passed at construction (before the guide data loads). onSelectEntry is
 // App's single selection entry point (a stable useCallback), so a tapped
 // Place-coordinate marker selects its Place identically to a sidebar click — the
 // map never owns selection, it just calls back (route-map/CLAUDE.md rule 4).
+// onSelectGuide / onHoverGuide are the overview equivalents (#141): a box click
+// picks that Guide (the same door the sidebar Guide list uses), and a box hover
+// tells App which row to emphasize — the map owns neither the view nor the
+// selection, it just calls back.
 export interface CreateRouteMapOptions {
 	onSelectEntry: (entry: Entry) => void;
+	onSelectGuide: (guideId: string) => void;
+	onHoverGuide: (guideId: string | null) => void;
 }
 
 export function createRouteMap(
 	container: HTMLElement,
-	{ onSelectEntry }: CreateRouteMapOptions,
+	{ onSelectEntry, onSelectGuide, onHoverGuide }: CreateRouteMapOptions,
 ): RouteMap {
 	const map = new MapLibreMap({
 		container,
@@ -340,6 +441,16 @@ export function createRouteMap(
 	// survive a style install and must be wired exactly once — re-wiring would
 	// stack duplicate handlers.
 	let interactionsWired = false;
+	// The Guide overview boxes (#141). currentGuideBoxes is the last set handed to
+	// showGuideBoxes, retained so the fill/line layers can be re-added after a base
+	// style install wipes them (the label markers are DOM, so they survive it).
+	// guideBoxMarkers holds the DOM label per guide id (for the hover emphasis + a
+	// clean removal). hoveredBoxId is the box currently emphasized (from a row hover
+	// or a box hover). guideBoxInteractionsWired mirrors interactionsWired.
+	let currentGuideBoxes: Guide[] | null = null;
+	const guideBoxMarkers = new Map<string, Marker>();
+	let hoveredBoxId: string | null = null;
+	let guideBoxInteractionsWired = false;
 
 	// Run `task` once the style can accept sources/layers. maplibre's `load`
 	// event is one-shot, so a `map.once("load", …)` registered AFTER load has
@@ -443,6 +554,11 @@ export function createRouteMap(
 			renderPois(currentPois);
 		}
 		renderHighlight(selectedEntry, false);
+		// Re-add the overview boxes' fill/line layers wiped by the install (their
+		// DOM label markers survive it, so renderGuideBoxes leaves those alone).
+		if (currentGuideBoxes) {
+			renderGuideBoxes(currentGuideBoxes);
+		}
 		applyMode(terrainEnabled);
 	}
 
@@ -733,6 +849,204 @@ export function createRouteMap(
 		});
 	}
 
+	// Apply a pure CameraFrame as the opening view, shared by frameGuide and
+	// frameOverview so the POI-extent and box-extent framings cannot drift on
+	// padding, zoom cap, or the mobile bottom-sheet inset. A center frame (empty
+	// set) eases with no area; a bounds frame fits snugly above the sheet. Camera
+	// moves are safe before the style loads, so no whenStyleReady gate.
+	function applyOpeningFrame(frame: CameraFrame): void {
+		const bottomInset = bottomSheetInsetPx();
+		if (frame.kind === "center") {
+			// Empty set: center at a sensible zoom (never a zero-area box). Shift up
+			// by half the obscured height so it lands above the mobile sheet. duration
+			// 0 — the opening frame appears at once, no pan from the default view.
+			map.easeTo({
+				center: frame.center,
+				zoom: frame.zoom,
+				offset: [0, -bottomInset / 2],
+				duration: 0,
+			});
+			return;
+		}
+		// The extent: fit with a snug padding kept above the sheet, capped so a
+		// tight cluster does not slam to max zoom. animate:false so the opening
+		// view snaps in rather than flying from the default.
+		map.fitBounds(frame.bounds, {
+			padding: {
+				top: OPENING_FIT_PADDING,
+				right: OPENING_FIT_PADDING,
+				bottom: OPENING_FIT_PADDING + bottomInset,
+				left: OPENING_FIT_PADDING,
+			},
+			maxZoom: FIT_MAX_ZOOM,
+			animate: false,
+		});
+	}
+
+	// Draw (or update) the Guide overview boxes. The fill/line layers are style
+	// layers (wiped by a base-style install, so re-addable from currentGuideBoxes);
+	// the labels are DOM markers, which survive an install — hence created once and
+	// left in place on a re-render. Idempotent.
+	function renderGuideBoxes(guides: Guide[]): void {
+		const data = toGuideBoxFeatureCollection(guides);
+		const existing = map.getSource(GUIDE_BOX_SOURCE_ID) as
+			| GeoJSONSource
+			| undefined;
+		if (existing) {
+			existing.setData(data);
+		} else {
+			map.addSource(GUIDE_BOX_SOURCE_ID, { type: "geojson", data });
+			map.addLayer({
+				id: GUIDE_BOX_FILL_LAYER_ID,
+				type: "fill",
+				source: GUIDE_BOX_SOURCE_ID,
+				paint: {
+					"fill-color": ["get", "color"] as unknown as ExpressionSpecification,
+					// The hovered box fills more strongly so a row/box hover reads as one
+					// picker (#141); the rest stay a light wash so the map shows through.
+					"fill-opacity": [
+						"case",
+						["boolean", ["feature-state", "hover"], false],
+						0.35,
+						/* other */ 0.12,
+					] as unknown as ExpressionSpecification,
+				},
+			});
+			map.addLayer({
+				id: GUIDE_BOX_LINE_LAYER_ID,
+				type: "line",
+				source: GUIDE_BOX_SOURCE_ID,
+				paint: {
+					"line-color": ["get", "color"] as unknown as ExpressionSpecification,
+					"line-width": [
+						"case",
+						["boolean", ["feature-state", "hover"], false],
+						4,
+						/* other */ 2,
+					] as unknown as ExpressionSpecification,
+				},
+			});
+			if (!guideBoxInteractionsWired) {
+				wireGuideBoxInteractions();
+				guideBoxInteractionsWired = true;
+			}
+		}
+		// DOM label markers, one per box, at the bbox centre. They persist across a
+		// base-style install, so create them only when absent.
+		if (guideBoxMarkers.size === 0) {
+			for (const guide of guides) {
+				const [south, west, north, east] = guide.bbox;
+				const element = document.createElement("div");
+				element.className = "guide-box-label";
+				element.textContent = guide.name;
+				const marker = new Marker({ element })
+					.setLngLat([(west + east) / 2, (south + north) / 2])
+					.addTo(map);
+				guideBoxMarkers.set(guide.id, marker);
+			}
+		}
+	}
+
+	// Remove the overview boxes entirely — the DOM label markers plus the fill/line
+	// layers and their source. Left clean for the entered Guide's POIs. Safe when
+	// nothing is drawn.
+	// Tear down the POI marker layer + peak labels + their shared source (#142), so
+	// returning to the overview leaves no stale markers under the boxes. The peak
+	// labels read POI_SOURCE_ID, so they come off before the source. Safe when the
+	// layers/source were never added.
+	function removePois(): void {
+		for (const id of [PEAK_LABEL_LAYER_ID, POI_LAYER_ID]) {
+			if (map.getLayer(id)) {
+				map.removeLayer(id);
+			}
+		}
+		if (map.getSource(POI_SOURCE_ID)) {
+			map.removeSource(POI_SOURCE_ID);
+		}
+	}
+
+	function removeGuideBoxes(): void {
+		for (const marker of guideBoxMarkers.values()) {
+			marker.remove();
+		}
+		guideBoxMarkers.clear();
+		for (const id of [GUIDE_BOX_LINE_LAYER_ID, GUIDE_BOX_FILL_LAYER_ID]) {
+			if (map.getLayer(id)) {
+				map.removeLayer(id);
+			}
+		}
+		if (map.getSource(GUIDE_BOX_SOURCE_ID)) {
+			map.removeSource(GUIDE_BOX_SOURCE_ID);
+		}
+		hoveredBoxId = null;
+	}
+
+	// Emphasize one box by guide id (or clear with null) via feature-state on the
+	// fill/line paint and a class on the label marker. The single door for both a
+	// row hover (App → highlightGuideBox) and a box hover (the mousemove handler),
+	// so the list and the map stay in sync. A no-op on the boxes when the source is
+	// gone; the marker class is still cleared.
+	function applyGuideBoxHover(guideId: string | null): void {
+		const hasSource = map.getSource(GUIDE_BOX_SOURCE_ID) !== undefined;
+		if (hoveredBoxId && hoveredBoxId !== guideId) {
+			if (hasSource) {
+				map.setFeatureState(
+					{ source: GUIDE_BOX_SOURCE_ID, id: hoveredBoxId },
+					{ hover: false },
+				);
+			}
+			guideBoxMarkers
+				.get(hoveredBoxId)
+				?.getElement()
+				.classList.remove("guide-box-label--hovered");
+		}
+		if (guideId) {
+			if (hasSource) {
+				map.setFeatureState(
+					{ source: GUIDE_BOX_SOURCE_ID, id: guideId },
+					{ hover: true },
+				);
+			}
+			guideBoxMarkers
+				.get(guideId)
+				?.getElement()
+				.classList.add("guide-box-label--hovered");
+		}
+		hoveredBoxId = guideId;
+	}
+
+	// Wire the overview boxes' click + hover once (layer-scoped handlers survive a
+	// style install and re-created layer, so re-wiring would stack duplicates). A
+	// box click picks that Guide through the construction callback (the same door
+	// the sidebar Guide list uses); hover drives the emphasis and tells App which
+	// row to light up. Boxes are never a selection (ADR-0004).
+	function wireGuideBoxInteractions(): void {
+		map.on("click", GUIDE_BOX_FILL_LAYER_ID, (event) => {
+			const feature = event.features?.[0];
+			if (!feature) {
+				return;
+			}
+			onSelectGuide((feature.properties as GuideBoxFeatureProps).id);
+		});
+		map.on("mousemove", GUIDE_BOX_FILL_LAYER_ID, (event) => {
+			map.getCanvas().style.cursor = "pointer";
+			const feature = event.features?.[0];
+			if (!feature) {
+				return;
+			}
+			const { id } = feature.properties as GuideBoxFeatureProps;
+			if (id !== hoveredBoxId) {
+				applyGuideBoxHover(id);
+				onHoverGuide(id);
+			}
+		});
+		map.on("mouseleave", GUIDE_BOX_FILL_LAYER_ID, () => {
+			map.getCanvas().style.cursor = "";
+			applyGuideBoxHover(null);
+			onHoverGuide(null);
+		});
+	}
+
 	return {
 		showPois(
 			pois: Poi[],
@@ -751,6 +1065,14 @@ export function createRouteMap(
 					pendingPois = null;
 				}
 			});
+		},
+		clearPois(): void {
+			// Drop any buffered/retained set so neither a late whenStyleReady flush
+			// nor a base-style reinstall (onCombinedReady repaints currentPois)
+			// repopulates the layer after this clear.
+			pendingPois = null;
+			currentPois = null;
+			whenStyleReady(() => removePois());
 		},
 		highlightEntry(entry: Entry | null): void {
 			pendingHighlight = entry;
@@ -777,38 +1099,35 @@ export function createRouteMap(
 		frameGuide(pois: Poi[]): void {
 			// The opening view is derived from the POI set (boundsForPois, pure),
 			// then applied here with the mobile bottom-sheet inset — the map keeps
-			// its maplibre-gl behind this module (route-map/CLAUDE.md rule 4). Camera
-			// moves are safe before the style loads, so no whenStyleReady gate.
-			const frame = boundsForPois(pois);
-			const bottomInset = bottomSheetInsetPx();
-			if (frame.kind === "center") {
-				// Empty or single POI: center at a sensible zoom (never a zero-area
-				// box). Shift up by half the obscured height so the point lands in the
-				// visible area above the mobile sheet. duration 0 — the opening frame
-				// appears at once, no pan from the default view.
-				map.easeTo({
-					center: frame.center,
-					zoom: frame.zoom,
-					offset: [0, -bottomInset / 2],
-					duration: 0,
-				});
-				return;
-			}
-			// The extent: fit with a snug padding kept above the sheet, capped so a
-			// tight cluster does not slam to max zoom. animate:false so the opening
-			// view snaps in rather than flying from the default.
-			map.fitBounds(frame.bounds, {
-				padding: {
-					top: OPENING_FIT_PADDING,
-					right: OPENING_FIT_PADDING,
-					bottom: OPENING_FIT_PADDING + bottomInset,
-					left: OPENING_FIT_PADDING,
-				},
-				maxZoom: FIT_MAX_ZOOM,
-				animate: false,
+			// its maplibre-gl behind this module (route-map/CLAUDE.md rule 4).
+			applyOpeningFrame(boundsForPois(pois));
+		},
+		showGuideBoxes(guides: Guide[]): void {
+			// Retain the set so the fill/line layers can be re-added after a base
+			// style install wipes them (renderGuideBoxes keeps the DOM markers).
+			currentGuideBoxes = guides;
+			whenStyleReady(() => {
+				if (currentGuideBoxes) {
+					renderGuideBoxes(currentGuideBoxes);
+				}
 			});
 		},
+		clearGuideBoxes(): void {
+			currentGuideBoxes = null;
+			whenStyleReady(() => removeGuideBoxes());
+		},
+		highlightGuideBox(guideId: string | null): void {
+			applyGuideBoxHover(guideId);
+		},
+		frameOverview(guides: Guide[]): void {
+			// The overview opening view fits every Guide's box (boundsForGuideBoxes,
+			// pure), applied through the same door as frameGuide.
+			applyOpeningFrame(boundsForGuideBoxes(guides));
+		},
 		destroy() {
+			for (const marker of guideBoxMarkers.values()) {
+				marker.remove();
+			}
 			map.remove();
 		},
 	};
