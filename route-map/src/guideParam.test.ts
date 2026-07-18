@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { Guide } from "./domain";
 import {
+	deepLinkGuideId,
 	guideParamSearch,
 	readGuideParam,
-	resolveInitialGuideId,
 } from "./guideParam";
 
 // The `?guide=` param logic (ADR-0005, route-map/CLAUDE.md rule 5): pure
@@ -13,8 +13,18 @@ import {
 // verified in the browser with DevTools per the ticket.
 
 const guides: Guide[] = [
-	{ id: "wetterstein", label: "Wetterstein (4. Auflage 1996)" },
-	{ id: "karwendel", label: "Karwendel (16. Auflage 2011)" },
+	{
+		id: "wetterstein",
+		name: "Wetterstein",
+		label: "Wetterstein (4. Auflage 1996)",
+		bbox: [47.3, 10.85, 47.55, 11.35],
+	},
+	{
+		id: "karwendel",
+		name: "Karwendel",
+		label: "Karwendel (16. Auflage 2011)",
+		bbox: [47.27, 11.19, 47.6, 11.8],
+	},
 ];
 
 describe("readGuideParam", () => {
@@ -32,22 +42,22 @@ describe("readGuideParam", () => {
 	});
 });
 
-describe("resolveInitialGuideId", () => {
-	it("opens the requested Guide when the id names a manifest Guide", () => {
-		expect(resolveInitialGuideId("karwendel", guides)).toBe("karwendel");
+describe("deepLinkGuideId", () => {
+	it("deep-links into the requested Guide when the id names a manifest Guide", () => {
+		expect(deepLinkGuideId("karwendel", guides)).toBe("karwendel");
 	});
 
-	it("falls back to the manifest default (first entry) for an unknown id", () => {
-		expect(resolveInitialGuideId("bogus", guides)).toBe("wetterstein");
+	it("stays on the overview (null) for an unknown id", () => {
+		expect(deepLinkGuideId("bogus", guides)).toBeNull();
 	});
 
-	it("falls back to the manifest default when the param is absent", () => {
-		expect(resolveInitialGuideId(null, guides)).toBe("wetterstein");
+	it("stays on the overview (null) when the param is absent", () => {
+		expect(deepLinkGuideId(null, guides)).toBeNull();
 	});
 
-	it("returns null for an empty manifest (no Guide to open)", () => {
-		expect(resolveInitialGuideId("karwendel", [])).toBeNull();
-		expect(resolveInitialGuideId(null, [])).toBeNull();
+	it("stays on the overview (null) for an empty manifest", () => {
+		expect(deepLinkGuideId("karwendel", [])).toBeNull();
+		expect(deepLinkGuideId(null, [])).toBeNull();
 	});
 });
 

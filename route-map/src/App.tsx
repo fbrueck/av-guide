@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
 	type DetailNav,
-	GuideSwitcher,
+	GuideList,
 	MapAttribution,
+	OverviewButton,
 	PlaceDetail,
 	PoiLegend,
 	RouteDetail,
@@ -14,9 +15,9 @@ import {
 import { loadGuideData, loadGuidesManifest } from "./data";
 import type { Entry, Guide, GuideData, Poi } from "./domain";
 import {
+	deepLinkGuideId,
 	guideParamSearch,
 	readGuideParam,
-	resolveInitialGuideId,
 } from "./guideParam";
 import { createRouteMap, type RouteMap } from "./map";
 
@@ -46,6 +47,22 @@ export function App() {
 	const [guideData, setGuideData] = useState<GuideData | null>(null);
 	const [selection, setSelection] = useState<Entry[]>([]);
 	const [searchText, setSearchText] = useState("");
+	// The Guide overview state atom (#141/#142, route-map/CLAUDE.md rule 5): plain
+	// React state, no router. "overview" — no Guide loaded: the sidebar is a
+	// clickable Guide list and the map draws the labelled boxes; "guide" — the
+	// existing app (Entry sidebar, POIs). First load reads `?guide=` (#142): a known
+	// id deep-links straight into that guide, an absent/unknown value stays on the
+	// overview (deepLinkGuideId). The book icon in the panel/sheet header returns to
+	// the overview (handleReturnToOverview), so navigation is two-way. The overview
+	// map boxes and the guide POI layer never overlap: guideData is null in the
+	// overview.
+	const [view, setView] = useState<"overview" | "guide">("overview");
+	// The overview hover link (#141): the guide id currently emphasized across the
+	// list and the map. A row hover (GuideList) and a box hover (the map's
+	// onHoverGuide callback) both write it; an effect drives the map's box
+	// highlight from it, and GuideList marks the matching row. Desktop only in
+	// effect — touch fires no hover — matching rule 8's no-hover-on-touch.
+	const [hoveredGuideId, setHoveredGuideId] = useState<string | null>(null);
 	// The third state atom (route-map/CLAUDE.md rule 5): 2D vs 3D terrain.
 	const [terrainEnabled, setTerrainEnabled] = useState(false);
 	// Mobile-only state atom (route-map/CLAUDE.md rules 5 & 8): the bottom sheet's
@@ -84,38 +101,59 @@ export function App() {
 	const handleClose = useCallback(() => {
 		setSelection([]);
 	}, []);
-	// Switch the loaded Guide (#133, ADR-0005). Setting selectedGuideId drives the
-	// lazy reload + reframe effect below; here we reset the two atoms that reference
-	// the *old* Guide — the selection stack (a stale Entry would point at nothing)
-	// and the search text (a query into the old Guide's Entry list is meaningless
-	// against another). Terrain (2D/3D) and the mobile sheet mode PERSIST: both are
+	// Pick a Guide — the single door for BOTH an overview pick (a sidebar Guide-list
+	// row or a map box, #141) and the in-guide switcher (#133). Setting
+	// selectedGuideId drives the lazy reload + reframe effect below and enters the
+	// guide state; here we reset the atoms that reference the *old* Guide — the
+	// selection stack (a stale Entry would point at nothing), the search text (a
+	// query into the old Guide's Entry list is meaningless against another), and the
+	// overview hover. Terrain (2D/3D) and the mobile sheet mode PERSIST: both are
 	// guide-independent display choices about *how* to render, not *what* is viewed
 	// (rule 5). The selection stays Entry[] — a Guide is not pushed onto the stack
-	// (ADR-0004); it is the context the stack lives in. Guarded so re-picking the
-	// current Guide is a no-op (no needless reload/reset).
+	// (ADR-0004); it is the context the stack lives in. Stable ([] deps) so the map
+	// (constructed with it as onSelectGuide) is never re-created; a <select> only
+	// fires onChange for a genuine change, so no re-pick guard is needed.
 	//
-	// The switch is reflected in the `?guide=<id>` URL param via
-	// `history.replaceState` (#134): no new history entry (Back does not undo a
-	// Guide switch), no router, and only the Guide is written — selection, search,
-	// terrain, and sheet mode stay ephemeral. The path and hash are preserved so
-	// the write is safe under the GitHub Pages project-site base.
-	const handleSelectGuide = useCallback(
-		(guideId: string) => {
-			if (guideId === selectedGuideId) {
-				return;
-			}
-			setSelectedGuideId(guideId);
-			setSelection([]);
-			setSearchText("");
-			const { pathname, search, hash } = window.location;
-			window.history.replaceState(
-				null,
-				"",
-				`${pathname}${guideParamSearch(guideId, search)}${hash}`,
-			);
-		},
-		[selectedGuideId],
-	);
+	// The pick is reflected in the `?guide=<id>` URL param via
+	// `history.replaceState` (#134): no new history entry, no router, and only the
+	// Guide is written — selection, search, terrain, and sheet mode stay ephemeral.
+	// The path and hash are preserved so the write is safe under the GitHub Pages
+	// project-site base. First-load reads of `?guide=` land in the manifest effect
+	// below (#142, deepLinkGuideId); here the param is written on a pick.
+	const handleSelectGuide = useCallback((guideId: string) => {
+		setSelectedGuideId(guideId);
+		setView("guide");
+		setSelection([]);
+		setSearchText("");
+		setHoveredGuideId(null);
+		const { pathname, search, hash } = window.location;
+		window.history.replaceState(
+			null,
+			"",
+			`${pathname}${guideParamSearch(guideId, search)}${hash}`,
+		);
+	}, []);
+	// Return to the Guide overview — the app's front door (#142). The book icon in
+	// the panel/sheet header calls this from the guide state. It reverses a pick:
+	// leave the guide state, drop the loaded Guide (selectedGuideId → null so its
+	// data effect stops and re-picking the same Guide reloads honestly; guideData →
+	// null so the map is clean under the overview boxes), and clear the atoms that
+	// reference the Guide just left — the selection stack and the search text. The
+	// `?guide=` param is dropped from the URL via `history.replaceState` (no new
+	// history entry, symmetric with the write on pick) so the address honestly
+	// reflects that no Guide is loaded. Terrain (2D/3D) and the mobile sheet mode
+	// PERSIST across the transition — both are guide-independent display choices
+	// about *how* to render, not *what* is viewed (rule 5). Stable ([] deps) so the
+	// map (constructed with the stable pick/hover callbacks) is never re-created.
+	const handleReturnToOverview = useCallback(() => {
+		setView("overview");
+		setSelectedGuideId(null);
+		setGuideData(null);
+		setSelection([]);
+		setSearchText("");
+		const { pathname, hash } = window.location;
+		window.history.replaceState(null, "", `${pathname}${hash}`);
+	}, []);
 	// Step the sheet one height taller / shorter through collapsed <-> peek <->
 	// full (CSS height transition, no drag). Only wired below 768px where the
 	// handle is shown; inert on desktop (rule 8).
@@ -139,38 +177,42 @@ export function App() {
 		}
 		const map = createRouteMap(container, {
 			onSelectEntry: handleSelectEntry,
+			// The overview doors (#141): a box click picks that Guide (same as a
+			// sidebar row / the switcher), a box hover lights up its row. Both are
+			// stable, so the map is created once.
+			onSelectGuide: handleSelectGuide,
+			onHoverGuide: setHoveredGuideId,
 		});
 		mapRef.current = map;
 		return () => {
 			mapRef.current = null;
 			map.destroy();
 		};
-	}, [handleSelectEntry]);
+	}, [handleSelectEntry, handleSelectGuide]);
 
-	// Load the published-Guide manifest once and select the initial Guide. The
-	// `?guide=<id>` param is read ONCE here from `location.search` (#134): a value
-	// naming a manifest Guide opens it (a shared/bookmarked link is honoured, and a
-	// reload — which kept the param via replaceState on the last switch — lands on
-	// the same Guide); an absent or unknown value falls back honestly to the
-	// manifest default (first entry), so a stale or mistyped link still loads a
-	// working map. Dev and deploy behave identically. Setting selectedGuideId
-	// drives the data-load effect below.
+	// Load the published-Guide manifest once, then honour the `?guide=` deep-link
+	// (#142): a known id opens straight into that Guide (skipping the overview, no
+	// overview flash); an absent or unknown value stays on the OVERVIEW, where the
+	// reader picks a Guide from the list or a map box (deepLinkGuideId is the pure
+	// decision, read from `location.search` here). An empty manifest is surfaced as
+	// an error — there is no Guide to show at all.
 	useEffect(() => {
 		let cancelled = false;
 		loadGuidesManifest()
 			.then((manifest) => {
-				const initialGuideId = resolveInitialGuideId(
-					readGuideParam(window.location.search),
-					manifest,
-				);
-				if (!initialGuideId) {
-					throw new Error(
-						"guides manifest is empty — no default Guide to load",
-					);
+				if (manifest.length === 0) {
+					throw new Error("guides manifest is empty — no Guides to show");
 				}
 				if (!cancelled) {
 					setGuides(manifest);
-					setSelectedGuideId(initialGuideId);
+					const initialGuideId = deepLinkGuideId(
+						readGuideParam(window.location.search),
+						manifest,
+					);
+					if (initialGuideId) {
+						setSelectedGuideId(initialGuideId);
+						setView("guide");
+					}
 				}
 			})
 			.catch((error: unknown) => {
@@ -251,6 +293,37 @@ export function App() {
 		mapRef.current?.setTerrain(terrainEnabled);
 	}, [terrainEnabled]);
 
+	// Draw or clear the Guide overview boxes off the view atom (#141/#142). In the
+	// overview state the map shows every Guide's labelled box, framed to fit them
+	// all, and clears any prior Guide's POIs so the boxes stand alone (returning
+	// from a guide via the book icon — the overview and POI layers never overlap);
+	// entering a Guide clears the boxes so the map is left clean for that Guide's
+	// POIs. showGuideBoxes/clearPois/frameOverview buffer until the style is ready,
+	// so ordering against map creation and the manifest load does not matter.
+	useEffect(() => {
+		const map = mapRef.current;
+		if (!map) {
+			return;
+		}
+		if (view === "overview" && guides.length > 0) {
+			map.clearPois();
+			map.showGuideBoxes(guides);
+			map.frameOverview(guides);
+		} else if (view === "guide") {
+			map.clearGuideBoxes();
+		}
+	}, [view, guides]);
+
+	// Drive the overview hover link into the map (#141): emphasize the hovered
+	// Guide's box, so hovering a sidebar row lights up its box (the reverse — box
+	// hover lighting the row — flows back via onHoverGuide). Only meaningful in the
+	// overview; a null clears the emphasis.
+	useEffect(() => {
+		if (view === "overview") {
+			mapRef.current?.highlightGuideBox(hoveredGuideId);
+		}
+	}, [hoveredGuideId, view]);
+
 	// Highlight the selected Entry's POI set on the map and fit to it. Passing
 	// null (nothing selected) clears the prior highlight. The base all-POIs layer
 	// stays visible underneath — this is an emphasis layer, not a redraw.
@@ -264,11 +337,18 @@ export function App() {
 	// offered only when there is somewhere to go back to).
 	const detailNav: DetailNav = useMemo(
 		() => ({
+			onReturnToOverview: handleReturnToOverview,
 			onClose: handleClose,
 			onBack: canGoBack ? handleBack : undefined,
 			onNavigate: handleNavigate,
 		}),
-		[handleClose, canGoBack, handleBack, handleNavigate],
+		[
+			handleReturnToOverview,
+			handleClose,
+			canGoBack,
+			handleBack,
+			handleNavigate,
+		],
 	);
 
 	return (
@@ -280,17 +360,18 @@ export function App() {
 				<MapAttribution terrainEnabled={terrainEnabled} />
 			</div>
 			<div className={`route-panel route-panel--${sheetMode}`}>
-				{/* Panel/sheet header: the Guide switcher docks here, right-aligned, in
-				    BOTH layouts (rule 8) — a bordered bar at the top of the desktop
-				    docked panel, and the mobile bottom-sheet header band (reachable at
-				    peek) overlaid on the chevron grabber. It sits above the sidebar and
-				    detail so switching Guides is possible from any view (#133). */}
+				{/* Sheet header band (MOBILE only — the desktop bar is removed, .panel-header
+				    is display:none >768px): on the plain Place list the return-to-overview
+				    book rides the bottom-sheet grabber band, reachable at peek (rule 8). On
+				    desktop the same book instead docks inline next to the search field
+				    (Sidebar). Only in the guide state with no Entry selected — once a detail
+				    panel is open the book moves into its icon row as the leftmost action
+				    (DetailHeader), so it is never shown twice. The overview state is the front
+				    door itself (#142), with no Guide to return away from (#141). */}
 				<div className="panel-header">
-					<GuideSwitcher
-						guides={guides}
-						currentGuideId={selectedGuideId}
-						onSelectGuide={handleSelectGuide}
-					/>
+					{view === "guide" && !currentEntry ? (
+						<OverviewButton onReturnToOverview={handleReturnToOverview} />
+					) : null}
 				</div>
 				{/* The mobile sheet's handle: chevron buttons that step through the
 				    three heights (rule 8). Hidden on desktop, where the panel is the
@@ -300,20 +381,35 @@ export function App() {
 					onExpand={handleSheetExpand}
 					onCollapse={handleSheetCollapse}
 				/>
-				<Sidebar
-					places={guideData?.places ?? []}
-					unfiledRoutes={guideData?.unfiledRoutes ?? []}
-					searchText={searchText}
-					onSearchChange={setSearchText}
-					selectedEntry={currentEntry}
-					onSelectEntry={handleSelectEntry}
-				/>
-				{currentEntry?.kind === "place" ? (
-					<PlaceDetail place={currentEntry} nav={detailNav} />
-				) : null}
-				{currentEntry?.kind === "route" ? (
-					<RouteDetail route={currentEntry} nav={detailNav} />
-				) : null}
+				{view === "overview" ? (
+					// Overview state (#141): the sidebar is the clickable Guide list; the
+					// map draws the labelled boxes. A pick (row or box) enters the guide
+					// state via handleSelectGuide.
+					<GuideList
+						guides={guides}
+						onSelectGuide={handleSelectGuide}
+						hoveredGuideId={hoveredGuideId}
+						onHoverGuide={setHoveredGuideId}
+					/>
+				) : (
+					<>
+						<Sidebar
+							places={guideData?.places ?? []}
+							unfiledRoutes={guideData?.unfiledRoutes ?? []}
+							searchText={searchText}
+							onSearchChange={setSearchText}
+							selectedEntry={currentEntry}
+							onSelectEntry={handleSelectEntry}
+							onReturnToOverview={handleReturnToOverview}
+						/>
+						{currentEntry?.kind === "place" ? (
+							<PlaceDetail place={currentEntry} nav={detailNav} />
+						) : null}
+						{currentEntry?.kind === "route" ? (
+							<RouteDetail route={currentEntry} nav={detailNav} />
+						) : null}
+					</>
+				)}
 			</div>
 		</div>
 	);

@@ -40,9 +40,39 @@ export function parseGuidesManifest(raw: unknown): Guide[] {
 			);
 			continue;
 		}
-		guides.push({ id: record.id, label: record.label });
+		if (typeof record.name !== "string" || record.name.trim() === "") {
+			console.warn(
+				"[data] skipping guides.json entry missing non-blank string name",
+				entry,
+			);
+			continue;
+		}
+		if (!isBbox(record.bbox)) {
+			console.warn(
+				"[data] skipping guides.json entry with invalid bbox (need 4 finite numbers)",
+				entry,
+			);
+			continue;
+		}
+		guides.push({
+			id: record.id,
+			name: record.name,
+			label: record.label,
+			bbox: record.bbox,
+		});
 	}
 	return guides;
+}
+
+// A bbox is exactly four finite numbers, `[south, west, north, east]`. Cheap
+// explicit guard (no schema library, rule 2): reject a non-array, a wrong
+// length, or any non-finite element (NaN/Infinity/string).
+function isBbox(value: unknown): value is [number, number, number, number] {
+	return (
+		Array.isArray(value) &&
+		value.length === 4 &&
+		value.every((n) => typeof n === "number" && Number.isFinite(n))
+	);
 }
 
 // Fetch + guard the manifest — the impure I/O half. A failed fetch throws (the
