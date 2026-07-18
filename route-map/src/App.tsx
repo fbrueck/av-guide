@@ -11,7 +11,7 @@ import {
 	TerrainToggle,
 } from "./components";
 import { loadGuideData } from "./data";
-import type { Entry, GuideData } from "./domain";
+import type { Entry, GuideData, Poi } from "./domain";
 import { createRouteMap, type RouteMap } from "./map";
 
 // Composition root and the app's minimal state (route-map/CLAUDE.md rule 5):
@@ -136,6 +136,24 @@ export function App() {
 				guideData.entriesByPoiId,
 				placePoiIds,
 			);
+		}
+	}, [guideData]);
+
+	// Frame the opening view on the loaded Guide's Place-POI extent (#131). The map
+	// is constructed without initial bounds (the POIs aren't known yet), so this
+	// effect drives the reframe once guide data resolves — the app opens fitted to
+	// whichever Guide it loaded, computed from its POIs rather than a constant.
+	// Frames the **Place** POIs specifically: those are the primary markers and the
+	// only POIs shown by default (rule #77 — mention-only / gazetteer POIs stay
+	// hidden until an Entry is selected), so the opening view fits exactly what is
+	// visible. Framing the full POI set would zoom out to a handful of far-flung
+	// gazetteer outliers and swamp the massif in dead space.
+	useEffect(() => {
+		if (guideData) {
+			const placePois = guideData.places
+				.map((place) => place.poi)
+				.filter((poi): poi is Poi => poi !== null);
+			mapRef.current?.frameGuide(placePois);
 		}
 	}, [guideData]);
 

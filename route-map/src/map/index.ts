@@ -11,4 +11,4 @@ export {
 } from "./poiStyle";
 export type { RouteMap } from "./RouteMap";
 export { createRouteMap } from "./RouteMap";
-export { WETTERSTEIN_BOUNDS } from "./view";
+export { boundsForPois, type CameraFrame } from "./view";

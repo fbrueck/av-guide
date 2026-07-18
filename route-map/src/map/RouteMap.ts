@@ -27,7 +27,12 @@ import {
 	type PoiVisibilityFeature,
 	poiVisibilityFilter,
 } from "./poiVisibility";
-import { WETTERSTEIN_BOUNDS } from "./view";
+import {
+	boundsForPois,
+	DEFAULT_CENTER,
+	DEFAULT_ZOOM,
+	SINGLE_POINT_ZOOM,
+} from "./view";
 
 const POI_SOURCE_ID = "pois";
 const POI_LAYER_ID = "poi-markers";
@@ -47,14 +52,17 @@ const PEAK_LABEL_LAYER_ID = "peak-labels";
 const HIGHLIGHT_SOURCE_ID = "entry-highlight";
 const HIGHLIGHT_LAYER_ID = "entry-highlight-markers";
 
-// Camera framing for the single-point case (most Entries — a Route with just its
-// Destination, or a Place with just its own POI). A degenerate zero-area bounds would
-// over-zoom, so we ease to the point at a sensible massif zoom — kept deliberately low
-// so the surrounding terrain context stays in frame rather than zooming in tight (#120).
-const SINGLE_POINT_ZOOM = 12;
+// Camera framing for the single-point case is SINGLE_POINT_ZOOM, owned by
+// view.ts alongside boundsForPois so the opening frame and a selection fit cannot
+// drift on how tight a lone point zooms (a zero-area bounds would over-zoom; the
+// low zoom keeps surrounding terrain context in frame, #120).
 // Fit padding + a ceiling so a tight multi-POI cluster does not slam to max zoom.
 const FIT_PADDING = 64;
 const FIT_MAX_ZOOM = 13;
+// The opening frame (frameGuide) uses a snugger padding than a selection fit —
+// it matches the padding the retired construction-time WETTERSTEIN_BOUNDS framing
+// used, so the app opens on the POI extent visually identical to before (#131).
+const OPENING_FIT_PADDING = 32;
 
 // Mirrors the single `max-width: 768px` CSS breakpoint (route-map/CLAUDE.md
 // rule 8): below it the route panel becomes a bottom sheet overlaying the map.
@@ -138,6 +146,15 @@ export interface RouteMap {
 	 *  rotation stays free in both modes (#120). Idempotent and safe to call
 	 *  before the style loads. */
 	setTerrain(enabled: boolean): void;
+	/** Frame the map on a Guide's POI extent (#131) — the opening view, computed
+	 *  from the loaded POIs (boundsForPois) rather than a hardcoded constant, so
+	 *  the app opens fitted to whichever Guide it loads. App calls this once the
+	 *  guide data resolves (the POIs aren't known at construction). Degenerate
+	 *  sets are honest: no POIs → a default overview, a single POI → a sensible
+	 *  centered zoom, never a zero-area frame (route-map/CLAUDE.md rule 3). Snaps
+	 *  into place (no pan animation) and respects the mobile bottom-sheet inset,
+	 *  like the selection framing (fitToPois). */
+	frameGuide(pois: Poi[]): void;
 	destroy(): void;
 }
 
@@ -245,17 +262,12 @@ export function createRouteMap(
 	const map = new MapLibreMap({
 		container,
 		style: basemapStyle2d,
-		bounds: WETTERSTEIN_BOUNDS,
-		// Reserve the mobile bottom sheet's height so the initial overview frames
-		// above it, not behind it (same rationale as fitToPois).
-		fitBoundsOptions: {
-			padding: {
-				top: 32,
-				right: 32,
-				bottom: 32 + bottomSheetInsetPx(),
-				left: 32,
-			},
-		},
+		// A broad default view for the map's first paint — the real opening frame
+		// is set by frameGuide once the guide's POIs load (they aren't known at
+		// construction, #131), which snaps the camera to the loaded Guide's extent.
+		// This default just avoids a null-island flash in the meantime.
+		center: DEFAULT_CENTER,
+		zoom: DEFAULT_ZOOM,
 		maxZoom: BASEMAP_MAX_ZOOM,
 		// Start flat and tilt-locked: the map opens in 2D, where the angle is
 		// fixed (#120). applyMode raises maxPitch when 3D is enabled and drops it
@@ -754,6 +766,40 @@ export function createRouteMap(
 				return;
 			}
 			whenStyleReady(() => applyMode(terrainEnabled));
+		},
+		frameGuide(pois: Poi[]): void {
+			// The opening view is derived from the POI set (boundsForPois, pure),
+			// then applied here with the mobile bottom-sheet inset — the map keeps
+			// its maplibre-gl behind this module (route-map/CLAUDE.md rule 4). Camera
+			// moves are safe before the style loads, so no whenStyleReady gate.
+			const frame = boundsForPois(pois);
+			const bottomInset = bottomSheetInsetPx();
+			if (frame.kind === "center") {
+				// Empty or single POI: center at a sensible zoom (never a zero-area
+				// box). Shift up by half the obscured height so the point lands in the
+				// visible area above the mobile sheet. duration 0 — the opening frame
+				// appears at once, no pan from the default view.
+				map.easeTo({
+					center: frame.center,
+					zoom: frame.zoom,
+					offset: [0, -bottomInset / 2],
+					duration: 0,
+				});
+				return;
+			}
+			// The extent: fit with a snug padding kept above the sheet, capped so a
+			// tight cluster does not slam to max zoom. animate:false so the opening
+			// view snaps in rather than flying from the default.
+			map.fitBounds(frame.bounds, {
+				padding: {
+					top: OPENING_FIT_PADDING,
+					right: OPENING_FIT_PADDING,
+					bottom: OPENING_FIT_PADDING + bottomInset,
+					left: OPENING_FIT_PADDING,
+				},
+				maxZoom: FIT_MAX_ZOOM,
+				animate: false,
+			});
 		},
 		destroy() {
 			map.remove();
