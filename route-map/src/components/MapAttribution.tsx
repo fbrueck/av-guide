@@ -1,13 +1,11 @@
-import {
-	BASEMAP_CREDITS,
-	BASEMAP_CREDITS_3D,
-	type MapCredit,
-	TERRAIN_CREDIT,
-} from "../map";
+import { type Basemap2dId, type MapCredit, mapCreditsFor } from "../map";
 
 interface MapAttributionProps {
-	// Terrain-enabled is also the 3D-base-map flag: enabling terrain swaps the
-	// flat OpenTopoMap for the VersaTiles landcover map and adds the Mapterhorn
+	// The active flat 2D base (#135): in 2D its credit is shown (OpenTopoMap or
+	// Skitourenguru) — whichever raster's tiles are actually loaded.
+	base2d: Basemap2dId;
+	// Terrain-enabled is also the 3D-base-map flag: enabling terrain hides the
+	// flat 2D raster for the VersaTiles landcover map and adds the Mapterhorn
 	// relief, so the credits change with it. The terrain credit is shown only
 	// while terrain is enabled — the Mapterhorn DEM tiles are not loaded on the
 	// flat map, so crediting them there would be dishonest (route-map/CLAUDE.md
@@ -23,10 +21,11 @@ interface MapAttributionProps {
 // are one click away — while giving us the declarative collapsed default the
 // library itself does not offer. It reads the credits from src/map (the single
 // source of truth), so the two can never drift.
-export function MapAttribution({ terrainEnabled }: MapAttributionProps) {
-	const credits: readonly MapCredit[] = terrainEnabled
-		? [...BASEMAP_CREDITS_3D, TERRAIN_CREDIT]
-		: BASEMAP_CREDITS;
+export function MapAttribution({
+	base2d,
+	terrainEnabled,
+}: MapAttributionProps) {
+	const credits: readonly MapCredit[] = mapCreditsFor(base2d, terrainEnabled);
 	return (
 		<details className="map-attribution">
 			<summary
