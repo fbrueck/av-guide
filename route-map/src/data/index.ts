@@ -2,6 +2,11 @@ import type { GuideData } from "../domain";
 import { joinGuideData } from "./join";
 import { loadRawArtifacts } from "./load";
 
+// Re-export the Guide manifest loader through the single data boundary so the app
+// fetches the published-Guide list the same way it loads a Guide's artifacts —
+// via src/data, never by reaching at a file layout (rule 2).
+export { loadGuidesManifest } from "./manifest";
+
 // The single data boundary (route-map/CLAUDE.md rule 2): the ONLY place that
 // knows the raw on-disk artifact shapes. It loads (load.ts), guards + joins
 // (join.ts) the three artifacts into clean domain objects at startup, exposing

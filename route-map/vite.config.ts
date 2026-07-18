@@ -14,6 +14,10 @@ import { defineConfig } from "vitest/config";
 // `npm run dev` serves every Guide's live tree with no env selection.
 const REPO_ROOT = fileURLToPath(new URL("..", import.meta.url));
 const GUIDES_ROOT = resolve(REPO_ROOT, "guides");
+// The committed Guide manifest (ADR-0005): app/maintainer metadata at the root of
+// the shared guides tree, NOT pipeline output, so it sits beside the per-Guide
+// data dirs and is served at the id-less `/guide-data/guides.json` URL.
+const GUIDES_MANIFEST_PATH = resolve(GUIDES_ROOT, "guides.json");
 
 // URL scheme (stable — the src/data adapter fetches these):
 //   /guide-data/<id>/parse-routes/03_structured/routes.json
@@ -45,6 +49,25 @@ function serveGuideData(): PluginOption {
 		const pathname = decodeURIComponent(url.split("?")[0] ?? "");
 		if (!pathname.startsWith(DATA_URL_PREFIX)) {
 			next();
+			return;
+		}
+
+		// The Guide manifest is served id-less from `guides/guides.json` — it is
+		// the index over Guide ids, not one Guide's data, so it does not take the
+		// `<id>/<stage-dir>` path below (ADR-0005). Matched by exact path.
+		if (pathname === `${DATA_URL_PREFIX}guides.json`) {
+			if (!existsSync(GUIDES_MANIFEST_PATH)) {
+				res.statusCode = 404;
+				res.end("Not found: guides.json (the Guide manifest is missing)");
+				return;
+			}
+			res.setHeader("Content-Type", MIME_BY_EXT[".json"] ?? "application/json");
+			res.setHeader("Cache-Control", "no-cache");
+			if (req.method === "HEAD") {
+				res.end();
+				return;
+			}
+			createReadStream(GUIDES_MANIFEST_PATH).pipe(res);
 			return;
 		}
 

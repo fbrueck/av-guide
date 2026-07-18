@@ -145,6 +145,18 @@ Load-bearing. Breaking one needs a deliberate, called-out reason.
    both the id segment and the stage-relative path; stage-dir allowlist
    retained).
 
+   **The Guide manifest** — `/guide-data/guides.json`, an id-less sibling of the
+   per-Guide trees (ADR-0005, #132) — is the committed, hand-maintained list of
+   published Guides as `[{ id, label }]` (**no bbox**; app/maintainer metadata,
+   NOT pipeline output). It is answered the same two ways: the dev middleware
+   serves it from `guides/guides.json` (the root of the shared guides tree,
+   beside each `guides/<id>/config.yml`); the build copies it into the snapshot at
+   `public/guide-data/guides.json`. The `src/data` adapter loads + guards it
+   (`manifest.ts`, warn-and-skip malformed entries) into `Guide[]`. There is no
+   `VITE_GUIDE_ID`: `App` picks the **first manifest entry** as the default Guide
+   (a `?guide=` switcher lands later), so dev and deploy open on the same Guide
+   and `npm run dev` stays one-command.
+
 7. **Domain vocabulary in code and UI.** Use the root `CONTEXT.md` terms —
    Entry, Place, Route, POI, Destination, Mention, Reference, Gazetteer — in
    identifiers, comments, and user-facing copy. ("Anchor" is retired — ADR-0002.)

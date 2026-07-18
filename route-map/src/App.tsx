@@ -10,7 +10,7 @@ import {
 	Sidebar,
 	TerrainToggle,
 } from "./components";
-import { loadGuideData } from "./data";
+import { loadGuideData, loadGuidesManifest } from "./data";
 import type { Entry, GuideData, Poi } from "./domain";
 import { createRouteMap, type RouteMap } from "./map";
 
@@ -100,14 +100,24 @@ export function App() {
 		};
 	}, [handleSelectEntry]);
 
-	// Load + join the guide's artifacts once through the src/data boundary, then
-	// hold the result in state so the sidebar, search, and detail panels all read
-	// from one source.
+	// Load the published-Guide manifest, then load + join the default Guide's
+	// artifacts through the src/data boundary and hold the result in state so the
+	// sidebar, search, and detail panels all read from one source. The default is
+	// the manifest's **first entry** (#132): no `?guide=` selection yet (that lands
+	// with the switcher, #128), so dev and deploy both open on manifest order —
+	// `npm run dev` still starts one-command onto a sensible Guide.
 	useEffect(() => {
 		let cancelled = false;
-		// Temporary hardcoded id: replaced by the manifest default in the manifest
-		// ticket (#128).
-		loadGuideData("wetterstein")
+		loadGuidesManifest()
+			.then((guides) => {
+				const defaultGuide = guides[0];
+				if (!defaultGuide) {
+					throw new Error(
+						"guides manifest is empty — no default Guide to load",
+					);
+				}
+				return loadGuideData(defaultGuide.id);
+			})
 			.then((guide) => {
 				if (!cancelled) {
 					setGuideData(guide);

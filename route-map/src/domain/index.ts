@@ -97,6 +97,20 @@ export interface Route extends EntryBase {
 // Every Entry is either a Place or a Route — that is its `kind` (CONTEXT.md).
 export type Entry = Place | Route;
 
+// A published Guide as the committed `guides/guides.json` manifest lists it
+// (CONTEXT.md: Guide) — the digitized Alpenvereinsführer volume the whole model
+// hangs under. This is the lightweight *identity + label* pair the switcher and
+// the data loader speak, deliberately distinct from `GuideData` (the joined
+// artifacts for ONE Guide, below): the manifest names which Guides are served
+// and how they read; `GuideData` is what loading one of them yields.
+export interface Guide {
+	/** The short guide id keying its data URLs, e.g. "wetterstein". */
+	id: string;
+	/** Human copy shown in the switcher (an edition string), never a
+	 *  mechanically-capitalized id. */
+	label: string;
+}
+
 // The whole guide, loaded + joined once at startup by loadGuideData().
 export interface GuideData {
 	/** Every Entry (Places + Routes), in artifact order. */
