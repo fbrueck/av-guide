@@ -99,44 +99,81 @@ Load-bearing. Breaking one needs a deliberate, called-out reason.
    sources, and layers are managed imperatively inside `src/map/`. UI components
    never call `maplibre-gl` directly.
 
-5. **Minimal state.** The app's state is: the selection (a small stack of
-   Entries for drill-in/back through the place→route→reference graph), search
-   text, terrain on/off, and — on mobile — whether the bottom sheet is expanded
-   (a selection made from the map auto-expands it, so it must be real state, not
-   pure CSS). The selection stays `Entry[]`: a POI is **never** selected (rule
-   9), so the stack is not widened. Plain React state (lifted to `App`, or one
-   context) — **no router, no global-state library** (Redux/Zustand/etc.).
+5. **Minimal state.** The app's state is: the `selectedGuideId` (which published
+   Guide is loaded), the selection (a small stack of Entries for drill-in/back
+   through the place→route→reference graph), search text, terrain on/off, and —
+   on mobile — whether the bottom sheet is expanded (a selection made from the
+   map auto-expands it, so it must be real state, not pure CSS). The selection
+   stays `Entry[]`: a POI is **never** selected (rule 9), so the stack is not
+   widened; a Guide is **not** pushed onto it either (ADR-0004/0005) — the Guide
+   is the *context* the stack lives in. **On a Guide switch** (`selectedGuideId`
+   changes via the switcher, #133/ADR-0005): the app lazily re-loads that Guide's
+   data — one Guide's join in memory at a time, reusing the first-load pending
+   state for a brief honest loading state — and reframes the map onto the new
+   Guide's POI extent; the **selection** and **search text** are **cleared**
+   (both reference the old Guide's Entries), while **terrain** and the **mobile
+   sheet mode** **persist** (guide-independent display choices). Plain React
+   state (lifted to `App`, or one context) — **no router, no global-state
+   library** (Redux/Zustand/etc.). The **selected Guide — and only the Guide — is
+   reflected in a `?guide=<id>` query param** (#134/ADR-0005): **read once on
+   load** from `location.search` (a valid id opens that Guide; absent/unknown
+   falls back honestly to the manifest default), and **written with
+   `history.replaceState` on switch** (no new history entry, no router; done with
+   the platform `location`/`history` API, not a routing library — see
+   `src/guideParam.ts`). Selection, search, terrain, and sheet mode stay
+   **ephemeral** — never in the URL. A query param (not a path) is deliberate so
+   GitHub Pages serves the single `index.html` and the client reads
+   `location.search`, with no `404.html` SPA redirect hack.
 
 6. **Data access: dev-live vs deployed-snapshot.** Two sources answer the same
-   `/guide-data/` URL scheme by design (ADR-0003); the `src/data` adapter's
-   contract is identical in both.
-   - **Dev (live):** `vite.config.ts`'s `configureServer` middleware serves the
-     guide's `parse-routes/03_structured` and `fetch-pois/04_final` directories
-     (under the gitignored `guides/<id>/data/`) as static data, so the app
-     always reflects the latest pipeline run with **no copy step**. The guide is
-     selected by the `VITE_GUIDE_ID` env var, defaulting to the single existing
-     guide (`wetterstein`), so `npm run dev` is a genuine one-command start.
-     (This deliberately softens the pipeline's strict "no default `--guide`"
-     rule — a personal QA tool should start with one command.)
+   id-namespaced `/guide-data/<id>/` URL scheme by design (ADR-0003); the
+   `src/data` adapter's contract is identical in both. The Guide id is threaded
+   through the whole data path — `loadGuideData(guideId)` builds its four
+   artifact URLs from the id via a pure, unit-tested URL-construction helper in
+   `src/data/load.ts` (#130). It is a path **segment**, not a query param,
+   because it must key the static snapshot on GitHub Pages (which ignores query
+   strings).
+   - **Dev (live):** `vite.config.ts`'s `configureServer` middleware serves
+     **every** Guide's `parse-routes/03_structured` and `fetch-pois/04_final`
+     directories (under the gitignored `guides/<id>/data/`) as static data,
+     mapping `/guide-data/<id>/…` onto `guides/<id>/data/…`, so the app always
+     reflects the latest pipeline run with **no copy step** and no Guide
+     selection at mount (the id in the URL selects). `npm run dev` is a genuine
+     one-command start.
    - **Build/deploy (snapshot):** a committed copy of the four consumed
-     artifacts lives under Vite's static `public/` directory (mirroring the
-     `/guide-data/` scheme) and is copied into `dist/` verbatim, so the deployed
-     site renders from a **deliberately-updated snapshot**, kept separate from
-     the live gitignored tree so local pipeline reruns never dirty what is
-     published. ADR-0003 owns the full rationale and the gitignore mechanics.
+     artifacts lives under Vite's static `public/guide-data/<id>/` directory
+     (mirroring the id-namespaced `/guide-data/<id>/` scheme) and is copied into
+     `dist/` verbatim, so the deployed site renders from a
+     **deliberately-updated snapshot**, kept separate from the live gitignored
+     tree so local pipeline reruns never dirty what is published. ADR-0003 owns
+     the full rationale and the gitignore mechanics.
    - **Base path is conditional:** `base` is `'/'` in dev and `'/av-guide/'` in
      build; the adapter prefixes its data URLs with `import.meta.env.BASE_URL`
      so the same fetches resolve under the project-site base when deployed and
      stay bare in dev.
 
-   **URL scheme (stable — the `src/data` adapter fetches these):** `/guide-data/`
-   maps onto `guides/<id>/data/`, mirroring the on-disk layout minus the guide
-   prefix. Only the two consumed stage dirs are exposed:
-   `/guide-data/parse-routes/03_structured/routes.json`,
-   `/guide-data/fetch-pois/04_final/pois.geojson`,
-   `/guide-data/fetch-pois/04_final/place_pois.jsonl`,
-   `/guide-data/fetch-pois/04_final/entry_pois.jsonl`. Served by a small
-   `configureServer` middleware in `vite.config.ts` (path-traversal guarded).
+   **URL scheme (stable — the `src/data` adapter fetches these):**
+   `/guide-data/<id>/` maps onto `guides/<id>/data/`, mirroring the on-disk
+   layout. Only the two consumed stage dirs are exposed:
+   `/guide-data/<id>/parse-routes/03_structured/routes.json`,
+   `/guide-data/<id>/fetch-pois/04_final/pois.geojson`,
+   `/guide-data/<id>/fetch-pois/04_final/place_pois.jsonl`,
+   `/guide-data/<id>/fetch-pois/04_final/entry_pois.jsonl`. Served by a small
+   `configureServer` middleware in `vite.config.ts` (path-traversal guarded on
+   both the id segment and the stage-relative path; stage-dir allowlist
+   retained).
+
+   **The Guide manifest** — `/guide-data/guides.json`, an id-less sibling of the
+   per-Guide trees (ADR-0005, #132) — is the committed, hand-maintained list of
+   published Guides as `[{ id, label }]` (**no bbox**; app/maintainer metadata,
+   NOT pipeline output). It is answered the same two ways: the dev middleware
+   serves it from `guides/guides.json` (the root of the shared guides tree,
+   beside each `guides/<id>/config.yml`); the build copies it into the snapshot at
+   `public/guide-data/guides.json`. The `src/data` adapter loads + guards it
+   (`manifest.ts`, warn-and-skip malformed entries) into `Guide[]`. There is no
+   `VITE_GUIDE_ID`: `App` picks the **first manifest entry** as the default Guide
+   (a `?guide=` switcher lands later), so dev and deploy open on the same Guide
+   and `npm run dev` stays one-command.
 
 7. **Domain vocabulary in code and UI.** Use the root `CONTEXT.md` terms —
    Entry, Place, Route, POI, Destination, Mention, Reference, Gazetteer — in

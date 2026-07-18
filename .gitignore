@@ -16,7 +16,10 @@ guides/*/data/
 # guides/*/data/ tree above stays ignored; publishing is an explicit act.
 route-map/public/guide-data/**
 !route-map/public/guide-data/**/
-!route-map/public/guide-data/parse-routes/03_structured/routes.json
-!route-map/public/guide-data/fetch-pois/04_final/pois.geojson
-!route-map/public/guide-data/fetch-pois/04_final/place_pois.jsonl
-!route-map/public/guide-data/fetch-pois/04_final/entry_pois.jsonl
+!route-map/public/guide-data/*/parse-routes/03_structured/routes.json
+!route-map/public/guide-data/*/fetch-pois/04_final/pois.geojson
+!route-map/public/guide-data/*/fetch-pois/04_final/place_pois.jsonl
+!route-map/public/guide-data/*/fetch-pois/04_final/entry_pois.jsonl
+# The committed Guide manifest snapshot (ADR-0005): the deployed build's copy of
+# guides/guides.json, un-ignored alongside the four artifacts above.
+!route-map/public/guide-data/guides.json

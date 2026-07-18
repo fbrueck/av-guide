@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
 	type DetailNav,
+	GuideSwitcher,
 	MapAttribution,
 	PlaceDetail,
 	PoiLegend,
@@ -10,8 +11,13 @@ import {
 	Sidebar,
 	TerrainToggle,
 } from "./components";
-import { loadGuideData } from "./data";
-import type { Entry, GuideData } from "./domain";
+import { loadGuideData, loadGuidesManifest } from "./data";
+import type { Entry, Guide, GuideData, Poi } from "./domain";
+import {
+	guideParamSearch,
+	readGuideParam,
+	resolveInitialGuideId,
+} from "./guideParam";
 import { createRouteMap, type RouteMap } from "./map";
 
 // Composition root and the app's minimal state (route-map/CLAUDE.md rule 5):
@@ -28,6 +34,15 @@ import { createRouteMap, type RouteMap } from "./map";
 export function App() {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const mapRef = useRef<RouteMap | null>(null);
+	// The published-Guide manifest (ADR-0005) and the reader's current Guide. The
+	// switcher lets the reader move between massifs in-app; selectedGuideId is a
+	// state atom (route-map/CLAUDE.md rule 5) that drives the lazy reload + reframe
+	// via effects. The Guide — and only the Guide — is reflected in a `?guide=<id>`
+	// URL param (#134): read once on load to pick the initial Guide, written with
+	// `history.replaceState` on switch (see handleSelectGuide) so a massif is
+	// bookmarkable and survives reload.
+	const [guides, setGuides] = useState<Guide[]>([]);
+	const [selectedGuideId, setSelectedGuideId] = useState<string | null>(null);
 	const [guideData, setGuideData] = useState<GuideData | null>(null);
 	const [selection, setSelection] = useState<Entry[]>([]);
 	const [searchText, setSearchText] = useState("");
@@ -69,6 +84,38 @@ export function App() {
 	const handleClose = useCallback(() => {
 		setSelection([]);
 	}, []);
+	// Switch the loaded Guide (#133, ADR-0005). Setting selectedGuideId drives the
+	// lazy reload + reframe effect below; here we reset the two atoms that reference
+	// the *old* Guide — the selection stack (a stale Entry would point at nothing)
+	// and the search text (a query into the old Guide's Entry list is meaningless
+	// against another). Terrain (2D/3D) and the mobile sheet mode PERSIST: both are
+	// guide-independent display choices about *how* to render, not *what* is viewed
+	// (rule 5). The selection stays Entry[] — a Guide is not pushed onto the stack
+	// (ADR-0004); it is the context the stack lives in. Guarded so re-picking the
+	// current Guide is a no-op (no needless reload/reset).
+	//
+	// The switch is reflected in the `?guide=<id>` URL param via
+	// `history.replaceState` (#134): no new history entry (Back does not undo a
+	// Guide switch), no router, and only the Guide is written — selection, search,
+	// terrain, and sheet mode stay ephemeral. The path and hash are preserved so
+	// the write is safe under the GitHub Pages project-site base.
+	const handleSelectGuide = useCallback(
+		(guideId: string) => {
+			if (guideId === selectedGuideId) {
+				return;
+			}
+			setSelectedGuideId(guideId);
+			setSelection([]);
+			setSearchText("");
+			const { pathname, search, hash } = window.location;
+			window.history.replaceState(
+				null,
+				"",
+				`${pathname}${guideParamSearch(guideId, search)}${hash}`,
+			);
+		},
+		[selectedGuideId],
+	);
 	// Step the sheet one height taller / shorter through collapsed <-> peek <->
 	// full (CSS height transition, no drag). Only wired below 768px where the
 	// handle is shown; inert on desktop (rule 8).
@@ -100,12 +147,55 @@ export function App() {
 		};
 	}, [handleSelectEntry]);
 
-	// Load + join the guide's artifacts once through the src/data boundary, then
-	// hold the result in state so the sidebar, search, and detail panels all read
-	// from one source.
+	// Load the published-Guide manifest once and select the initial Guide. The
+	// `?guide=<id>` param is read ONCE here from `location.search` (#134): a value
+	// naming a manifest Guide opens it (a shared/bookmarked link is honoured, and a
+	// reload — which kept the param via replaceState on the last switch — lands on
+	// the same Guide); an absent or unknown value falls back honestly to the
+	// manifest default (first entry), so a stale or mistyped link still loads a
+	// working map. Dev and deploy behave identically. Setting selectedGuideId
+	// drives the data-load effect below.
 	useEffect(() => {
 		let cancelled = false;
-		loadGuideData()
+		loadGuidesManifest()
+			.then((manifest) => {
+				const initialGuideId = resolveInitialGuideId(
+					readGuideParam(window.location.search),
+					manifest,
+				);
+				if (!initialGuideId) {
+					throw new Error(
+						"guides manifest is empty — no default Guide to load",
+					);
+				}
+				if (!cancelled) {
+					setGuides(manifest);
+					setSelectedGuideId(initialGuideId);
+				}
+			})
+			.catch((error: unknown) => {
+				console.error("[app] failed to load guides manifest", error);
+			});
+		return () => {
+			cancelled = true;
+		};
+	}, []);
+
+	// Load + join the selected Guide's artifacts through the src/data boundary and
+	// hold the result in state, so the sidebar, search, and detail panels all read
+	// from one source. Re-invoked on every Guide switch (#133, ADR-0005): loading
+	// is lazy, one Guide at a time — only the current Guide's join is in memory.
+	// Clearing guideData to null first reuses the existing first-load pending state,
+	// so a switch shows the same brief, honest loading state as first load; the
+	// downstream showPois/frameGuide effects then repaint + reframe onto the new
+	// Guide's POIs when its data resolves.
+	useEffect(() => {
+		if (!selectedGuideId) {
+			return;
+		}
+		let cancelled = false;
+		setGuideData(null);
+		loadGuideData(selectedGuideId)
 			.then((guide) => {
 				if (!cancelled) {
 					setGuideData(guide);
@@ -117,7 +207,7 @@ export function App() {
 		return () => {
 			cancelled = true;
 		};
-	}, []);
+	}, [selectedGuideId]);
 
 	// Push the loaded POIs + the poi->Entries index + the set of Place-coordinate
 	// poi_ids (the primary markers) into the imperative map API. showPois buffers
@@ -134,6 +224,24 @@ export function App() {
 				guideData.entriesByPoiId,
 				placePoiIds,
 			);
+		}
+	}, [guideData]);
+
+	// Frame the opening view on the loaded Guide's Place-POI extent (#131). The map
+	// is constructed without initial bounds (the POIs aren't known yet), so this
+	// effect drives the reframe once guide data resolves — the app opens fitted to
+	// whichever Guide it loaded, computed from its POIs rather than a constant.
+	// Frames the **Place** POIs specifically: those are the primary markers and the
+	// only POIs shown by default (rule #77 — mention-only / gazetteer POIs stay
+	// hidden until an Entry is selected), so the opening view fits exactly what is
+	// visible. Framing the full POI set would zoom out to a handful of far-flung
+	// gazetteer outliers and swamp the massif in dead space.
+	useEffect(() => {
+		if (guideData) {
+			const placePois = guideData.places
+				.map((place) => place.poi)
+				.filter((poi): poi is Poi => poi !== null);
+			mapRef.current?.frameGuide(placePois);
 		}
 	}, [guideData]);
 
@@ -172,6 +280,18 @@ export function App() {
 				<MapAttribution terrainEnabled={terrainEnabled} />
 			</div>
 			<div className={`route-panel route-panel--${sheetMode}`}>
+				{/* Panel/sheet header: the Guide switcher docks here, right-aligned, in
+				    BOTH layouts (rule 8) — a bordered bar at the top of the desktop
+				    docked panel, and the mobile bottom-sheet header band (reachable at
+				    peek) overlaid on the chevron grabber. It sits above the sidebar and
+				    detail so switching Guides is possible from any view (#133). */}
+				<div className="panel-header">
+					<GuideSwitcher
+						guides={guides}
+						currentGuideId={selectedGuideId}
+						onSelectGuide={handleSelectGuide}
+					/>
+				</div>
 				{/* The mobile sheet's handle: chevron buttons that step through the
 				    three heights (rule 8). Hidden on desktop, where the panel is the
 				    docked column. Smart peek content is #102. */}

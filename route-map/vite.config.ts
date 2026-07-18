@@ -9,20 +9,24 @@ import { defineConfig } from "vitest/config";
 // The webapp is a read-only consumer of the pipelines' working-tree output
 // under the repo-root `guides/<id>/data/` tree (route-map/CLAUDE.md rule 6).
 // That tree is gitignored and lives OUTSIDE route-map/, so the dev server
-// mounts the two relevant stage dirs at stable URLs. The guide is chosen by
-// VITE_GUIDE_ID, defaulting to the single existing guide so `npm run dev` is a
-// genuine one-command start.
-const GUIDE_ID = process.env.VITE_GUIDE_ID ?? "wetterstein";
+// mounts every Guide's two relevant stage dirs at stable id-namespaced URLs.
+// The middleware no longer selects a Guide — the id is a path segment — so
+// `npm run dev` serves every Guide's live tree with no env selection.
 const REPO_ROOT = fileURLToPath(new URL("..", import.meta.url));
-const GUIDE_DATA_ROOT = resolve(REPO_ROOT, "guides", GUIDE_ID, "data");
+const GUIDES_ROOT = resolve(REPO_ROOT, "guides");
+// The committed Guide manifest (ADR-0005): app/maintainer metadata at the root of
+// the shared guides tree, NOT pipeline output, so it sits beside the per-Guide
+// data dirs and is served at the id-less `/guide-data/guides.json` URL.
+const GUIDES_MANIFEST_PATH = resolve(GUIDES_ROOT, "guides.json");
 
 // URL scheme (stable — the src/data adapter fetches these):
-//   /guide-data/parse-routes/03_structured/routes.json
-//   /guide-data/fetch-pois/04_final/pois.geojson
-//   /guide-data/fetch-pois/04_final/place_pois.jsonl
-//   /guide-data/fetch-pois/04_final/entry_pois.jsonl
-// i.e. `/guide-data/` maps onto `guides/<id>/data/`, mirroring the on-disk
-// layout minus the guide prefix. Only the two owned stage dirs are exposed.
+//   /guide-data/<id>/parse-routes/03_structured/routes.json
+//   /guide-data/<id>/fetch-pois/04_final/pois.geojson
+//   /guide-data/<id>/fetch-pois/04_final/place_pois.jsonl
+//   /guide-data/<id>/fetch-pois/04_final/entry_pois.jsonl
+// i.e. `/guide-data/<id>/` maps onto `guides/<id>/data/`, mirroring the on-disk
+// layout. The `<id>` path segment keys the static snapshot on GitHub Pages
+// (which ignores query strings). Only the two owned stage dirs are exposed.
 const DATA_URL_PREFIX = "/guide-data/";
 const EXPOSED_STAGE_DIRS = [
 	"parse-routes/03_structured/",
@@ -48,18 +52,55 @@ function serveGuideData(): PluginOption {
 			return;
 		}
 
-		const rel = pathname.slice(DATA_URL_PREFIX.length);
+		// The Guide manifest is served id-less from `guides/guides.json` — it is
+		// the index over Guide ids, not one Guide's data, so it does not take the
+		// `<id>/<stage-dir>` path below (ADR-0005). Matched by exact path.
+		if (pathname === `${DATA_URL_PREFIX}guides.json`) {
+			if (!existsSync(GUIDES_MANIFEST_PATH)) {
+				res.statusCode = 404;
+				res.end("Not found: guides.json (the Guide manifest is missing)");
+				return;
+			}
+			res.setHeader("Content-Type", MIME_BY_EXT[".json"] ?? "application/json");
+			res.setHeader("Cache-Control", "no-cache");
+			if (req.method === "HEAD") {
+				res.end();
+				return;
+			}
+			createReadStream(GUIDES_MANIFEST_PATH).pipe(res);
+			return;
+		}
+
+		// Split the leading `<id>` path segment off; the remainder is the
+		// stage-relative path within `guides/<id>/data/`.
+		const afterPrefix = pathname.slice(DATA_URL_PREFIX.length);
+		const slash = afterPrefix.indexOf("/");
+		if (slash < 1) {
+			res.statusCode = 404;
+			res.end("Not found");
+			return;
+		}
+		const guideId = afterPrefix.slice(0, slash);
+		const rel = afterPrefix.slice(slash + 1);
 		if (!EXPOSED_STAGE_DIRS.some((dir) => rel.startsWith(dir))) {
 			res.statusCode = 404;
 			res.end("Not found");
 			return;
 		}
 
-		const filePath = resolve(GUIDE_DATA_ROOT, rel);
-		// Path-traversal guard: resolved path must stay inside the guide data root.
+		// Path-traversal guard: the guide's data root must stay inside GUIDES_ROOT
+		// (rejects a `..` in the id segment), and the resolved file must stay inside
+		// that guide's data root.
+		const guideDataRoot = resolve(GUIDES_ROOT, guideId, "data");
+		if (!guideDataRoot.startsWith(GUIDES_ROOT + sep)) {
+			res.statusCode = 403;
+			res.end("Forbidden");
+			return;
+		}
+		const filePath = resolve(guideDataRoot, rel);
 		if (
-			filePath !== GUIDE_DATA_ROOT &&
-			!filePath.startsWith(GUIDE_DATA_ROOT + sep)
+			filePath !== guideDataRoot &&
+			!filePath.startsWith(guideDataRoot + sep)
 		) {
 			res.statusCode = 403;
 			res.end("Forbidden");

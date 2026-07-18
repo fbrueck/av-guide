@@ -45,6 +45,56 @@ body,
 	background: #fff;
 }
 
+/* Panel/sheet header (#133, rule 8): the band at the top of the route-panel that
+ * docks the Guide switcher, right-aligned, in BOTH layouts. On desktop it is a
+ * bordered bar in the panel's normal flow (reserving --sheet-header-height so the
+ * absolute-filling sidebar/detail start below it); on mobile the media query at
+ * the foot of this file relocates it to overlay the bottom-sheet grabber band, so
+ * the switcher is reachable at the sheet's peek height. It sits above the sidebar
+ * and detail (z-index) so the reader can switch Guides from any view. */
+.panel-header {
+	position: relative;
+	z-index: 4;
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	height: var(--sheet-header-height);
+	padding: 0 0.75rem;
+	border-bottom: 1px solid #ddd;
+	background: #fff;
+}
+
+/* The Guide switcher (#133): a native <select> over the published-Guide manifest,
+ * plus a short visible label. The select is width-capped so a long edition label
+ * never blows out the panel; the native control truncates it, and the dropdown
+ * shows each label in full. */
+.guide-switcher {
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+	min-width: 0;
+	font:
+		13px / 1.4 system-ui,
+		sans-serif;
+}
+
+.guide-switcher__label {
+	flex: none;
+	font-size: 0.75rem;
+	color: #555;
+}
+
+.guide-switcher__select {
+	max-width: 13rem;
+	padding: 0.25rem 0.4rem;
+	font: inherit;
+	font-size: 0.8rem;
+	border: 1px solid #bbb;
+	border-radius: 5px;
+	background: #fff;
+	cursor: pointer;
+}
+
 /* Bottom-sheet grabber (rule 8): the tappable header that flips the sheet
  * peek <-> full below 768px. Hidden on desktop, where the panel is docked and
  * needs no header; the media query at the foot of this file switches it on and
@@ -57,7 +107,9 @@ body,
  * bucket, both scrolling together. */
 .sidebar {
 	position: absolute;
-	inset: 0;
+	/* Start below the panel-header bar (#133); the grabber band on mobile is the
+	 * same height, so this one offset holds in both layouts. */
+	inset: var(--sheet-header-height) 0 0 0;
 	display: flex;
 	flex-direction: column;
 	font:
@@ -168,7 +220,9 @@ body,
  * metadata + prose + cross-links into the surrounding Entry graph. */
 .detail {
 	position: absolute;
-	inset: 0;
+	/* Start below the panel-header bar on desktop (#133); mobile overrides this to
+	 * top:0 so the detail fills the sheet and shares the grabber band (#102). */
+	inset: var(--sheet-header-height) 0 0 0;
 	z-index: 2;
 	display: flex;
 	flex-direction: column;
@@ -554,6 +608,38 @@ body,
 
 	.route-panel--full {
 		height: 92vh;
+	}
+
+	/* The panel-header leaves the flow and overlays the grabber band (top:0), so
+	 * the Guide switcher rides at the sheet's peek height (#133, rule 8). It is
+	 * transparent and click-through like .sheet-header so the centered chevrons and
+	 * a detail's action row (both in the same band) still receive taps — only the
+	 * switcher (pointer-events: auto) intercepts. The switcher is capped narrow
+	 * enough to clear the centered chevrons; the native control truncates the long
+	 * edition label, and opening it shows each label in full. */
+	.panel-header {
+		position: absolute;
+		inset: 0 0 auto 0;
+		height: var(--sheet-header-height);
+		padding: 0 0.5rem;
+		border-bottom: none;
+		background: none;
+		pointer-events: none;
+	}
+
+	.panel-header .guide-switcher {
+		pointer-events: auto;
+		max-width: calc(50vw - 4rem);
+	}
+
+	.guide-switcher__label {
+		display: none;
+	}
+
+	/* ≥44px tap target on mobile (rule 8): the select fills the grabber band. */
+	.guide-switcher__select {
+		min-height: 44px;
+		max-width: 100%;
 	}
 
 	/* The handle: a full-width band at the top of the sheet holding the chevron

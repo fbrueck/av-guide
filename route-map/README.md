@@ -25,21 +25,23 @@ OpenTopoMap topographic basemap framed on the Wetterstein. The map credits
 
 The app is a read-only consumer of the pipelines' working-tree output under the
 repo-root `guides/<id>/data/` tree — there is **no copy step**, so it always
-reflects the latest pipeline run. The guide is chosen by the `VITE_GUIDE_ID`
-env var, defaulting to `wetterstein`:
+reflects the latest pipeline run. The Guide is chosen by an **id path segment**
+in the data URL, threaded through `loadGuideData(guideId)`; the dev server
+serves **every** Guide's tree, so `npm run dev` is a one-command start:
 
 ```sh
-VITE_GUIDE_ID=wetterstein npm run dev
+npm run dev
 ```
 
-The dev server mounts the two consumed stage dirs at stable URLs (see
-`vite.config.ts`). `/guide-data/` maps onto `guides/<id>/data/`:
+The dev server mounts each Guide's two consumed stage dirs at stable URLs (see
+`vite.config.ts`). `/guide-data/<id>/` maps onto `guides/<id>/data/`:
 
 | URL | On-disk (repo root) |
 |---|---|
-| `/guide-data/parse-routes/03_structured/routes.json` | `guides/<id>/data/parse-routes/03_structured/routes.json` |
-| `/guide-data/fetch-pois/04_final/pois.geojson` | `guides/<id>/data/fetch-pois/04_final/pois.geojson` |
-| `/guide-data/fetch-pois/04_final/route_pois.jsonl` | `guides/<id>/data/fetch-pois/04_final/route_pois.jsonl` |
+| `/guide-data/<id>/parse-routes/03_structured/routes.json` | `guides/<id>/data/parse-routes/03_structured/routes.json` |
+| `/guide-data/<id>/fetch-pois/04_final/pois.geojson` | `guides/<id>/data/fetch-pois/04_final/pois.geojson` |
+| `/guide-data/<id>/fetch-pois/04_final/place_pois.jsonl` | `guides/<id>/data/fetch-pois/04_final/place_pois.jsonl` |
+| `/guide-data/<id>/fetch-pois/04_final/entry_pois.jsonl` | `guides/<id>/data/fetch-pois/04_final/entry_pois.jsonl` |
 
 Only those two stage dirs are exposed. Nothing is fetched yet — the scaffold
 wires the access so the `src/data` adapter (a later ticket) just fetches.

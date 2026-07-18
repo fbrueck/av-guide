@@ -12,6 +12,13 @@ Implementation follows in a separate PR; the rule-5/rule-6 amendments land
 **with that code** (the rules describe live wiring, so they change when the
 wiring does). This ADR records the decision cluster now.
 
+> **Amended 2026-07-18** — guide selection moves from the in-app **dropdown
+> switcher** to a **guide-overview state** (a clickable-bounding-box map + a
+> guide list), and the manifest gains `name` and `bbox` fields. See the
+> **Amendment** section at the foot of this ADR; it supersedes the "in-app
+> switcher," the `[{ id, label }]` manifest shape, and the "manifest carries
+> **no bbox**" points in the Decision below.
+
 ## Context
 
 route-map was built to render exactly **one** guide. The guide is chosen out of
@@ -163,3 +170,110 @@ One build, both snapshots; the reader picks.
   retires that constant and would make a single hardcoded sun center wrong for
   Karwendel — but productionizing the spike (a per-guide sun center, the import
   rename) is the spike's own concern, not this ticket's.
+
+## Amendment (2026-07-18): guide selection via an overview state
+
+### Status
+
+accepted — supersedes, within the original Decision above: the **in-app
+switcher** shape (the panel-header dropdown, #133), the `[{ id, label }]`
+manifest shape, and the "manifest carries **no bbox**" point. The rest of the
+original decision cluster (id-namespaced `/guide-data/<id>/…` scheme, lazy
+one-guide-at-a-time loading, the `?guide=` param, the retired `VITE_GUIDE_ID`,
+the POI-computed *load* framing, Guide-as-a-domain-term) **stands unchanged**.
+
+The dropdown switcher (#133) and `?guide=` (#134) have already shipped on the
+implementation branch (`ticket-128-multi-guide`, PR #137). Whether the overview
+lands on top of a merged #137 or replaces its dropdown in place is a
+**sequencing decision left open** — recorded here as design, not yet scheduled.
+
+### Context
+
+The original decision picked the smallest control that satisfies "switch guides
+in-app": a native `<select>` in the panel/sheet header. Shipped and reviewed, two
+frictions surfaced. The edition-string `label` ("Alpenvereinsführer Wetterstein
+(Beulke, 4. Auflage 1996)") is too long for a narrow control — it truncates on
+the mobile sheet before the massif name is even visible. And a flat dropdown
+gives the reader no sense of *where* the guides are: two Alpine massifs are
+places on a map, and a picker that shows them as places reads far more naturally
+than a text list. With the map already the primary surface, letting the reader
+**pick a massif by clicking its region** turns guide selection into a small map
+interaction rather than a form control.
+
+### Decision
+
+Guide selection becomes a **guide-overview state** of the one existing screen —
+not a routed page (rule 5 holds: no router, one added `view` state atom).
+
+- **One screen, two states.** A `view: 'overview' | 'guide'` atom in App state.
+  **Overview:** no guide loaded — the sidebar is a clickable list of guides
+  (`name` title, `label` edition subtitle) and the map draws one **labeled,
+  clickable bounding box per guide**, hover-linked to its sidebar row (desktop),
+  framed to fit all boxes. **Guide:** today's app (Entry sidebar, POIs, opening
+  framed on the guide's POI extent, #131). Picking a guide (its row *or* its box)
+  loads it and enters the guide state; a **book icon** in the panel/sheet header
+  — the slot the dropdown vacated — returns to overview.
+
+- **The manifest gains `name` and `bbox`:** the record becomes
+  `{ id, name, label, bbox }`. `name` is the short massif name (titles the boxes
+  and the sidebar rows); `label` stays the edition string (now a subtitle/tooltip,
+  which also retires the mobile-truncation smell). `bbox` is a clickable region
+  for the overview **only** — the *load* framing stays POI-computed (#131). It is
+  seeded by **hand-copying** each `guides/<id>/config.yml` bbox value into the
+  manifest; route-map does **not** read `config.yml` at runtime (the module
+  boundary the original ADR guarded stays intact — the value is copied by a human
+  at authoring time, not fetched by the app). The box is a slightly-loose regional
+  rectangle (the config *search* box, reused verbatim); it need not hug the POIs.
+
+- **Initial load.** No `?guide=` → **overview** (the new front door). A
+  `?guide=<known id>` still **deep-links straight to the guide state** (the #134
+  shareable/bookmarkable link is honoured). An absent or unknown id → overview
+  (rather than silently defaulting to the first guide). Returning to overview via
+  the book icon drops the `?guide=` param and clears selection + search.
+
+- **The map stays behind its module (rule 4).** `src/map` gains an imperative
+  overview API — draw/clear the labeled guide boxes, hover-highlight, click →
+  `onSelectGuide`, and frame-to-boxes. The boxes are a distinct overview layer,
+  **not** POIs (ADR-0004 is untouched: a box is a guide affordance, not a
+  selectable POI). App drives it through effects keyed on the `view` atom.
+
+- **The `src/data` boundary guards the two new fields (rule 2).** The manifest
+  guard extends to `name` and `bbox` (is it there; is `bbox` four finite
+  numbers), warn-and-skipping a malformed entry as today. New pure logic (the
+  box→camera framing for the overview) gets focused Vitest coverage; no DOM.
+
+- **Mobile.** Overview opens the bottom sheet at **peek** with the guide list,
+  boxes on the map behind; tapping a row or a box loads the guide (no hover-link
+  on touch — a desktop affordance). The book icon rides in the sheet header in
+  the guide state.
+
+### Considered options
+
+- **Keep the dropdown, just shorten the label** (add `name`, drop the edition
+  from the control) — fixes the truncation but not the "where are these massifs"
+  legibility gap; the map is right there and idle on the picker.
+- **Compute the overview boxes from each guide's POI extent** (like #131) —
+  rejected: it forces loading *every* guide's `pois.geojson` on the overview,
+  defeating the lazy one-guide-at-a-time loading the original ADR committed to.
+- **Have the pipeline export a per-guide POI extent** into the manifest — most
+  honest (auto-matches real data), but cross-module pipeline work and a contract
+  change for a box that only needs to be roughly right; deferred in favour of the
+  hand-copied config bbox.
+- **Read `guides/<id>/config.yml` at runtime** for the bbox — rejected: it breaks
+  the module boundary the original ADR was careful to keep. Copying the value into
+  the app-owned manifest keeps route-map a pure consumer.
+
+### Consequences
+
+- **Rule 5** gains the `view` overview/guide atom (still no router) and the
+  overview-entry reset (clear selection + search, drop `?guide=`). **Rule 6 /
+  the data-contract table** document the manifest as `{ id, name, label, bbox }`.
+  Both amendments land **with the implementation code**, as before.
+- Adopting a further guide still needs no code change — but the one manifest line
+  now carries `name` and `bbox` alongside `id`/`label` (`bbox` hand-copied from
+  its `config.yml`).
+- `CONTEXT.md` needs no new term: "overview" is a UI state, not domain
+  vocabulary, and **Guide** already carries id + label; the manifest `bbox` is the
+  existing config search box reused, which the Guide glossary entry already names.
+- The dropdown `GuideSwitcher` component (#133) is retired by this change; the
+  `?guide=` param (#134) is kept and gains the overview/deep-link semantics above.
