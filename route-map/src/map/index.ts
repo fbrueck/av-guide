@@ -4,6 +4,7 @@ export {
 	type MapCredit,
 	TERRAIN_CREDIT,
 } from "./basemap";
+export { boundsForGuideBoxes } from "./overview";
 export {
 	POI_DEFAULT_COLOR,
 	POI_TYPE_STYLES,
