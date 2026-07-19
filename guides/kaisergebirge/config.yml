@@ -1,0 +1,72 @@
+# Alpenvereinsführer Kaisergebirge alpin (Höfler / Piepenstock, 12. Auflage 2006).
+#
+# One external config per guide. Shared top-level facts (id, bbox) apply to
+# both pipelines; each pipeline reads its own subsection. The fixed on-disk
+# stage layout is NOT here — it lives in code (pipeline/config.py path
+# helpers, derived from data_root = guides/<id>/data/<pipeline>/).
+id: kaisergebirge
+# Kaisergebirge (Wilder + Zahmer Kaiser), Tirol, between Kufstein (W ~12.17)
+# and St. Johann in Tirol (SE ~12.42). Brackets the Ellmauer Halt (2344 m, the
+# range's high point) plus the valley towns the book files: Kufstein (W),
+# Söll/Scheffau/Ellmau/Going and St. Johann (S/SE), Walchsee/Kössen (N).
+# Provisional; only the downstream fetch-pois Overpass query depends on it —
+# revisit before that stage runs (cf. the lechtal/karwendel bbox notes).
+bbox: [47.48, 12.10, 47.70, 12.45]     # (south, west, north, east)
+
+# Bibliographic facts about the guidebook. Guide facts (not algorithm
+# behaviour), so they live here — the parse-routes orchestrator injects them
+# into the OCR/extraction subagents instead of hardcoding a guide in the
+# prompts (#147).
+facts:
+  title: Alpenvereinsführer Kaisergebirge
+  author: Höfler / Piepenstock
+  edition: 12. Auflage
+  year: 2006
+  language: German
+
+parse-routes:
+  # PDF filename, resolved under guides/<id>/data/parse-routes/.
+  pdf: Kaisergebirge_HoeflerHorst_PiepenstockJan_12_Auflage_2006.pdf
+  # Pages with fewer OCR-text chars than this are treated as image/sketch pages.
+  min_text_chars: 200
+  # Scan page(s) holding the Inhaltsverzeichnis; the toc-extractor reads them
+  # into the section map that drives Entry classification (ADR-0005).
+  toc_pages: [6]
+
+fetch-pois:
+  # Taxonomy type -> OSM tags that put an element in that type. Order matters:
+  # an element is classified by the first matching entry, so specific alpine
+  # types come before the `locality` catch-all. ("yes" is quoted so YAML does
+  # not read it as the boolean true.)
+  # Copied verbatim from lechtal/wetterstein/karwendel (#84); review against
+  # sampled pages before the fetch-pois run and only diverge for this guide's
+  # specifics.
+  tag_map:
+    peak: [[natural, peak]]
+    pass: [[natural, saddle], [mountain_pass, "yes"]]
+    hut: [[tourism, alpine_hut], [tourism, wilderness_hut], [amenity, shelter], [place, farm]]
+    glacier: [[natural, glacier]]
+    valley: [[natural, valley]]
+    ridge: [[natural, ridge], [natural, arete]]
+    station: [[aerialway, station]]
+    settlement: [[place, town], [place, village], [place, hamlet], [place, suburb]]
+    bridge: [[man_made, bridge], [natural, gorge]]
+    path: [[highway, path], [highway, track], [highway, via_ferrata]]
+    water: [[natural, water], [waterway, river], [waterway, stream]]
+    locality: [[place, locality]]
+  # Valley-floor inns/serviced houses the book calls Hütten/Häuser are often
+  # tagged restaurant/chalet/guest_house in OSM. Admitted only outside
+  # settlement radius and when gap-filling (see fetch-pois README, #14).
+  guarded_tag_map:
+    hut: [[amenity, restaurant], [tourism, chalet], [tourism, guest_house]]
+  # Linear types kept as one representative entry per name (segmented in OSM).
+  deduped_types: [path, water]
+  # Guarded candidates must be at least this many km from every settlement.
+  settlement_exclusion_km: 1.0
+  # Mention name classes deliberately outside the gazetteer's scope: recorded
+  # as skipped with the reason instead of polluting the unmatched funnel.
+  out_of_scope:
+    - pattern: 'gebirge$'
+      reason: 'mountain range/region — deliberately not in the gazetteer (no point representation)'
+  # overpass_url is optional; defaults to the public endpoint when omitted.
+  # overpass_url: https://overpass-api.de/api/interpreter
