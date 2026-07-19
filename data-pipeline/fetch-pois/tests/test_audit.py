@@ -297,3 +297,54 @@ def test_empty_link_tables_render_headers_only(cfg, capsys):
     # header + separator only, no data row.
     assert mention_section.count("\n|") == 2
     assert "mention links: 0 matched" in captured.err
+
+
+# --- --kind: each branch signs off only its own table (#151) ----------------
+
+
+def test_run_audit_kind_place_renders_only_the_place_table(cfg, capsys):
+    write_cascade_parts(cfg)
+    run_pipeline(cfg)
+    capsys.readouterr()
+
+    out = audit.run_audit(cfg, "place")
+    captured = capsys.readouterr()
+
+    assert "## Place → POI matches" in out
+    assert "## Entry mentions → POI" not in out
+    assert "place matches:" in captured.err
+    assert "mention links:" not in captured.err
+
+
+def test_run_audit_kind_mention_renders_only_the_mention_table(cfg, capsys):
+    write_cascade_parts(cfg)
+    run_pipeline(cfg)
+    capsys.readouterr()
+
+    out = audit.run_audit(cfg, "mention")
+    captured = capsys.readouterr()
+
+    assert "## Entry mentions → POI" in out
+    assert "## Place → POI matches" not in out
+    assert "mention links:" in captured.err
+    assert "place matches:" not in captured.err
+
+
+def test_run_audit_all_is_byte_identical_to_the_pre_split_output(cfg, capsys):
+    # `all` (the default) must still render both tables joined exactly as before
+    # the split, so the audit gate is unchanged for a full run.
+    write_cascade_parts(cfg)
+    run_pipeline(cfg)
+    capsys.readouterr()
+
+    default = audit.run_audit(cfg)
+    capsys.readouterr()
+    explicit_all = audit.run_audit(cfg, "all")
+    capsys.readouterr()
+    assert default == explicit_all
+    place_out = audit.run_audit(cfg, "place")
+    capsys.readouterr()
+    mention_out = audit.run_audit(cfg, "mention")
+    capsys.readouterr()
+    # The two per-kind renders are exactly the two halves of the joined output.
+    assert default == place_out + "\n\n" + mention_out

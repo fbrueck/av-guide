@@ -31,7 +31,9 @@ subagents, each case carrying its candidate shortlist plus the owning entry's
 name/kind/peak, its resolved Destination (name + that Place's POI, a geographic
 prior), and description as context. A case is done once its verdict file
 `03_matched/verdicts/<case_id>.json` exists, so interrupted runs resume
-without re-adjudicating. Output: one JSON object per line, e.g.
+without re-adjudicating. `--kind {place,mention}` restricts the batched cases to
+one item kind (#151), so the Places and Mentions branches adjudicate
+independently; the default `all` batches both. Output: one JSON object per line, e.g.
   {"batch": 1, "cases": [{"case_id": ..., "entry_id": ..., "mention": ...,
    "candidates": [...], "entry": {"name": ..., "kind": ..., "peak": ...,
    "destination": {"name": ..., "poi": {...}} | null, "description": ...}}]}
@@ -147,11 +149,16 @@ def _destination_context(
     }
 
 
-def _plan_adjudicate(cfg: GuideConfig, batch_size: int) -> None:
+def _plan_adjudicate(cfg: GuideConfig, batch_size: int, kind: str = "all") -> None:
     if not cfg.adjudication_queue.exists():
         sys.exit(f"missing {cfg.adjudication_queue} — run the matcher first.")
     with cfg.adjudication_queue.open(encoding="utf-8") as f:
         cases = [json.loads(line) for line in f]
+    if kind != "all":
+        # The two branches adjudicate independently (#151): /fetch-places settles
+        # only Place leftovers, /fetch-mentions only Mention leftovers, so each
+        # command never fans subagents out over the other kind's cases.
+        cases = [c for c in cases if c["kind"] == kind]
     entries = {e["id"]: e for e in _load_entries(cfg)}
     place_poi = _load_place_pois(cfg)
     cfg.verdicts_dir.mkdir(parents=True, exist_ok=True)
@@ -266,6 +273,13 @@ def main() -> None:
         default=10,
         help="Routes (extract) or cases (adjudicate) per subagent batch.",
     )
+    ap.add_argument(
+        "--kind",
+        choices=["place", "mention", "all"],
+        default="all",
+        help="adjudicate only: restrict to Place or Mention leftovers "
+        "(default: all). Ignored by extract/funnel.",
+    )
     args = ap.parse_args()
 
     cfg = load_guide(args.guide)
@@ -273,7 +287,7 @@ def main() -> None:
     if args.stage == "funnel":
         _print_funnel(cfg)
     elif args.stage == "adjudicate":
-        _plan_adjudicate(cfg, args.batch)
+        _plan_adjudicate(cfg, args.batch, args.kind)
     else:
         _plan_extract(cfg, args.batch)
 

@@ -21,11 +21,15 @@ in the tables — they are surfaced honestly in the stderr summary, which points
 at the funnel and unmatched artifact so nothing the operator signs off on is
 silently dropped.
 
+`--kind {place,mention}` renders only that branch's table, so the Places and
+Mentions pipelines each sign off just their own matches (#151); the default
+`all` prints both, byte-identical to the pre-split gate.
+
 The tool is pure and offline (no network, no `gh`): stdout gets the Markdown,
 stderr a one-line summary, mirroring `plan funnel`. Re-running it on unchanged
 pipeline outputs prints byte-identical tables (seeded sample, sorted rows).
 
-  python -m pipeline.audit --guide <id>
+  python -m pipeline.audit --guide <id> [--kind place|mention|all]
 """
 
 from __future__ import annotations
@@ -292,13 +296,67 @@ def _method_tally(rows: list[Row]) -> str:
     return ", ".join(f"{m}: {counts[m]}" for m in sorted(counts))
 
 
-def run_audit(cfg: GuideConfig) -> str:
-    """Build, sample, and render both audit tables. Prints the Markdown to
-    stdout and a one-line summary (with the honest unmatched counts) to stderr,
-    mirroring `plan funnel`. Returns the stdout text."""
+@dataclass(frozen=True)
+class _Section:
+    """One audit table's rendered Markdown (`lines`) and its one-line stderr
+    `summary`, built for a single item kind so the Places and Mentions branches
+    can each render only their own table (#151)."""
+
+    lines: tuple[str, ...]
+    summary: str
+
+
+def _place_section(ctx: MatchContext, unmatched: list[dict[str, Any]]) -> _Section:
+    rows = build_place_rows(load_jsonl(ctx.cfg.place_pois_jsonl), ctx)
+    picked = sample(rows)
+    n_unmatched = sum(u["kind"] == "place" for u in unmatched)
+    return _Section(
+        lines=(
+            f"## Place → POI matches ({len(picked)} of {len(rows)} matches)",
+            "",
+            render_table(PLACE_HEADERS, picked),
+        ),
+        summary=(
+            f"place matches: {len(rows)} matched "
+            f"(sample {len(picked)} — {_method_tally(picked)}), "
+            f"{n_unmatched} without a match"
+        ),
+    )
+
+
+def _mention_section(ctx: MatchContext, unmatched: list[dict[str, Any]]) -> _Section:
+    rows = build_mention_rows(load_jsonl(ctx.cfg.entry_pois_jsonl), ctx)
+    picked = sample(rows)
+    n_unmatched = sum(u["kind"] == "mention" for u in unmatched)
+    return _Section(
+        lines=(
+            f"## Entry mentions → POI ({len(picked)} of {len(rows)} matches)",
+            "",
+            render_table(MENTION_HEADERS, picked),
+        ),
+        summary=(
+            f"mention links: {len(rows)} matched "
+            f"(sample {len(picked)} — {_method_tally(picked)}), "
+            f"{n_unmatched} without a match"
+        ),
+    )
+
+
+def run_audit(cfg: GuideConfig, kind: str = "all") -> str:
+    """Build, sample, and render the audit tables for `kind` (`place`,
+    `mention`, or `all`). Prints the Markdown to stdout and a one-line summary
+    (with the honest unmatched counts) to stderr, mirroring `plan funnel`.
+    Returns the stdout text. `all` renders both tables, byte-identical to the
+    pre-split gate; the Places and Mentions branches pass their own kind so each
+    signs off only its own matches (#151)."""
+    want_place = kind in ("all", "place")
+    want_mention = kind in ("all", "mention")
     _require(cfg.routes_jsonl, "run the parse-routes pipeline first.")
-    for path in (cfg.pois_jsonl, cfg.place_pois_jsonl, cfg.entry_pois_jsonl):
-        _require(path, "run the matcher first.")
+    _require(cfg.pois_jsonl, "run the matcher first.")
+    if want_place:
+        _require(cfg.place_pois_jsonl, "run the matcher first.")
+    if want_mention:
+        _require(cfg.entry_pois_jsonl, "run the matcher first.")
 
     index, keys = build_index(load_gazetteer(cfg))
     decisions, _notes = load_decisions(cfg)
@@ -311,37 +369,21 @@ def run_audit(cfg: GuideConfig) -> str:
         verdicts=load_verdicts(cfg),
         cfg=cfg,
     )
-    place_rows = build_place_rows(load_jsonl(cfg.place_pois_jsonl), ctx)
-    mention_rows = build_mention_rows(load_jsonl(cfg.entry_pois_jsonl), ctx)
-    place_sample = sample(place_rows)
-    mention_sample = sample(mention_rows)
-
-    out = "\n".join(
-        [
-            f"## Place → POI matches ({len(place_sample)} of {len(place_rows)} matches)",
-            "",
-            render_table(PLACE_HEADERS, place_sample),
-            "",
-            f"## Entry mentions → POI ({len(mention_sample)} of {len(mention_rows)} matches)",
-            "",
-            render_table(MENTION_HEADERS, mention_sample),
-        ]
-    )
-    print(out)
 
     # Honest picture: what is *not* in the tables. Places/mentions with no
     # match live in unmatched.jsonl (with the funnel counting them); surface
     # their counts and point at both artifacts so nothing is silently dropped.
     unmatched = load_jsonl(cfg.unmatched) if cfg.unmatched.exists() else []
-    unmatched_places = sum(u["kind"] == "place" for u in unmatched)
-    unmatched_mentions = sum(u["kind"] == "mention" for u in unmatched)
+    sections: list[_Section] = []
+    if want_place:
+        sections.append(_place_section(ctx, unmatched))
+    if want_mention:
+        sections.append(_mention_section(ctx, unmatched))
+
+    out = "\n\n".join("\n".join(s.lines) for s in sections)
+    print(out)
     print(
-        f"[audit] place matches: {len(place_rows)} matched "
-        f"(sample {len(place_sample)} — {_method_tally(place_sample)}), "
-        f"{unmatched_places} without a match; "
-        f"mention links: {len(mention_rows)} matched "
-        f"(sample {len(mention_sample)} — {_method_tally(mention_sample)}), "
-        f"{unmatched_mentions} without a match. "
+        f"[audit] {'; '.join(s.summary for s in sections)}. "
         f"Unmatched/skipped detail in {cfg.unmatched}; "
         f"full funnel via `plan funnel --guide {cfg.id}`.",
         file=sys.stderr,
@@ -354,8 +396,14 @@ def main() -> None:
         description="Print seeded match-audit tables for operator sign-off."
     )
     ap.add_argument("--guide", required=True, help="Guide id (guides/<id>/config.yml).")
+    ap.add_argument(
+        "--kind",
+        choices=["place", "mention", "all"],
+        default="all",
+        help="Restrict tables to Place → POI or Mention → POI (default: both).",
+    )
     args = ap.parse_args()
-    run_audit(load_guide(args.guide))
+    run_audit(load_guide(args.guide), args.kind)
 
 
 if __name__ == "__main__":

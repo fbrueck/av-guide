@@ -16,6 +16,28 @@ guide-agnostic: everything guide-specific lives in external config and data (see
 **Guides** below). Spec and tickets: see the repo issue tracker (spec is issue
 #1).
 
+## Two branches: Places first, Mentions later
+
+The pipeline splits at the extraction boundary (#151). **Place** entries are the
+high-value output — structured straight from `routes.jsonl` (name, `place_type`,
+elevation), they resolve to coordinate pins without reading any prose. Text
+**Mentions** are a bonus: extracting them costs a full LLM pass over every
+Entry's prose, so they run separately and later.
+
+- **`/fetch-places <id>`** (primary) — gazetteer → match → adjudicate Place
+  leftovers → audit. Produces `place_pois.jsonl` and the POI registry. Complete
+  and shippable on its own; no bulk extraction.
+- **`/fetch-mentions <id>`** (bonus, run after places) — extract → match →
+  adjudicate Mention leftovers → audit. Adds `entry_pois.jsonl`.
+
+The deterministic matcher stays a **single idempotent pass** over both kinds:
+`place_pois.jsonl`/`entry_pois.jsonl` are kind-partitioned, and `pois.jsonl`/
+`pois.geojson` are the union of whatever has been resolved so far. The Mentions
+branch's `match` re-runs Places too, but that is a cheap, deterministic re-run
+(Place adjudication verdicts persist), never redone LLM work. The branches stay
+independent through a `--kind {place,mention,all}` filter on `plan adjudicate`
+and `audit`, so each command adjudicates and signs off only its own kind.
+
 ## Guides
 
 A guide is one directory at the repo root:
@@ -71,16 +93,19 @@ Data paths below are under `guides/<id>/data/fetch-pois/`.
 | 1. Gazetteer | `uv run python -m pipeline.gazetteer --guide <id> [--refresh]` | `01_gazetteer/gazetteer.jsonl` (raw Overpass response cached alongside) |
 | 2. Mention extraction (LLM) | `uv run python -m pipeline.plan extract --guide <id> [--batch 10]` plans; `mention-extractor` subagents execute | `02_mentions/parts/<entry_id>.json` (one part per Entry — the resumability unit) |
 | 3. Matching | `uv run python -m pipeline.match --guide <id>` | `04_final/{pois.jsonl,place_pois.jsonl,entry_pois.jsonl,pois.geojson}`; `03_matched/{review.jsonl,unmatched.jsonl,adjudication_queue.jsonl,funnel.json}` (`uv run python -m pipeline.plan funnel --guide <id>` renders the funnel) |
-| 4. Adjudication (LLM) | `uv run python -m pipeline.plan adjudicate --guide <id> [--batch 10]` plans; `match-adjudicator` subagents execute; rerun `pipeline.match` to consume | `03_matched/verdicts/<case_id>.json` (one verdict per case — the resumability unit) |
-| 5. Validation gate | `uv run python -m pipeline.audit --guide <id>` | two seeded audit tables (Markdown) to stdout for operator sign-off; no artifact written |
+| 4. Adjudication (LLM) | `uv run python -m pipeline.plan adjudicate --guide <id> [--kind place\|mention\|all] [--batch 10]` plans; `match-adjudicator` subagents execute; rerun `pipeline.match` to consume | `03_matched/verdicts/<case_id>.json` (one verdict per case — the resumability unit) |
+| 5. Validation gate | `uv run python -m pipeline.audit --guide <id> [--kind place\|mention\|all]` | seeded audit table(s) (Markdown) to stdout for operator sign-off; no artifact written |
 
-The whole pipeline is driven by the `/fetch-pois` slash command (see
-`.claude/commands/fetch-pois.md`): it runs the deterministic stages and fans the
-planner's batches out to `mention-extractor` and `match-adjudicator` subagents
-until nothing remains. The planner batches the entry list sorted by entry id
-(and the adjudication queue in matcher order), so batch numbers and membership
-are stable across runs, and an interrupted run resumes without redoing
-completed entries or re-adjudicating decided cases.
+Stage 2 (mention extraction) belongs only to the Mentions branch; the Places
+branch skips it. The two branches are driven by the `/fetch-places` and
+`/fetch-mentions` slash commands (see `.claude/commands/`): each runs the
+deterministic stages it needs and fans the planner's batches out to
+`mention-extractor` and `match-adjudicator` subagents until nothing remains,
+passing `--kind` so a command only ever adjudicates and signs off its own kind.
+The planner batches the entry list sorted by entry id (and the adjudication
+queue in matcher order), so batch numbers and membership are stable across runs,
+and an interrupted run resumes without redoing completed entries or
+re-adjudicating decided cases.
 
 The gazetteer taxonomy (`tag_map` in the guide's `config.yml`) covers: peak,
 pass, hut, glacier, valley, ridge, station, settlement, bridge, path (named
@@ -216,7 +241,10 @@ POI, the waypoints) — so they can be pasted into an issue comment for sign-off
 Each table is a **seeded sample of 30** matches (Place name + book elevation /
 Übersicht (or prose) excerpt / matched OSM name / elevation Δ / method),
 **oversampling fuzzy and LLM matches** where errors hide and filling with
-exact/review only to reach 30.
+exact/review only to reach 30. `--kind {place,mention}` renders only that
+branch's table (so `/fetch-places` and `/fetch-mentions` each sign off just
+their own matches); the default `all` prints both, byte-identical to before the
+split.
 
 The **method column is recomputed per match** by replaying the matcher's
 cascade against the item (`match.classify_method`) — the true per-match method,
