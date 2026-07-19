@@ -32,8 +32,37 @@ one-line summary (e.g. "cleaned 15 pages"); do not print the page contents.
   mis-read umlauts.
 - Rejoin words split by a hyphen at a line break (e.g. `Verschnei-\ndung` →
   `Verschneidung`). Keep genuine hyphenated compounds.
-- Preserve the page's structure and the line breaks between distinct elements
-  (headings, route names, paragraphs).
+- **Reflow prose, preserve structure.** A guidebook paragraph is wrapped across
+  several short lines, and the OCR often drops the hyphen — so a word can be
+  split mid-word with no hyphen at all (`Hochalm\nsattel`, `Schutt\nreise`,
+  `un\nschwierig`). Join every line break that falls *inside a running
+  paragraph*, whether it splits a word (`Hochalm\nsattel` → `Hochalmsattel`,
+  joined with no space) or falls between two whole words (`… den man von hier
+  leicht\nerreichen kann` → joined with a single space), so the paragraph reads
+  as one continuous block. This is the same repair as the hyphen rejoin above,
+  extended to non-hyphenated wraps. **Do NOT join the structural line breaks**
+  the page is segmented by, and do not merge them into the prose: the break
+  before and after each heading, route name, and place name; a Randziffer line
+  (the marginal route number, printed as a bulleted bare integer like `•640`,
+  frequently OCR'd as `640`, `I 641`, or `>632`); a grade/metadata line standing
+  on its own (`III, anregend. 1½ Std.`); and the boundary between one entry and
+  the next. Reflow the prose *within* an entry; keep the lines that mark where
+  entries and their headings begin, line-for-line.
+- **Decide join-vs-keep line by line.** A line that continues the sentence or
+  paragraph of the line above it → **join** (delete the break). A line that
+  starts a new heading, route/place name, Randziffer, own-line grade token, or a
+  new entry → **keep the break**. Worked example — join the wrap, keep the
+  structure. Given the raw lines:
+  ```
+  640
+  Fleischbankgrat, höchster Turm 2210 m
+  Vom Fußpunkt des N-Grates der Erlspitze zieht die schroffe Reihe der Fleisch
+  banktürme gegen N …
+  ```
+  `640` (Randziffer) and `Fleischbankgrat, höchster Turm 2210 m` (route name)
+  each stay on their own line; the paragraph beneath them is reflowed into one
+  block, and the mid-word wrap `Fleisch\nbanktürme` is joined to
+  `Fleischbanktürme`.
 - Preserve route names, climbing grades (I–VI, A0–A3, roman numerals, `+`/`-`),
   times, heights, dates, first-ascent names, and abbreviations (SL, H, Hb,
   Std., mH) exactly.
