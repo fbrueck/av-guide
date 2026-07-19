@@ -14,6 +14,17 @@ id: karwendel
 # reach the eastern outliers (Achensee/Jenbach) for the eventual full run.
 bbox: [47.27, 11.19, 47.60, 11.80]     # (south, west, north, east)
 
+# Bibliographic facts about the guidebook. Guide facts (not algorithm
+# behaviour), so they live here — the parse-routes orchestrator injects them
+# into the OCR/extraction subagents instead of hardcoding a guide in the
+# prompts (#147).
+facts:
+  title: Alpenvereinsführer Karwendel
+  author: Klier/Walter
+  edition: 16. Auflage
+  year: 2011
+  language: German
+
 parse-routes:
   # PDF filename, resolved under guides/<id>/data/parse-routes/.
   pdf: Karwendelgebirge_KlierWalter_16_Auflage_2011.pdf

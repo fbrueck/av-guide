@@ -30,6 +30,12 @@ subsection read by this pipeline:
 ```yaml
 id: wetterstein
 bbox: [47.30, 10.85, 47.55, 11.35]
+facts:                                         # bibliographic facts, injected
+  title: Alpenvereinsführer Wetterstein        #   into the LLM subagents so no
+  author: Beulke                               #   guide is named in a prompt (#147)
+  edition: 4. Auflage
+  year: 1996
+  language: German
 parse-routes:
   pdf: Wetterstein_Beulke_4_Auflage_1996.pdf   # resolved under data/parse-routes/
   min_text_chars: 200                          # below this a page is an image/sketch
@@ -56,7 +62,8 @@ Code subscription, no API key and no per-token billing.
    │
    ├─ Bash: pipeline.extract           deterministic — read OCR text layer
    ├─ Bash: pipeline.plan clean        deterministic — which pages need cleaning
-   ├─ Task × N: ocr-cleaner            subagents — repair OCR per page
+   ├─ Bash: pipeline.facts             deterministic — guide facts block for the cleaners
+   ├─ Task × N: ocr-cleaner            subagents — repair OCR per page (given the facts block)
    ├─ Bash: pipeline.plan structure    deterministic — which pages need structuring
    ├─ Task × N: entry-extractor        subagents — classify + extract Entries (cross-page aware)
    └─ Bash: pipeline.merge             deterministic — key by entry id, link destination/places, build routes.jsonl
@@ -67,7 +74,8 @@ work, so a re-run skips whatever is already done.
 
 | Piece | What it is | Where |
 |-------|-----------|-------|
-| `pipeline.config` | `GuideConfig`, `load_guide`, path helpers | `pipeline/config.py` |
+| `pipeline.config` | `GuideConfig`, `GuideFacts`, `load_guide`, path helpers | `pipeline/config.py` |
+| `pipeline.facts`  | Render the guide's facts block for the subagents (#147) | `pipeline/facts.py` |
 | `pipeline.extract` | Read text layer + page metadata → `01_raw/` | `pipeline/extract.py` |
 | `pipeline.plan`    | List/batch pages needing work | `pipeline/plan.py` |
 | `pipeline.ids`     | Canonical entry-id normalization (`R43`) + synthetic fallback | `pipeline/ids.py` |

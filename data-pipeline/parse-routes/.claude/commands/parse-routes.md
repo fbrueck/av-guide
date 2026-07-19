@@ -28,17 +28,24 @@ If `guides/<id>/data/parse-routes/01_raw/manifest.jsonl` does not exist, run:
 
 ## Stage 2 — Clean OCR (subagents: `ocr-cleaner`)
 
-1. Get the work plan:
+1. Get the guide's facts block once — you pass it verbatim to **every**
+   `ocr-cleaner` so the prompt stays guide-agnostic (the guidebook's
+   title/author/edition/year/language come from config, never the prompt body):
+   ```
+   .venv/bin/python -m pipeline.facts --guide <id>
+   ```
+2. Get the work plan:
    ```
    .venv/bin/python -m pipeline.plan clean --guide <id> --batch 15
    ```
    Each stdout line is a batch: `{"batch": N, "pages": ["page_0006", ...]}`.
    (Sketch/image pages are passed through automatically and won't appear.)
-2. For each batch, spawn an `ocr-cleaner` subagent, passing it the exact list of
-   page stems for that batch and telling it to clean those pages. Launch up to
-   **10 subagents at a time** (multiple Task calls in one message), wait for the
-   wave to finish, then launch the next wave, until all batches are done.
-3. If any batch reports failures, just re-run `pipeline.plan clean` — completed
+3. For each batch, spawn an `ocr-cleaner` subagent, passing it (a) the Guide
+   facts block from step 1 and (b) the exact list of page stems for that batch,
+   and telling it to clean those pages. Launch up to **10 subagents at a time**
+   (multiple Task calls in one message), wait for the wave to finish, then launch
+   the next wave, until all batches are done.
+4. If any batch reports failures, just re-run `pipeline.plan clean` — completed
    pages are skipped — and dispatch the remaining batches again.
 
 ## Stage 3 — Structure entries (subagents: `entry-extractor`)
