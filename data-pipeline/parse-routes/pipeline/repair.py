@@ -24,9 +24,11 @@ Two deterministic entrypoints bracket the LLM step (the LLM lives in the
 
   python -m pipeline.repair apply --guide <id>
       Read the corrected-anchor files the subagents wrote under `repairs/` and
-      write each entry's new anchors back into its page part file, matched by
-      (source page, name). A name that is absent or ambiguous on the page is
-      skipped and surfaced — never guessed. Re-running `merge` then re-slices.
+      write each entry's new anchors back into its page part file, matched by the
+      book **entry id** (the part's Randziffer, unique even when headings repeat),
+      falling back to the heading only when the id pins nothing. An entry that
+      still cannot be placed unambiguously is skipped and surfaced — never
+      guessed. Re-running `merge` then re-slices.
 
 Re-running is safe/idempotent: `plan` only ever lists entries still in the
 current unsliced report, so an entry that already sliced is never touched.
@@ -42,6 +44,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from .config import GuideConfig, load_guide
+from .ids import normalize_entry_id
 from .records import PartEntry
 
 # The unsliced-report reason buckets this pass repairs (#110). Empty-anchor
@@ -82,7 +85,8 @@ class RepairTask:
 @dataclass(frozen=True, slots=True)
 class AnchorRepair:
     """The corrected anchors a subagent wrote for one entry (repairs/<id>.json),
-    read back by `apply`. Matched to its part entry by (source_page, name)."""
+    read back by `apply`. Matched to its part entry by book entry id (its
+    Randziffer), falling back to (source_page, name) when the id pins nothing."""
 
     entry_id: str
     source_page: int
@@ -127,14 +131,31 @@ def _read_part_entries(cfg: GuideConfig, page: int) -> list[dict[str, Any]]:
     return entries
 
 
-def _match_by_name(entries: list[dict[str, Any]], name: str | None) -> int | None:
-    """Index of the single part entry on the page whose name matches, or None if
-    the name is absent or ambiguous (>1 match) — never a silent first-hit guess,
-    mirroring the slicer's ambiguous-anchor rule."""
+def _match_entry(
+    entries: list[dict[str, Any]], entry_id: str, name: str | None
+) -> int | None:
+    """Index of the single part entry a report/repair row targets, or None if it
+    cannot be placed unambiguously — never a silent first-hit guess, mirroring the
+    slicer's ambiguous-anchor rule.
+
+    The book **entry id** is the strong key: match on the part entry's own
+    Randziffer (`entry_id_raw`, normalized the same way merge keys it), which stays
+    unique even when several entries on a page share a heading ("Von Süden" under
+    different peaks — the case name-only matching could not place). Only when the
+    id pins nothing (a dropped Randziffer left `entry_id_raw` null, or merge
+    assigned an inferred/synthetic id) do we fall back to the heading, which must
+    then be the lone match on the page."""
+    by_id = [
+        i
+        for i, e in enumerate(entries)
+        if normalize_entry_id(e.get("entry_id_raw")) == entry_id
+    ]
+    if len(by_id) == 1:
+        return by_id[0]
     if name is None:
         return None
-    hits = [i for i, e in enumerate(entries) if e.get("name") == name]
-    return hits[0] if len(hits) == 1 else None
+    by_name = [i for i, e in enumerate(entries) if e.get("name") == name]
+    return by_name[0] if len(by_name) == 1 else None
 
 
 def plan_repair(cfg: GuideConfig) -> list[RepairTask]:
@@ -155,7 +176,7 @@ def plan_repair(cfg: GuideConfig) -> list[RepairTask]:
     for page in sorted(by_page):
         entries = _read_part_entries(cfg, page)
         for rec in by_page[page]:
-            idx = _match_by_name(entries, rec.get("name"))
+            idx = _match_entry(entries, rec["id"], rec.get("name"))
             current = PartEntry.from_dict(entries[idx]) if idx is not None else None
             tasks.append(
                 RepairTask(
@@ -182,9 +203,9 @@ def _load_repairs(cfg: GuideConfig) -> list[AnchorRepair]:
 
 
 def apply_repairs(cfg: GuideConfig) -> ApplyResult:
-    """Write each corrected anchor back into its page part file, matched by
-    (source page, name). Part files are read/written once per page. A repair
-    whose name is absent or ambiguous on its page is skipped and surfaced."""
+    """Write each corrected anchor back into its page part file, matched by book
+    entry id (heading fallback). Part files are read/written once per page. A
+    repair that cannot be placed unambiguously is skipped and surfaced."""
     by_page: dict[int, list[AnchorRepair]] = defaultdict(list)
     for repair in _load_repairs(cfg):
         by_page[repair.source_page].append(repair)
@@ -200,7 +221,7 @@ def apply_repairs(cfg: GuideConfig) -> ApplyResult:
         entries: list[dict[str, Any]] = data.get("entries", [])
         changed = False
         for repair in by_page[page]:
-            idx = _match_by_name(entries, repair.name)
+            idx = _match_entry(entries, repair.entry_id, repair.name)
             if idx is None:
                 skipped.append(repair.entry_id)
                 continue
@@ -230,7 +251,7 @@ def _run_apply(cfg: GuideConfig) -> None:
     result = apply_repairs(cfg)
     print(
         f"[repair apply] {len(result.applied)} anchors rewritten, "
-        f"{len(result.skipped)} skipped (name absent/ambiguous on page).",
+        f"{len(result.skipped)} skipped (entry not placeable on page).",
         file=sys.stderr,
     )
     if result.skipped:
