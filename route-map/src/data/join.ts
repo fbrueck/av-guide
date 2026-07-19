@@ -320,11 +320,24 @@ export function joinGuideData(raw: RawArtifacts): GuideData {
 		}
 	}
 
-	// A Route is unfiled only when it has no target Place at all — no Destination
-	// and no places (an honest "not linked to anywhere" bucket).
-	const unfiledRoutes = routes.filter(
+	// A Route is placeless only when it has no target Place at all — no
+	// Destination and no places (an honest "no Ort" bucket).
+	const placelessRoutes = routes.filter(
 		(route) => route.destination === null && route.places.length === 0,
 	);
 
-	return { entries, places, routes, unfiledRoutes, pois, entriesByPoiId };
+	// The Places that resolved to no POI — an honest coordinate gap, surfaced as
+	// its own "Orte ohne Koordinate" bucket. Mirrors placelessRoutes: a plain
+	// filter over the joined Places (route-map/CLAUDE.md rule 3).
+	const uncoordinatedPlaces = places.filter((place) => place.poi === null);
+
+	return {
+		entries,
+		places,
+		routes,
+		placelessRoutes,
+		uncoordinatedPlaces,
+		pois,
+		entriesByPoiId,
+	};
 }

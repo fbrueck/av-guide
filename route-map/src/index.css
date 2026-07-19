@@ -66,8 +66,8 @@ body,
 	display: none;
 }
 
-/* Place-first sidebar (#44): search box + a Place list above the Unfiled-routes
- * bucket, both scrolling together. */
+/* Place-first sidebar (#44): search box + the mapped-Place list above the
+ * "Orte ohne Koordinate" and "Routen ohne Ort" buckets, all scrolling together. */
 .sidebar {
 	position: absolute;
 	/* Fill the panel from the top on desktop (no header bar). Mobile drops it below
