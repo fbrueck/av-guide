@@ -47,6 +47,10 @@ class GuideConfig:
     data_root: Path
     pdf: Path  # source PDF, resolved under data_root
     min_text_chars: int
+    # Scan page(s) holding the guidebook's Inhaltsverzeichnis, for the
+    # toc-extractor to read into the section map (ADR-0005). Empty when a guide
+    # is not (yet) onboarded to TOC-driven classification.
+    toc_pages: tuple[int, ...]
 
     # --- path helpers (fixed layout, derived from data_root) ---
     @property
@@ -68,6 +72,10 @@ class GuideConfig:
     @property
     def clean_pages(self) -> Path:
         return self.clean_dir / "pages"
+
+    @property
+    def section_map(self) -> Path:  # guidebook structure from the TOC (ADR-0005)
+        return self.struct_dir / "sections.json"
 
     @property
     def struct_parts(
@@ -123,6 +131,7 @@ def load_guide(guide_id: str) -> GuideConfig:
         data_root=data_root,
         pdf=data_root / section["pdf"],
         min_text_chars=int(section.get("min_text_chars", 200)),
+        toc_pages=tuple(int(p) for p in section.get("toc_pages", []) or []),
     )
 
 

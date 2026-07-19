@@ -55,6 +55,27 @@ def test_project_entry_places_carry_place_fields():
     assert set(projected) == set(CONTRACT_FIELDS)
 
 
+def test_project_entry_traverse_is_route_shaped_with_null_destination():
+    # A Traverse (ADR-0005) projects like a Route — climbing metadata and
+    # place_ids — but its destination_id is null by definition, in the same
+    # uniform contract shape.
+    traverse = {
+        "id": "R361",
+        "kind": "traverse",
+        "name": "Klassische Karwendeldurchquerung",
+        "time": "3 Tage",
+        "destination_id": None,
+        "place_ids": ["R251"],
+        "description": "1.Tag: …",
+    }
+    projected = project_entry(Entry.from_dict(traverse))
+    assert projected["kind"] == "traverse"
+    assert projected["destination_id"] is None
+    assert projected["place_ids"] == ["R251"]
+    assert projected["place_type"] is None
+    assert set(projected) == set(CONTRACT_FIELDS)
+
+
 def test_project_entry_link_fields_default_to_empty_list():
     # An Entry lacking place_ids/references still yields [] (never null), so a
     # consumer can iterate without a null check; the nullable scalar

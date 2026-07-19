@@ -19,9 +19,12 @@ lives here (no LLM):
 - **Destination and places.** A Route's *Destination* is its structural parent
   Place — the nearest preceding Place in the book's running sequence
   (`destination_id`, id-to-id from nesting; null when there is none, surfaced in
-  the report rather than invented). Traverse Routes name *additional* target
-  Places in prose; those resolve by name against a place-name index into
-  `place_ids` (disjoint from the Destination; best-effort, unresolved surfaced).
+  the report rather than invented). A **Traverse** (a range-wide Weitwanderweg /
+  Rundtour / Übergang, ADR-0005) is filed under no Place: its `destination_id`
+  stays null **by definition** and is *not* a reported gap. Both Routes and
+  Traverses name *additional* target Places in prose; those resolve by name
+  against a place-name index into `place_ids` (disjoint from the Destination;
+  best-effort, unresolved surfaced).
 - **References.** Inline cross-refs (`Wie R 43`) are parsed from each Entry's
   verbatim description into `{ref_id, surface}` (see references.py).
 - **Validation.** Every reference `ref_id` is checked against the id set;
@@ -52,7 +55,7 @@ from .slicing import slice_description, unsliced_reason
 
 @dataclass(frozen=True, slots=True)
 class UnresolvedPlace:
-    """A traverse place-name a Route's prose named that no Place resolves."""
+    """A waypoint place-name an itinerary's prose named that no Place resolves."""
 
     route: str
     name: str
@@ -257,19 +260,24 @@ def _resolve_targets(
     index: dict[str, str],
     report: MergeReport,
 ) -> Entry:
-    """Set a Route's Destination (nearest preceding Place, or None — surfaced,
-    not invented) and its `place_ids` (traverse names resolved via the index,
-    disjoint from the Destination)."""
-    if current_place is None:
+    """Set an itinerary Entry's Destination and its `place_ids` (waypoint names
+    resolved via the index, disjoint from the Destination).
+
+    A **Route** takes the nearest preceding Place as its Destination; a null one
+    is a gap, surfaced (not invented). A **Traverse** is filed under no Place
+    (ADR-0005): its Destination stays null by definition and is *not* a gap."""
+    is_traverse = route.kind == "traverse"
+    destination = None if is_traverse else current_place
+    if destination is None and not is_traverse:
         report.missing_destination.append(route.id)
     place_ids: list[str] = []
     for name in place_names:
         rid = index.get(_norm_name(name))
         if rid is None:
             report.unresolved_places.append(UnresolvedPlace(route=route.id, name=name))
-        elif rid != current_place and rid not in place_ids:
+        elif rid != destination and rid not in place_ids:
             place_ids.append(rid)
-    return replace(route, destination_id=current_place, place_ids=place_ids)
+    return replace(route, destination_id=destination, place_ids=place_ids)
 
 
 def _report_dangling(records: list[Entry], report: MergeReport) -> None:
@@ -325,7 +333,9 @@ def assemble_entries(
     index = _place_index(records)
 
     # Pass 3 — targets. A Place carries the running Destination forward; a Route
-    # resolves its Destination and traverse place_ids against it.
+    # resolves its Destination against it. A Traverse is filed under no Place, so
+    # it neither takes nor resets the running Destination — `_resolve_targets`
+    # nulls it out (ADR-0005) — but still resolves its waypoint place_ids.
     current_place: str | None = None
     for i, r in enumerate(records):
         if r.kind == "place":
@@ -420,10 +430,11 @@ def _print_summary(
 ) -> None:
     n_place = sum(r.kind == "place" for r in records)
     n_route = sum(r.kind == "route" for r in records)
+    n_traverse = sum(r.kind == "traverse" for r in records)
     n_collision = len(report.id_collisions)
     print(f"Wrote {len(records)} entry files -> {cfg.entries_dir}")
     print(
-        f"  {n_place} places, {n_route} routes, "
+        f"  {n_place} places, {n_route} routes, {n_traverse} traverses, "
         f"{report.inferred} inferred ids (Randziffer recovered from sequence), "
         f"{report.synthetic} synthetic ids (OCR-unrecoverable), "
         f"{n_collision} collision re-keyed"
@@ -445,7 +456,7 @@ def _print_summary(
         )
     if report.unresolved_places:
         print(
-            f"  WARN: {len(report.unresolved_places)} unresolved traverse "
+            f"  WARN: {len(report.unresolved_places)} unresolved waypoint "
             "place names (surfaced, not invented)",
             file=sys.stderr,
         )
