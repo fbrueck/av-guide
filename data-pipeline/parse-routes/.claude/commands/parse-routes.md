@@ -54,7 +54,9 @@ If `guides/<id>/data/parse-routes/01_raw/manifest.jsonl` does not exist, run:
    ```
    .venv/bin/python -m pipeline.plan structure --guide <id> --batch 15
    ```
-2. For each batch, spawn an `entry-extractor` subagent with the list of stems.
+2. For each batch, spawn an `entry-extractor` subagent, passing it (a) the same
+   Guide facts block you fetched once in Stage 2 (so the extractor prompt stays
+   guide-agnostic) and (b) the list of stems.
    Same wave discipline: up to 10 at a time. These subagents read each batch
    page plus its neighbours **once** so entries spanning a page break are
    captured once; each entry is classified as a Place or a Route and carries the

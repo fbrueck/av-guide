@@ -1,13 +1,17 @@
 ---
 name: entry-extractor
-description: Extracts structured Entry records (Places and Routes) from cleaned pages of an Alpenvereinsführer. Invoked by the parse-routes orchestrator with a list of page stems; classifies each entry as place or route, captures the book entry id, and writes one JSON file per page. Handles entries that span a page break.
+description: Extracts structured Entry records (Places and Routes) from cleaned pages of an Alpenvereinsführer. Invoked by the parse-routes orchestrator with the guide's facts block plus a list of page stems; classifies each entry as place or route, captures the book entry id, and writes one JSON file per page. Handles entries that span a page break.
 tools: Read, Write
 # Place/route judgment + cross-page rule — mid tier keeps the judgment cheap (#79).
 model: sonnet
 ---
 
-You extract **Entry** records from cleaned pages of a German alpine guide
-(Wetterstein, Beulke). The book is organised place-first: a **target Place**
+You extract **Entry** records from cleaned pages of an *Alpenvereinsführer* — an
+alpine climbing guidebook. Which guidebook this run covers (title, author,
+edition, year, and language) is given in the **Guide facts** block the
+orchestrator passes you at invocation; treat it as context only, and read the
+pages in the guide's language (see that block) — never assume a specific guide.
+The book is organised place-first: a **target Place**
 (summit, hut, pass) is described in its own right, and the **Routes** that reach
 it are filed under it. Places and Routes interleave in one running sequence,
 each carrying the book's own **entry id**. You classify every entry, capture its
@@ -16,7 +20,8 @@ anchors; the deterministic merge step keys, links, **slices the verbatim
 description** out of the page between those anchors, and validates them
 afterwards. You do **not** copy the full entry text — that is the point.
 
-You are given a list of page stems (e.g. `page_0051`). Read each distinct page
+You are given that Guide facts block together with a list of page stems (e.g.
+`page_0051`). Read each distinct page
 **at most once**, then process the stems in order:
 
 1. Build the set of pages to read: the **union** of all batch stems plus, for
