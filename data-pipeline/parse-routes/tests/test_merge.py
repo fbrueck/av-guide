@@ -58,6 +58,24 @@ def route(entry_id_raw, name, text=None, **fields):
     return _anchored(base, name, text, fields)
 
 
+def traverse(entry_id_raw, name, text=None, **fields):
+    # A range-wide itinerary (Weitwanderweg / Rundtour / Übergang, ADR-0005):
+    # route-shaped fields, but filed under no Place.
+    base = {
+        "kind": "traverse",
+        "entry_id_raw": entry_id_raw,
+        "name": name,
+        "peak": None,
+        "grade": None,
+        "first_ascent": None,
+        "time": None,
+        "height_m": None,
+        "summary": None,
+        "place_names": [],
+    }
+    return _anchored(base, name, text, fields)
+
+
 def assemble(pages):
     """Feed dict fixtures through the real parse+slice boundary, as merge does:
     synthesize each page's text from its entries' bodies, then assemble. Pure
@@ -136,6 +154,67 @@ def test_orphan_route_has_null_destination_surfaced():
     assert records[0].place_ids == []
     # The gap is surfaced in the merge report, never invented.
     assert report.missing_destination == ["R56"]
+
+
+def test_traverse_has_null_destination_and_is_not_a_gap():
+    # A Traverse is filed under no Place (ADR-0005): its Destination stays null
+    # by definition and is NOT reported as a missing-Destination gap, even though
+    # a Place precedes it in book order.
+    records, report = assemble(
+        [
+            (
+                46,
+                [
+                    place("•355", "Seewaldhütte"),
+                    traverse("•361", "Klassische Karwendeldurchquerung"),
+                ],
+            )
+        ]
+    )
+    t = next(r for r in records if r.kind == "traverse")
+    assert t.destination_id is None
+    assert report.missing_destination == []
+
+
+def test_traverse_resolves_waypoint_place_ids_without_a_destination():
+    # A Traverse still resolves the target Places it names into place_ids, but
+    # takes none of them (nor the preceding Place) as a Destination.
+    records, report = assemble(
+        [
+            (
+                46,
+                [
+                    place("•251", "Karwendelhaus"),
+                    place("•355", "Seewaldhütte"),
+                    traverse("•361", "Durchquerung", place_names=["Karwendelhaus"]),
+                ],
+            )
+        ]
+    )
+    t = next(r for r in records if r.kind == "traverse")
+    assert t.destination_id is None
+    assert t.place_ids == ["R251"]
+    assert report.unresolved_places == []
+
+
+def test_traverse_does_not_reset_the_running_destination():
+    # A Traverse must not consume the running Place: a Route after it still takes
+    # the last real Place as its Destination.
+    records, report = assemble(
+        [
+            (
+                46,
+                [
+                    place("•55", "Haus"),
+                    traverse("•361", "Übergang"),
+                    route("•56", "Zustieg"),
+                ],
+            )
+        ]
+    )
+    r = next(r for r in records if r.kind == "route")
+    assert r.destination_id == "R55"
+    assert report.missing_destination == []
 
 
 def test_traverse_place_resolved_by_name_disjoint_from_destination():

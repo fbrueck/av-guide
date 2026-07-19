@@ -13,6 +13,9 @@ between.
     into this record at the read boundary, then builds the final `Entry`.
   - `PageMeta` — one per-page metadata record produced by the extractor and read
     back by the planner.
+  - `Section` / `SectionMap` — the guidebook's top-level structure, read from its
+    Inhaltsverzeichnis by the toc-extractor and injected into the entry-extractor
+    so classification is anchored to the book's own sections (ADR-0005).
 """
 
 from __future__ import annotations
@@ -22,8 +25,10 @@ from typing import Any, Literal
 
 from .references import Reference
 
-# Every Entry/PartEntry is one of these two kinds (CONTEXT.md).
-Kind = Literal["place", "route"]
+# Every Entry/PartEntry is one of these kinds (CONTEXT.md, ADR-0005). A Traverse
+# is a range-wide itinerary (Weitwanderweg / Rundtour / Übergang / Höhenweg)
+# filed under no Place: route-shaped metadata, but never a Destination.
+Kind = Literal["place", "route", "traverse"]
 
 # Provenance of an Entry's `description` (#114), so verbatim and non-verbatim
 # text are never silently mixed: `sliced` = cut verbatim from the page between
@@ -35,13 +40,25 @@ DescriptionSource = Literal["sliced", "stub", "none"]
 _ROUTE_FIELDS = ("peak", "grade", "first_ascent", "time", "height_m")
 _PLACE_FIELDS = ("place_type", "elevation")
 
+# The canonical role of a top-level guidebook section, mapped from its (guide-
+# specific) printed title by the toc-extractor (ADR-0005). The behavioural one is
+# `traverses` — the "Übergänge und Höhenwege" section, whose itineraries are
+# Traverses (no parent Place); in `valley_places` / `huts` / `peaks` itineraries
+# are ordinary Routes filed under the preceding Place. `front_matter` /
+# `back_matter` (Vorwort, Informationsteil, Stichwortverzeichnis) hold no Entries.
+SectionRole = Literal[
+    "front_matter", "valley_places", "huts", "traverses", "peaks", "back_matter"
+]
+
 
 @dataclass(frozen=True, slots=True)
 class Entry:
     """A book Entry keyed by its canonical entry id (`R43`). `kind` is
-    `place` or `route`; Route-only metadata (peak/grade/…) and Place-only
-    metadata (place_type/elevation) stay None on the other kind. `destination_id`
-    and `place_ids` are a Route's resolved targets (empty/None on a Place)."""
+    `place`, `route`, or `traverse`; Route/Traverse metadata (peak/grade/…) and
+    Place-only metadata (place_type/elevation) stay None on the other kind.
+    `destination_id` and `place_ids` are a Route's resolved targets (empty/None
+    on a Place); a Traverse carries `place_ids` but never a `destination_id`
+    (filed under no Place, ADR-0005)."""
 
     id: str
     kind: Kind
@@ -95,8 +112,9 @@ class Entry:
 
     def to_record(self) -> dict[str, Any]:
         """Serialize to the merged-index/entry-file wire shape: shared fields,
-        then the kind's own verbatim metadata (a Route also carries its resolved
-        targets). Internal bookkeeping is kept; `merge` strips it per file."""
+        then the kind's own verbatim metadata (a Route or Traverse also carries
+        its resolved targets — `destination_id` is null on a Traverse).
+        Internal bookkeeping is kept; `merge` strips it per file."""
         rec: dict[str, Any] = {
             "id": self.id,
             "id_source": self.id_source,
@@ -212,3 +230,45 @@ class PageMeta:
             "largest_image": list(self.largest_image) if self.largest_image else None,
             "is_sketch": self.is_sketch,
         }
+
+
+@dataclass(frozen=True, slots=True)
+class Section:
+    """One top-level section of the guidebook, read from its Inhaltsverzeichnis.
+    `role` is the canonical classification (mapped from the guide's printed
+    `title`); `book_page` is the printed page the section opens on (the book's
+    own numbering, as the TOC prints it — not a scan/`source_page`)."""
+
+    role: SectionRole
+    title: str
+    book_page: int
+
+    @classmethod
+    def from_dict(cls, raw: dict[str, Any]) -> Section:
+        return cls(
+            role=raw["role"],
+            title=raw["title"],
+            book_page=int(raw["book_page"]),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"role": self.role, "title": self.title, "book_page": self.book_page}
+
+
+@dataclass(frozen=True, slots=True)
+class SectionMap:
+    """The guidebook's top-level structure from its Inhaltsverzeichnis (ADR-0005):
+    an ordered list of `Section`s, ascending by `book_page`. The toc-extractor
+    writes it to `03_structured/sections.json`; the entry-extractor reads it back
+    to classify each Entry by the section it falls in (Übergänge und Höhenwege →
+    Traverse). A range is `[section.book_page, next.book_page)`; the last runs to
+    the book's end."""
+
+    sections: list[Section] = field(default_factory=list)
+
+    @classmethod
+    def from_dict(cls, raw: dict[str, Any]) -> SectionMap:
+        return cls(sections=[Section.from_dict(s) for s in raw.get("sections") or []])
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"sections": [s.to_dict() for s in self.sections]}

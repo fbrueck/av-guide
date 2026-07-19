@@ -150,3 +150,41 @@ def test_adjudicate_place_owned_case_has_null_destination(cfg, capsys):
 
     assert cases["c-place"]["entry"]["kind"] == "place"
     assert cases["c-place"]["entry"]["destination"] is None
+
+
+# --- plan adjudicate --kind: independent Places / Mentions branches (#151) -----
+
+
+def adjudicate_kind(cfg, capsys, kind):
+    plan._plan_adjudicate(cfg, 10, kind)
+    out = capsys.readouterr()
+    cases = [c for line in out.out.splitlines() for c in json.loads(line)["cases"]]
+    return {c["case_id"] for c in cases}
+
+
+def test_adjudicate_kind_restricts_the_queue_to_one_item_kind(cfg, capsys):
+    # A mixed queue: one Place leftover (r1) and one Mention leftover (r2). Each
+    # branch adjudicates only its own kind; the default `all` batches both.
+    write_jsonl(
+        cfg.adjudication_queue,
+        [
+            {
+                "case_id": "c-place",
+                "entry_id": "r1",
+                "kind": "place",
+                "mention": "x",
+                "candidates": [],
+            },
+            {
+                "case_id": "c-mention",
+                "entry_id": "r2",
+                "kind": "mention",
+                "mention": "y",
+                "candidates": [],
+            },
+        ],
+    )
+
+    assert adjudicate_kind(cfg, capsys, "place") == {"c-place"}
+    assert adjudicate_kind(cfg, capsys, "mention") == {"c-mention"}
+    assert adjudicate_kind(cfg, capsys, "all") == {"c-place", "c-mention"}

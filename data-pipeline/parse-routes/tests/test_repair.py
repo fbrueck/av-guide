@@ -183,6 +183,94 @@ def test_apply_repairs_skips_ambiguous_name_never_guesses(cfg):
     assert [e["end_quote"] for e in read_part(cfg, 15)] == ["b", "d"]
 
 
+def test_apply_repairs_disambiguates_duplicate_name_by_entry_id(cfg):
+    # Same heading twice on the page (e.g. "Von Süden" under two peaks). Name
+    # alone is ambiguous, but each part entry carries its own Randziffer, so the
+    # repair is placed on the entry whose id matches — never guessed onto the
+    # first, and the sibling stays untouched.
+    write_part(
+        cfg,
+        150,
+        [
+            {
+                "kind": "route",
+                "entry_id_raw": "2072",
+                "name": "Von Süden",
+                "start_quote": "Von Süden",
+                "end_quote": "b",
+            },
+            {
+                "kind": "route",
+                "entry_id_raw": "2081",
+                "name": "Von Süden",
+                "start_quote": "Von Süden",
+                "end_quote": "d",
+            },
+        ],
+    )
+    write_repair(
+        cfg,
+        "R2081",
+        source_page=150,
+        name="Von Süden",
+        start_quote="Von Süden über das Roßloch",
+        end_quote="zum Gipfel.",
+    )
+
+    result = apply_repairs(cfg)
+
+    assert result.applied == ["R2081"]
+    assert result.skipped == []
+    entries = read_part(cfg, 150)
+    # Only the id-matched sibling was rewritten.
+    assert entries[0]["end_quote"] == "b"
+    assert entries[1]["end_quote"] == "zum Gipfel."
+    assert entries[1]["start_quote"] == "Von Süden über das Roßloch"
+
+
+def test_plan_repair_disambiguates_current_anchors_by_entry_id(cfg):
+    # Two same-named entries, only one unsliced: plan reads the current (broken)
+    # anchors of the *right* one via its id, not None-because-ambiguous.
+    write_unsliced(
+        cfg,
+        [
+            {
+                "id": "R2081",
+                "source_page": 150,
+                "name": "Von Süden",
+                "kind": "route",
+                "reason": "start_ambiguous",
+            }
+        ],
+    )
+    write_part(
+        cfg,
+        150,
+        [
+            {
+                "kind": "route",
+                "entry_id_raw": "2072",
+                "name": "Von Süden",
+                "start_quote": "Von Süden",
+                "end_quote": "first tail",
+            },
+            {
+                "kind": "route",
+                "entry_id_raw": "2081",
+                "name": "Von Süden",
+                "start_quote": "Von Süden",
+                "end_quote": "second tail",
+            },
+        ],
+    )
+
+    tasks = plan_repair(cfg)
+
+    assert len(tasks) == 1
+    assert tasks[0].entry_id == "R2081"
+    assert tasks[0].end_quote == "second tail"
+
+
 def test_apply_repairs_skips_when_part_file_missing(cfg):
     write_repair(
         cfg, "R1", source_page=99, name="Ghost", start_quote="x", end_quote="y"

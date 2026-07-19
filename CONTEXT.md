@@ -19,11 +19,11 @@ A single numbered item in the Alpenvereinsführer, identified by the book's own
 prose cross-references reprint it with an `R` sigil (`R 43`). We normalize both
 to one canonical key — `R43`, `R376A` (strip the inter-token space, uppercase
 the suffix) — so a [[Reference]] parsed from `Wie R 43` maps straight to the
-Entry. Every Entry is either a [[Place]] or a [[Route]] — that is its `kind`.
+Entry. Every Entry is a [[Place]], a [[Route]], or a [[Traverse]] — that is its `kind`.
 The entry id is the Entry's identity across the whole pipeline; when the number
 is unrecoverable (OCR loss, unnumbered heading) a deterministic synthetic id is
-assigned and flagged (`id_source: book | synthetic`). Places and Routes share
-one id namespace, so a [[Reference]] resolves to whichever kind carries that id.
+assigned and flagged (`id_source: book | synthetic`). All kinds share one id
+namespace, so a [[Reference]] resolves to whichever kind carries that id.
 
 An Entry's **description** is its verbatim book prose, cut from the cleaned page
 between two boundary anchors. Its **`description_source`** records the provenance
@@ -33,6 +33,19 @@ heading — start and end anchors coincide, so there is no span to cut), or `non
 (no description recovered). Verbatim-by-construction: the pipeline never emits a
 guessed or fuzzily-matched description.
 _Avoid_: record, item.
+
+## Section
+A **top-level division of the guidebook**, as listed in its *Inhaltsverzeichnis*
+(table of contents): *Täler und Talorte*, *Hütten und Zugangswege*, *Übergänge
+und Höhenwege*, *Gipfel und Gipfelrouten*, plus front/back matter. Each Section's
+guide-specific printed title maps to a canonical **role** (`valley_places`,
+`huts`, `traverses`, `peaks`, `front_matter`, `back_matter`), and the ordered set
+of roles + their page ranges is the **section map** the parse pipeline reads from
+the TOC (parse-routes ADR-0005) and uses to classify [[Entry]]s: an itinerary in
+the `traverses` Section is a [[Traverse]], elsewhere a [[Route]]. A Section is the
+book's own structure, distinct from a mountain-group sub-heading (Erlspitzgruppe,
+Inntalkette) nested inside it, which the model does not track.
+_Avoid_: chapter, part.
 
 ## Place
 An Entry (`kind = place`) whose subject is a **target feature** — a summit,
@@ -55,6 +68,22 @@ zero-or-many, disjoint from the Destination); its full target set is
 "Rendering a Route on the map" means highlighting its linked [[POI]] set (its
 Destination's and `place_ids`' POIs plus its Mentions), never drawing a path.
 
+## Traverse
+An Entry (`kind = traverse`) describing a **range-wide itinerary filed under no
+[[Place]]** — a *Weitwanderweg*, *Rundtour*, *Übergang*, or *Höhenweg* the book
+groups in its own "Weitwanderwege, Rundtouren / Übergänge und Höhenwege" section
+rather than under a single target Place. Structurally it is a [[Route]] with one
+difference: it has **no [[Destination]]** — its `destination_id` is null **by
+construction**, not a gap (so, unlike a parent-less Route, it is *not* surfaced
+in the merge report). It carries the same verbatim-German metadata (grade, time,
+height, `peak`) and links: the target Places it names along the way resolve into
+`place_ids` (its full target set, since there is no Destination to prepend), its
+inline id cross-refs into [[Reference]]s (a multi-day tour often stitches
+together other Routes/Traverses this way), and its prose place-names into
+[[Mention]]s. Rendering follows the Route rule — highlight the linked [[POI]]
+set, never draw a path.
+_Avoid_: long route, tour (as a `kind` term); reserve "route" for `kind = route`.
+
 ## POI
 A named alpine feature (peak, hut, pass, …) resolved to a single OpenStreetMap
 coordinate. Always a point, even for linear features like paths. Identified by
@@ -65,11 +94,13 @@ _Avoid_: point, marker, location.
 A [[Route]]'s **primary target [[Place]]** — the parent Place the route is
 filed under in the book, captured **structurally** (nearest preceding Place,
 resolved id-to-id at merge) as `destination_id`. Zero-or-one: a Route with no
-structural parent has none, surfaced in the merge report rather than invented. A
-Route's *destination coordinate* is transitive — it is its Destination Place's
-[[POI]] (`places[destination_id].poi`), never a direct route→POI link. Further
-target Places a traverse names live in `place_ids` (zero-or-many, resolved by
-name at merge, disjoint from the Destination). Distinct from a [[Mention]].
+structural parent has none, surfaced in the merge report rather than invented; a
+[[Traverse]] has none **by construction** (filed under no Place), an expected
+absence that is *not* surfaced. A Route's *destination coordinate* is transitive
+— it is its Destination Place's [[POI]] (`places[destination_id].poi`), never a
+direct route→POI link. Further target Places an itinerary names live in
+`place_ids` (zero-or-many, resolved by name at merge, disjoint from the
+Destination). Distinct from a [[Mention]].
 _Avoid_: anchor, peak (the latter is a verbatim string field on a Route, not the
 Destination).
 

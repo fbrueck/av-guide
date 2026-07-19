@@ -25,10 +25,16 @@ You are given a batch of **repair tasks**. Each task is a JSON object:
 
 The `reason` tells you what to fix:
 
-- **`end_mismatch`** — the start anchor is fine; the **end** anchor is not a
-  char-exact copy of the entry's last words (an OCR-variant char like `rn`↔`m`,
-  `ß`, an umlaut, or a fragile symbol `®` / a `>-661` arrow cross-ref). Re-copy
-  the entry's true tail character-for-character.
+- **`end_mismatch`** — the start anchor is fine; the **end** anchor could not be
+  reached after the start. Usual causes, all fixed by re-copying the entry's true
+  tail character-for-character:
+  - it is not a char-exact copy (OCR-variant char like `rn`↔`m`, `ß`, an umlaut,
+    a fragile symbol `®` / a `>-661` arrow cross-ref) — reproduce the page's
+    characters exactly, don't tidy them;
+  - it echoes the **heading** or an early phrase instead of the entry's last words
+    — take the final sentence of the last paragraph, before the next Randziffer;
+  - it **overlaps the start anchor** (a one-sentence entry): choose a tail that
+    lies strictly *after* the start snippet and shares no words with it.
 - **`start_not_found`** — the **start** anchor is not a char-exact copy of the
   heading (same OCR-variant causes). Re-copy the heading char-for-character.
 - **`start_ambiguous`** — the start anchor is correct but **too short**, so it
@@ -47,9 +53,10 @@ The `reason` tells you what to fix:
    match the page **exactly as printed**, OCR quirks and all):
    - `start_quote` — the entry's first words (its heading, starting right after
      the Randziffer marker). Make it **long enough to be unique on the page**.
-   - `end_quote` — the entry's true last words (≈ the last 4–8 words including
+   - `end_quote` — the entry's true last words (≈ the last 6–12 words including
      closing punctuation), i.e. the words just before the next entry's
-     Randziffer. Not a phrase that also appears earlier inside the same entry.
+     Randziffer. Not a phrase that also appears earlier inside the same entry, and
+     for a short entry not one that overlaps the start anchor.
    Even when a task only flags one end broken, emit **both** anchors (re-copy the
    good one unchanged) so the output file is self-contained.
 4. Write the result to `data/03_structured/repairs/<entry_id>.json`, exactly:

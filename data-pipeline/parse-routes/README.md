@@ -30,6 +30,12 @@ subsection read by this pipeline:
 ```yaml
 id: wetterstein
 bbox: [47.30, 10.85, 47.55, 11.35]
+facts:                                         # bibliographic facts, injected
+  title: Alpenvereinsführer Wetterstein        #   into the LLM subagents so no
+  author: Beulke                               #   guide is named in a prompt (#147)
+  edition: 4. Auflage
+  year: 1996
+  language: German
 parse-routes:
   pdf: Wetterstein_Beulke_4_Auflage_1996.pdf   # resolved under data/parse-routes/
   min_text_chars: 200                          # below this a page is an image/sketch
@@ -56,9 +62,13 @@ Code subscription, no API key and no per-token billing.
    │
    ├─ Bash: pipeline.extract           deterministic — read OCR text layer
    ├─ Bash: pipeline.plan clean        deterministic — which pages need cleaning
-   ├─ Task × N: ocr-cleaner            subagents — repair OCR per page
+   ├─ Bash: pipeline.facts             deterministic — guide facts block for the cleaners
+   ├─ Task × N: ocr-cleaner            subagents — repair OCR per page (given the facts block)
+   ├─ Bash: pipeline.sections plan     deterministic — the Inhaltsverzeichnis page stems
+   ├─ Task × 1: toc-extractor          subagent — read the TOC → sections.json (book structure)
+   ├─ Bash: pipeline.sections render   deterministic — section-map block for the extractors
    ├─ Bash: pipeline.plan structure    deterministic — which pages need structuring
-   ├─ Task × N: entry-extractor        subagents — classify + extract Entries (cross-page aware)
+   ├─ Task × N: entry-extractor        subagents — classify (by section) + extract Entries (cross-page aware)
    └─ Bash: pipeline.merge             deterministic — key by entry id, link destination/places, build routes.jsonl
 ```
 
@@ -67,7 +77,9 @@ work, so a re-run skips whatever is already done.
 
 | Piece | What it is | Where |
 |-------|-----------|-------|
-| `pipeline.config` | `GuideConfig`, `load_guide`, path helpers | `pipeline/config.py` |
+| `pipeline.config` | `GuideConfig`, `GuideFacts`, `load_guide`, path helpers | `pipeline/config.py` |
+| `pipeline.facts`  | Render the guide's facts block for the subagents (#147) | `pipeline/facts.py` |
+| `pipeline.sections` | Read the TOC section map; render its block for the extractor (ADR-0005) | `pipeline/sections.py` |
 | `pipeline.extract` | Read text layer + page metadata → `01_raw/` | `pipeline/extract.py` |
 | `pipeline.plan`    | List/batch pages needing work | `pipeline/plan.py` |
 | `pipeline.ids`     | Canonical entry-id normalization (`R43`) + synthetic fallback | `pipeline/ids.py` |
@@ -75,7 +87,8 @@ work, so a re-run skips whatever is already done.
 | `pipeline.merge`   | Key Entries by id, link destination/places, validate → `routes.jsonl` | `pipeline/merge.py` |
 | `pipeline.export`  | Project Entries onto the route-map contract → `routes.json` | `pipeline/export.py` |
 | `ocr-cleaner`      | Subagent: repair OCR for a batch of pages | `.claude/agents/ocr-cleaner.md` |
-| `entry-extractor`  | Subagent: classify + extract Entries (handles page-break spans) | `.claude/agents/entry-extractor.md` |
+| `toc-extractor`    | Subagent: read the Inhaltsverzeichnis → section map | `.claude/agents/toc-extractor.md` |
+| `entry-extractor`  | Subagent: classify (by section) + extract Entries (handles page-break spans) | `.claude/agents/entry-extractor.md` |
 | `/parse-routes`    | Orchestrator command | `.claude/commands/parse-routes.md` |
 
 ## Setup
@@ -115,6 +128,7 @@ Under `guides/<id>/data/parse-routes/` (gitignored):
 02_clean/
   pages/page_0001.txt   # OCR-repaired text (written by ocr-cleaner subagents)
 03_structured/
+  sections.json         # book structure from the Inhaltsverzeichnis (written by toc-extractor)
   parts/page_0051.json  # Entries starting on each page (written by entry-extractor)
   entries/R55.json      # FINAL: one self-contained file per Entry, keyed by entry id
   routes.jsonl          # combined index — one Entry record per line, in book order

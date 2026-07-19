@@ -28,31 +28,56 @@ If `guides/<id>/data/parse-routes/01_raw/manifest.jsonl` does not exist, run:
 
 ## Stage 2 — Clean OCR (subagents: `ocr-cleaner`)
 
-1. Get the work plan:
+1. Get the guide's facts block once — you pass it verbatim to **every**
+   `ocr-cleaner` so the prompt stays guide-agnostic (the guidebook's
+   title/author/edition/year/language come from config, never the prompt body):
+   ```
+   .venv/bin/python -m pipeline.facts --guide <id>
+   ```
+2. Get the work plan:
    ```
    .venv/bin/python -m pipeline.plan clean --guide <id> --batch 15
    ```
    Each stdout line is a batch: `{"batch": N, "pages": ["page_0006", ...]}`.
    (Sketch/image pages are passed through automatically and won't appear.)
-2. For each batch, spawn an `ocr-cleaner` subagent, passing it the exact list of
-   page stems for that batch and telling it to clean those pages. Launch up to
-   **10 subagents at a time** (multiple Task calls in one message), wait for the
-   wave to finish, then launch the next wave, until all batches are done.
-3. If any batch reports failures, just re-run `pipeline.plan clean` — completed
+3. For each batch, spawn an `ocr-cleaner` subagent, passing it (a) the Guide
+   facts block from step 1 and (b) the exact list of page stems for that batch,
+   and telling it to clean those pages. Launch up to **10 subagents at a time**
+   (multiple Task calls in one message), wait for the wave to finish, then launch
+   the next wave, until all batches are done.
+4. If any batch reports failures, just re-run `pipeline.plan clean` — completed
    pages are skipped — and dispatch the remaining batches again.
 
-## Stage 3 — Structure entries (subagents: `entry-extractor`)
+## Stage 3 — Structure entries (subagents: `toc-extractor`, `entry-extractor`)
 
-1. Get the work plan:
+1. **Section map (once per guide).** The entry-extractor classifies each entry by
+   the book section it falls in, so build the section map from the guide's
+   Inhaltsverzeichnis first. If
+   `guides/<id>/data/parse-routes/03_structured/sections.json` does not exist:
+   ```
+   .venv/bin/python -m pipeline.sections plan --guide <id>
+   ```
+   prints the Inhaltsverzeichnis page stems. Spawn **one** `toc-extractor`
+   subagent, passing it the Guide facts block and those stems; it writes
+   `sections.json`. (If the guide has no `toc_pages` configured, `plan` errors —
+   classification then falls back to heading shape only; skip this step.)
+   Then render the block you will inject into every extractor:
+   ```
+   .venv/bin/python -m pipeline.sections render --guide <id>
+   ```
+2. Get the work plan:
    ```
    .venv/bin/python -m pipeline.plan structure --guide <id> --batch 15
    ```
-2. For each batch, spawn an `entry-extractor` subagent with the list of stems.
+3. For each batch, spawn an `entry-extractor` subagent, passing it (a) the same
+   Guide facts block you fetched once in Stage 2, (b) the **Section map block**
+   from step 1 (so the extractor prompt stays guide-agnostic), and (c) the list
+   of stems.
    Same wave discipline: up to 10 at a time. These subagents read each batch
    page plus its neighbours **once** so entries spanning a page break are
-   captured once; each entry is classified as a Place or a Route and carries the
-   book's entry id.
-3. Merge the per-page JSON into the final dataset:
+   captured once; each entry is classified as a Place, a Route, or a Traverse
+   (by its section) and carries the book's entry id.
+4. Merge the per-page JSON into the final dataset:
    ```
    .venv/bin/python -m pipeline.merge --guide <id>
    ```

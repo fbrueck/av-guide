@@ -23,15 +23,34 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
 @dataclass(frozen=True)
+class GuideFacts:
+    """Bibliographic facts about the guidebook. Guide facts (not algorithm
+    behaviour), so they come from config.yml. The orchestrator injects them into
+    the LLM subagents so those prompts stay guide-agnostic — no guide is named in
+    a prompt body (#147)."""
+
+    title: str
+    author: str
+    edition: str
+    year: int
+    language: str
+
+
+@dataclass(frozen=True)
 class GuideConfig:
     """Everything the parse-routes steps need for one guide. Values come from
     the guide's config.yml; paths derive from data_root."""
 
     id: str
     bbox: tuple[float, float, float, float]  # shared top-level fact
+    facts: GuideFacts  # shared top-level bibliographic facts (#147)
     data_root: Path
     pdf: Path  # source PDF, resolved under data_root
     min_text_chars: int
+    # Scan page(s) holding the guidebook's Inhaltsverzeichnis, for the
+    # toc-extractor to read into the section map (ADR-0005). Empty when a guide
+    # is not (yet) onboarded to TOC-driven classification.
+    toc_pages: tuple[int, ...]
 
     # --- path helpers (fixed layout, derived from data_root) ---
     @property
@@ -53,6 +72,10 @@ class GuideConfig:
     @property
     def clean_pages(self) -> Path:
         return self.clean_dir / "pages"
+
+    @property
+    def section_map(self) -> Path:  # guidebook structure from the TOC (ADR-0005)
+        return self.struct_dir / "sections.json"
 
     @property
     def struct_parts(
@@ -92,14 +115,23 @@ def load_guide(guide_id: str) -> GuideConfig:
         sys.exit(f"no guide config at {cfg_path} — check the --guide id.")
     raw = yaml.safe_load(cfg_path.read_text(encoding="utf-8")) or {}
     section = raw.get("parse-routes", {}) or {}
+    facts_raw = raw.get("facts", {}) or {}
 
     data_root = REPO_ROOT / "guides" / guide_id / "data" / "parse-routes"
     return GuideConfig(
         id=raw["id"],
         bbox=tuple(raw["bbox"]),
+        facts=GuideFacts(
+            title=facts_raw["title"],
+            author=facts_raw["author"],
+            edition=facts_raw["edition"],
+            year=int(facts_raw["year"]),
+            language=facts_raw["language"],
+        ),
         data_root=data_root,
         pdf=data_root / section["pdf"],
         min_text_chars=int(section.get("min_text_chars", 200)),
+        toc_pages=tuple(int(p) for p in section.get("toc_pages", []) or []),
     )
 
 

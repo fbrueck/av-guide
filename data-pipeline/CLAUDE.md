@@ -10,12 +10,17 @@ data-pipeline/
   fetch-pois/     # stage B: Entry place-names -> OpenStreetMap POIs + GeoJSON
 ```
 
-`parse-routes` follows the **Entry model** (`CONTEXT.md`, ADR 0001/0002): each
-extracted item is classified `kind: place | route`, keyed by the book's own
-**entry id** (normalized `R43`, deterministic synthetic fallback flagged
-`id_source`), with Routes linked to their primary target Place via
+`parse-routes` follows the **Entry model** (`CONTEXT.md`, ADR 0001/0002/0005):
+each extracted item is classified `kind: place | route | traverse`, keyed by the
+book's own **entry id** (normalized `R43`, deterministic synthetic fallback
+flagged `id_source`), with Routes linked to their primary target Place via
 `destination_id` and any further target Places via `place_ids`, and inline
-cross-refs captured as `references`. The `routes.jsonl` / `routes.json`
+cross-refs captured as `references`. A **Traverse** is a range-wide itinerary
+(Weitwanderweg / Rundtour / Übergang) filed under no Place — route-shaped, but
+`destination_id` is null by construction, not a gap. Classification is anchored
+to the book's **section map**, read from its Inhaltsverzeichnis by the
+toc-extractor and injected into the entry-extractor (ADR-0005): an itinerary in
+the *Übergänge und Höhenwege* section is a Traverse, elsewhere a Route. The `routes.jsonl` / `routes.json`
 filenames are kept for contract stability even though each record is now an
 Entry, not only a route.
 

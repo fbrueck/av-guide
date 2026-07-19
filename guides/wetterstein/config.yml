@@ -7,6 +7,17 @@
 id: wetterstein
 bbox: [47.30, 10.85, 47.55, 11.35]     # (south, west, north, east)
 
+# Bibliographic facts about the guidebook. Guide facts (not algorithm
+# behaviour), so they live here — the parse-routes orchestrator injects them
+# into the OCR/extraction subagents instead of hardcoding a guide in the
+# prompts (#147).
+facts:
+  title: Alpenvereinsführer Wetterstein
+  author: Beulke
+  edition: 4. Auflage
+  year: 1996
+  language: German
+
 parse-routes:
   # PDF filename, resolved under guides/<id>/data/parse-routes/.
   pdf: Wetterstein_Beulke_4_Auflage_1996.pdf
