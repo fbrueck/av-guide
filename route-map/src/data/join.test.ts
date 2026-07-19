@@ -305,7 +305,7 @@ describe("joinGuideData — Destination + places (transitive coordinate) and pla
 		expect(data.placelessRoutes).toHaveLength(0);
 	});
 
-	it("adds a route to the routes-leading-here list of its Destination and its places", () => {
+	it("adds a route to the routes-leading-here list of its Destination only, not its waypoints", () => {
 		const data = joinGuideData(
 			artifacts(
 				[],
@@ -317,13 +317,15 @@ describe("joinGuideData — Destination + places (transitive coordinate) and pla
 				],
 			),
 		);
+		// Both R3 and R4 have R1 as their Ziel, so both lead here.
 		expect(
 			placeById(data, "R1")
 				.routes.map((r) => r.id)
 				.sort(),
 		).toEqual(["R3", "R4"]);
-		// A Place named only as a traverse waypoint still lists the route.
-		expect(placeById(data, "R2").routes.map((r) => r.id)).toEqual(["R4"]);
+		// A Place named only as a traverse waypoint is NOT a route's Ziel, so no
+		// route leads here — the route passes through, it does not end here.
+		expect(placeById(data, "R2").routes.map((r) => r.id)).toEqual([]);
 	});
 
 	it("puts a Route with no Destination and no places in the placeless-routes bucket", () => {

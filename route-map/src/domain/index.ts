@@ -67,8 +67,9 @@ export interface Place extends EntryBase {
 	elevation: string | null;
 	/** The single POI this Place resolves to, or null — an honest absence. */
 	poi: Poi | null;
-	/** Routes that target this Place (its Destination or one of its place_ids)
-	 *  — the routes leading here. */
+	/** Routes whose Destination (Ziel) is this Place — the routes that end here.
+	 *  Waypoint links (a route's place_ids) are deliberately excluded: a route
+	 *  passing through does not lead here. */
 	routes: Route[];
 }
 
