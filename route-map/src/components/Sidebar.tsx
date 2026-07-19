@@ -3,8 +3,12 @@ import type { Entry, Place, Route } from "../domain";
 import { OverviewButton } from "./OverviewButton";
 
 interface SidebarProps {
+	/** Every Place (mapped and unmapped). The main list shows the mapped ones
+	 *  (poi !== null); the unmapped ones live in the "Orte ohne Koordinate"
+	 *  bucket, passed separately as `uncoordinatedPlaces`. */
 	places: Place[];
-	unfiledRoutes: Route[];
+	uncoordinatedPlaces: Place[];
+	placelessRoutes: Route[];
 	searchText: string;
 	onSearchChange: (text: string) => void;
 	selectedEntry: Entry | null;
@@ -15,18 +19,40 @@ interface SidebarProps {
 	onReturnToOverview: () => void;
 }
 
+// Does a Place match the search needle? Name + place_type, case-insensitive —
+// the one predicate the main list and the "Orte ohne Koordinate" bucket share.
+function placeMatches(place: Place, needle: string): boolean {
+	return `${place.name} ${place.placeType ?? ""}`
+		.toLowerCase()
+		.includes(needle);
+}
+
+// Apply the search needle then order by how many Routes lead here, most first —
+// the busiest Places lead the list (#44), so the highest-impact coordinate gaps
+// sort to the top of the bucket too. The one shape the mapped list and the
+// "Orte ohne Koordinate" bucket share. Copy before sorting so the source prop is
+// never mutated; ties keep source order (Array.sort is stable).
+function filterAndSortPlaces(places: Place[], needle: string): Place[] {
+	const matched = needle
+		? places.filter((place) => placeMatches(place, needle))
+		: places;
+	return [...matched].sort((a, b) => b.routes.length - a.routes.length);
+}
+
 // Place-first navigation (#44): the guide is browsed by its target Places, not a
-// flat Route list. A searchable Place list (name, place_type, elevation, and how
-// many Routes lead here) sits above an **Unfiled routes** bucket — Routes with
-// no target Place at all (no Destination, no places), kept visible and never
-// hidden so incomplete target resolution is honest rather than papered over
-// (route-map/CLAUDE.md rule 3). Speaks domain
-// types only; selection is delegated up through onSelectEntry, the single seam
-// the map highlight and the detail panels build on. A plain scrollable list: a
-// few hundred rows need no virtualization, and the filter is O(n).
+// flat Route list. The primary list holds the Places that resolved to a POI (a
+// pin on the map), name/place_type/elevation and how many Routes lead here. Two
+// always-visible buckets sit below it, a matched pair of honest gaps kept
+// visible and never hidden (route-map/CLAUDE.md rule 3): **Orte ohne Koordinate**
+// — Places whose `poi` is null — and **Routen ohne Ort** — Routes with no target
+// Place at all (no Destination, no places). Speaks domain types only; selection
+// is delegated up through onSelectEntry, the single seam the map highlight and
+// the detail panels build on. A plain scrollable list: a few hundred rows need
+// no virtualization, and the filter is O(n).
 export function Sidebar({
 	places,
-	unfiledRoutes,
+	uncoordinatedPlaces,
+	placelessRoutes,
 	searchText,
 	onSearchChange,
 	selectedEntry,
@@ -35,29 +61,60 @@ export function Sidebar({
 }: SidebarProps) {
 	const needle = searchText.trim().toLowerCase();
 
-	const filteredPlaces = useMemo(() => {
-		const matched = needle
-			? places.filter((place) => {
-					const haystack =
-						`${place.name} ${place.placeType ?? ""}`.toLowerCase();
-					return haystack.includes(needle);
-				})
-			: places;
-		// Order by how many Routes lead here, most first — the busiest Places lead
-		// the place-first list (#44). Copy before sorting so the `places` prop is
-		// never mutated; ties keep the source order (Array.sort is stable).
-		return [...matched].sort((a, b) => b.routes.length - a.routes.length);
-	}, [places, needle]);
+	// The mapped list: only Places with a coordinate, so "X von Y Orten" honestly
+	// describes what has a pin on the map.
+	const mappedPlaces = useMemo(
+		() => places.filter((place) => place.poi !== null),
+		[places],
+	);
 
-	const filteredUnfiled = useMemo(() => {
+	const filteredPlaces = useMemo(
+		() => filterAndSortPlaces(mappedPlaces, needle),
+		[mappedPlaces, needle],
+	);
+
+	const filteredUncoordinated = useMemo(
+		() => filterAndSortPlaces(uncoordinatedPlaces, needle),
+		[uncoordinatedPlaces, needle],
+	);
+
+	const filteredPlaceless = useMemo(() => {
 		if (!needle) {
-			return unfiledRoutes;
+			return placelessRoutes;
 		}
-		return unfiledRoutes.filter((route) => {
+		return placelessRoutes.filter((route) => {
 			const haystack = `${route.name} ${route.peak ?? ""}`.toLowerCase();
 			return haystack.includes(needle);
 		});
-	}, [unfiledRoutes, needle]);
+	}, [placelessRoutes, needle]);
+
+	// One Place row, shared by the main list and the "Orte ohne Koordinate"
+	// bucket so the two read as one list cut by has-a-pin.
+	const renderPlaceRow = (place: Place) => (
+		<li key={place.id}>
+			<button
+				type="button"
+				className={
+					place.id === selectedEntry?.id
+						? "entry-row entry-row--selected"
+						: "entry-row"
+				}
+				onClick={() => onSelectEntry(place)}
+			>
+				<span className="entry-row__name">{place.name}</span>
+				<span className="entry-row__meta">
+					<span className="entry-row__type">
+						{place.placeType ?? "—"}
+						{place.elevation ? ` · ${place.elevation}` : ""}
+					</span>
+					<span className="entry-row__count">
+						{place.routes.length}{" "}
+						{place.routes.length === 1 ? "Route" : "Routen"}
+					</span>
+				</span>
+			</button>
+		</li>
+	);
 
 	return (
 		<aside className="sidebar" aria-label="Orte und Routen">
@@ -77,54 +134,44 @@ export function Sidebar({
 					/>
 				</div>
 				<p className="sidebar__count">
-					{filteredPlaces.length} von {places.length} Orten
+					{filteredPlaces.length} von {mappedPlaces.length} Orten
 				</p>
 			</div>
 			<div className="sidebar__scroll">
 				<ul className="sidebar__list" aria-label="Orte">
-					{filteredPlaces.map((place) => (
-						<li key={place.id}>
-							<button
-								type="button"
-								className={
-									place.id === selectedEntry?.id
-										? "entry-row entry-row--selected"
-										: "entry-row"
-								}
-								onClick={() => onSelectEntry(place)}
-							>
-								<span className="entry-row__name">{place.name}</span>
-								<span className="entry-row__meta">
-									<span className="entry-row__type">
-										{place.placeType ?? "—"}
-										{place.elevation ? ` · ${place.elevation}` : ""}
-									</span>
-									<span className="entry-row__count">
-										{place.routes.length}{" "}
-										{place.routes.length === 1 ? "Route" : "Routen"}
-									</span>
-								</span>
-							</button>
-						</li>
-					))}
+					{filteredPlaces.map(renderPlaceRow)}
 				</ul>
 
-				<section
-					className="sidebar__section"
-					aria-label="Nicht zugeordnete Routen"
-				>
+				<section className="sidebar__section" aria-label="Orte ohne Koordinate">
 					<h2 className="sidebar__section-title">
-						Nicht zugeordnete Routen ({filteredUnfiled.length})
+						Orte ohne Koordinate ({filteredUncoordinated.length})
 					</h2>
-					{filteredUnfiled.length === 0 ? (
+					{filteredUncoordinated.length === 0 ? (
 						<p className="sidebar__empty">
-							{unfiledRoutes.length === 0
-								? "Alle Routen haben ein Ziel."
+							{uncoordinatedPlaces.length === 0
+								? "Alle Orte haben eine Koordinate."
 								: "Keine Treffer in dieser Gruppe."}
 						</p>
 					) : (
 						<ul className="sidebar__list">
-							{filteredUnfiled.map((route) => (
+							{filteredUncoordinated.map(renderPlaceRow)}
+						</ul>
+					)}
+				</section>
+
+				<section className="sidebar__section" aria-label="Routen ohne Ort">
+					<h2 className="sidebar__section-title">
+						Routen ohne Ort ({filteredPlaceless.length})
+					</h2>
+					{filteredPlaceless.length === 0 ? (
+						<p className="sidebar__empty">
+							{placelessRoutes.length === 0
+								? "Alle Routen haben einen Ort."
+								: "Keine Treffer in dieser Gruppe."}
+						</p>
+					) : (
+						<ul className="sidebar__list">
+							{filteredPlaceless.map((route) => (
 								<li key={route.id}>
 									<button
 										type="button"

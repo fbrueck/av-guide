@@ -395,7 +395,8 @@ export function App() {
 					<>
 						<Sidebar
 							places={guideData?.places ?? []}
-							unfiledRoutes={guideData?.unfiledRoutes ?? []}
+							uncoordinatedPlaces={guideData?.uncoordinatedPlaces ?? []}
+							placelessRoutes={guideData?.placelessRoutes ?? []}
 							searchText={searchText}
 							onSearchChange={setSearchText}
 							selectedEntry={currentEntry}

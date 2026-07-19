@@ -122,13 +122,17 @@ export interface Guide {
 export interface GuideData {
 	/** Every Entry (Places + Routes), in artifact order. */
 	entries: Entry[];
-	/** The Places — the sidebar's primary, place-first list. */
+	/** Every Place (mapped and unmapped) — the sidebar's primary, place-first
+	 *  list derives its mapped rows from this by filtering on `poi`. */
 	places: Place[];
 	/** The Routes. */
 	routes: Route[];
+	/** Places that resolved to no POI (`poi === null`) — the "Orte ohne
+	 *  Koordinate" bucket, always visible. Mirrors placelessRoutes. */
+	uncoordinatedPlaces: Place[];
 	/** Routes with no target Place at all — no Destination and no places — the
-	 *  "Unfiled routes" bucket, always visible. */
-	unfiledRoutes: Route[];
+	 *  "Routen ohne Ort" bucket, always visible. */
+	placelessRoutes: Route[];
 	pois: Poi[];
 	/** poi_id -> Entries that reference that POI (a Place via its coordinate, or
 	 *  any Entry via a Mention). Powers the map popup's cross-links. */

@@ -88,9 +88,11 @@ Load-bearing. Breaking one needs a deliberate, called-out reason.
    route→POI link), or a Place's own **POI** — are styled distinctly from the
    **Mentions**. An Entry whose POI set is empty (a Place with no resolved POI, a
    Route with no target Place) is still selectable and rendered **honestly** —
-   the detail panel notes what is unlinked, and Routes with no target at all live
-   in a visible "Unfiled routes" bucket. Incomplete extraction must be *visible*,
-   never papered over with fake geometry.
+   the detail panel notes what is unlinked. The two coordinate gaps get matching
+   always-visible buckets: Places with no resolved POI in **"Orte ohne
+   Koordinate"** (`uncoordinatedPlaces`), Routes with no target Place at all in
+   **"Routen ohne Ort"** (`placelessRoutes`). Incomplete extraction must be
+   *visible*, never papered over with fake geometry.
 
 4. **Raw `maplibre-gl`, imperative, behind one map module.** No `react-map-gl`
    or other wrapper. `src/map/` owns the `Map` instance (created once in a

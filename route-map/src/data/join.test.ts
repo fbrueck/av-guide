@@ -257,7 +257,7 @@ describe("joinGuideData — Places and their POI", () => {
 	});
 });
 
-describe("joinGuideData — Destination + places (transitive coordinate) and unfiled routes", () => {
+describe("joinGuideData — Destination + places (transitive coordinate) and placeless routes", () => {
 	it("resolves a Route's Destination to a Place, coordinate transitive via place.poi", () => {
 		const data = joinGuideData(
 			artifacts(
@@ -300,9 +300,9 @@ describe("joinGuideData — Destination + places (transitive coordinate) and unf
 		);
 		const r = routeById(data, "R2");
 		expect(r.destination).toBeNull();
-		// A Route with places but no Destination is still filed (not unfiled).
+		// A Route with places but no Destination is still filed (not placeless).
 		expect(r.places.map((p) => p.id)).toEqual(["R1"]);
-		expect(data.unfiledRoutes).toHaveLength(0);
+		expect(data.placelessRoutes).toHaveLength(0);
 	});
 
 	it("adds a route to the routes-leading-here list of its Destination and its places", () => {
@@ -326,14 +326,14 @@ describe("joinGuideData — Destination + places (transitive coordinate) and unf
 		expect(placeById(data, "R2").routes.map((r) => r.id)).toEqual(["R4"]);
 	});
 
-	it("puts a Route with no Destination and no places in the unfiled-routes bucket", () => {
+	it("puts a Route with no Destination and no places in the placeless-routes bucket", () => {
 		const data = joinGuideData(
 			artifacts(
 				[],
 				[place("R1"), route("R2"), route("R3", { destination_id: "R1" })],
 			),
 		);
-		expect(data.unfiledRoutes.map((r) => r.id)).toEqual(["R2"]);
+		expect(data.placelessRoutes.map((r) => r.id)).toEqual(["R2"]);
 	});
 
 	it("keeps a filed Route's Destination Place resolvable even with no POI", () => {
@@ -343,7 +343,7 @@ describe("joinGuideData — Destination + places (transitive coordinate) and unf
 		const r = routeById(data, "R2");
 		expect(r.destination?.id).toBe("R1");
 		expect(r.destination?.poi).toBeNull();
-		expect(data.unfiledRoutes).toHaveLength(0);
+		expect(data.placelessRoutes).toHaveLength(0);
 	});
 
 	it("warns and skips a destination_id that resolves to no Entry", () => {
@@ -353,8 +353,8 @@ describe("joinGuideData — Destination + places (transitive coordinate) and unf
 		);
 		const r = routeById(data, "R2");
 		expect(r.destination).toBeNull();
-		// destination unresolved and no places -> unfiled
-		expect(data.unfiledRoutes.map((x) => x.id)).toEqual(["R2"]);
+		// destination unresolved and no places -> placeless
+		expect(data.placelessRoutes.map((x) => x.id)).toEqual(["R2"]);
 		expect(warn).toHaveBeenCalledWith(
 			expect.stringContaining('destination_id "ghost"'),
 		);
@@ -383,6 +383,52 @@ describe("joinGuideData — Destination + places (transitive coordinate) and unf
 		);
 		expect(routeById(data, "R3").places).toHaveLength(0);
 		expect(warn).toHaveBeenCalledWith(expect.stringContaining('place_id "R2"'));
+	});
+});
+
+describe("joinGuideData — uncoordinated places (poi === null)", () => {
+	it("excludes a Place that resolves to a POI", () => {
+		const data = joinGuideData(
+			artifacts([poiFeature("poi1")], [place("R1")], [placeLink("R1", "poi1")]),
+		);
+		expect(data.uncoordinatedPlaces.map((p) => p.id)).toEqual([]);
+	});
+
+	it("includes a Place that resolves to no POI", () => {
+		const data = joinGuideData(
+			artifacts(
+				[poiFeature("poi1")],
+				[place("R1"), place("R2")],
+				[placeLink("R1", "poi1")],
+			),
+		);
+		// R1 has a coordinate; R2 has none — only R2 is uncoordinated.
+		expect(data.uncoordinatedPlaces.map((p) => p.id)).toEqual(["R2"]);
+	});
+
+	it("keeps a Place with mentions but no target POI uncoordinated", () => {
+		const data = joinGuideData(
+			artifacts(
+				[poiFeature("m1")],
+				[place("R1")],
+				// No place_pois link — the POI is only a Mention, not this Place's
+				// own coordinate.
+				[],
+				[entryLink("R1", "m1")],
+			),
+		);
+		const place1 = placeById(data, "R1");
+		expect(place1.poi).toBeNull();
+		expect(place1.mentions.map((m) => m.id)).toEqual(["m1"]);
+		expect(data.uncoordinatedPlaces.map((p) => p.id)).toEqual(["R1"]);
+	});
+
+	it("never lists a Route in the uncoordinated-places bucket", () => {
+		const data = joinGuideData(artifacts([], [place("R1"), route("R2")]));
+		expect(data.uncoordinatedPlaces.every((p) => p.kind === "place")).toBe(
+			true,
+		);
+		expect(data.uncoordinatedPlaces.map((p) => p.id)).toEqual(["R1"]);
 	});
 });
 
@@ -507,7 +553,8 @@ describe("joinGuideData — degenerate inputs", () => {
 		expect(data.places).toEqual([]);
 		expect(data.routes).toEqual([]);
 		expect(data.pois).toEqual([]);
-		expect(data.unfiledRoutes).toEqual([]);
+		expect(data.placelessRoutes).toEqual([]);
+		expect(data.uncoordinatedPlaces).toEqual([]);
 		expect(data.entriesByPoiId.size).toBe(0);
 	});
 });
