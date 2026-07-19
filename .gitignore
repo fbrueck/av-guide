@@ -5,6 +5,11 @@ __pycache__/
 # scoped to the guides tree so it never clobbers source dirs named `data`
 # (e.g. route-map/src/data, the webapp's data-adapter boundary).
 guides/*/data/
+# Exception: the committed parse-routes test fixture (guides/sample/) ships its
+# data with the repo. Un-ignore the dir and everything under it — publicly
+# shared source pages, no usage restriction. See guides/sample/README.md.
+!guides/sample/data/
+!guides/sample/data/**
 *.pdf
 .claude/worktrees
 

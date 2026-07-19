@@ -1,0 +1,33 @@
+# Sample guide — a small, committed parse-routes test fixture.
+#
+# Unlike the real guides, guides/sample/data/ is deliberately UN-ignored (see
+# .gitignore) so this fixture ships with the repo, giving tests and experiments
+# real, representative pages without needing the full (gitignored) guide data.
+#
+# It is a verbatim contiguous 6-page slice of the Alpenvereinsführer Karwendel
+# (Klier/Walter, 16. Auflage; publicly shared by Rother/DAV, no usage
+# restriction) — pages 145–150, the "Großkarspitzen" place group. Real source
+# stem numbers are kept (page_0145..page_0150), not renumbered. The slice starts
+# on a Place heading (`1950 Großkarspitzen`, page 0145) — a clean place-first
+# segmentation boundary — and ends right before the next place group
+# (`2070 Bäralpikopf`, page 0151), so it is a self-contained, extractable range.
+id: sample
+# Karwendel massif extent, copied from the source guide.
+bbox: [47.27, 11.19, 47.60, 11.80]     # (south, west, north, east)
+
+# Bibliographic facts of the source guidebook, injected into the OCR/extraction
+# subagents so the prompts stay guide-agnostic (#147).
+facts:
+  title: Alpenvereinsführer Karwendel
+  author: Klier/Walter
+  edition: 16. Auflage
+  year: 2011
+  language: German
+
+parse-routes:
+  # No source PDF ships with the fixture — 01_raw is committed directly, so
+  # `pipeline.extract` is never run for this guide. This filename is a
+  # placeholder that satisfies config loading; it is not resolved to a file.
+  pdf: sample.pdf
+  # Pages with fewer OCR-text chars than this are treated as image/sketch pages.
+  min_text_chars: 200
