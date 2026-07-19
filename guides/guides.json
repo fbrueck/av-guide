@@ -16,5 +16,11 @@
     "name": "Lechtaler Alpen",
     "label": "Alpenvereinsführer Lechtaler Alpen (Seibert, 2. Auflage 2008)",
     "bbox": [47.05, 10.10, 47.55, 10.95]
+  },
+  {
+    "id": "kaisergebirge",
+    "name": "Kaisergebirge",
+    "label": "Alpenvereinsführer Kaisergebirge (Höfler / Piepenstock, 12. Auflage 2006)",
+    "bbox": [47.48, 12.10, 47.70, 12.45]
   }
 ]
