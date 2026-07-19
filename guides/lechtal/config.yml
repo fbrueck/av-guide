@@ -1,0 +1,71 @@
+# Alpenvereinsführer Lechtaler Alpen (Seibert, 2. Auflage 2008).
+#
+# One external config per guide. Shared top-level facts (id, bbox) apply to
+# both pipelines; each pipeline reads its own subsection. The fixed on-disk
+# stage layout is NOT here — it lives in code (pipeline/config.py path
+# helpers, derived from data_root = guides/<id>/data/<pipeline>/).
+id: lechtal
+# Lechtaler Alpen extent (S,W,N,E): Stanzertal/Rosanna valley (S), Arlberg (W),
+# Lechtal (N), Fernpass/Zwischentoren (E). Brackets the Parseierspitze (3036 m,
+# ~47.15,10.53), the range's high point. North edge widened to 47.55 so the
+# *Täler und Orte* valley towns the guide files — Reutte (~47.49), Weißenbach,
+# Forchach, Stanzach (~47.45) — fall inside the Overpass query (cf. the karwendel
+# bbox note, #84). Still provisional; revisit if fetch-pois coverage misses places.
+bbox: [47.05, 10.10, 47.55, 10.95]     # (south, west, north, east)
+
+# Bibliographic facts about the guidebook. Guide facts (not algorithm
+# behaviour), so they live here — the parse-routes orchestrator injects them
+# into the OCR/extraction subagents instead of hardcoding a guide in the
+# prompts (#147).
+facts:
+  title: Alpenvereinsführer Lechtaler Alpen
+  author: Seibert
+  edition: 2. Auflage
+  year: 2008
+  language: German
+
+parse-routes:
+  # PDF filename, resolved under guides/<id>/data/parse-routes/.
+  pdf: LechtalerAlpen_SeibertDieter_2_Auflage_2008.pdf
+  # Pages with fewer OCR-text chars than this are treated as image/sketch pages.
+  min_text_chars: 200
+  # Scan page(s) holding the Inhaltsverzeichnis; the toc-extractor reads them
+  # into the section map that drives Entry classification (ADR-0005).
+  toc_pages: [7]
+
+fetch-pois:
+  # Taxonomy type -> OSM tags that put an element in that type. Order matters:
+  # an element is classified by the first matching entry, so specific alpine
+  # types come before the `locality` catch-all. ("yes" is quoted so YAML does
+  # not read it as the boolean true.)
+  # Copied verbatim from wetterstein/karwendel (#84); review against sampled
+  # pages before the fetch-pois run and only diverge for Seibert-2008 specifics.
+  tag_map:
+    peak: [[natural, peak]]
+    pass: [[natural, saddle], [mountain_pass, "yes"]]
+    hut: [[tourism, alpine_hut], [tourism, wilderness_hut], [amenity, shelter], [place, farm]]
+    glacier: [[natural, glacier]]
+    valley: [[natural, valley]]
+    ridge: [[natural, ridge], [natural, arete]]
+    station: [[aerialway, station]]
+    settlement: [[place, town], [place, village], [place, hamlet], [place, suburb]]
+    bridge: [[man_made, bridge], [natural, gorge]]
+    path: [[highway, path], [highway, track], [highway, via_ferrata]]
+    water: [[natural, water], [waterway, river], [waterway, stream]]
+    locality: [[place, locality]]
+  # Valley-floor inns/serviced houses the book calls Hütten/Häuser are often
+  # tagged restaurant/chalet/guest_house in OSM. Admitted only outside
+  # settlement radius and when gap-filling (see fetch-pois README, #14).
+  guarded_tag_map:
+    hut: [[amenity, restaurant], [tourism, chalet], [tourism, guest_house]]
+  # Linear types kept as one representative entry per name (segmented in OSM).
+  deduped_types: [path, water]
+  # Guarded candidates must be at least this many km from every settlement.
+  settlement_exclusion_km: 1.0
+  # Mention name classes deliberately outside the gazetteer's scope: recorded
+  # as skipped with the reason instead of polluting the unmatched funnel.
+  out_of_scope:
+    - pattern: 'gebirge$'
+      reason: 'mountain range/region — deliberately not in the gazetteer (no point representation)'
+  # overpass_url is optional; defaults to the public endpoint when omitted.
+  # overpass_url: https://overpass-api.de/api/interpreter

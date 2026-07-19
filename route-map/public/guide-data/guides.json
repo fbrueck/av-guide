@@ -10,5 +10,11 @@
     "name": "Karwendel",
     "label": "Alpenvereinsführer Karwendel (Klier/Walter, 16. Auflage 2011)",
     "bbox": [47.27, 11.19, 47.60, 11.80]
+  },
+  {
+    "id": "lechtal",
+    "name": "Lechtaler Alpen",
+    "label": "Alpenvereinsführer Lechtaler Alpen (Seibert, 2. Auflage 2008)",
+    "bbox": [47.05, 10.10, 47.55, 10.95]
   }
 ]
