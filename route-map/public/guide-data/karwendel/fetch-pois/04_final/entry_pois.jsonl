@@ -2230,17 +2230,6 @@
 {"entry_id": "R408", "poi_id": "osm-way-26209134", "surface": "Knappensteig"}
 {"entry_id": "R408", "poi_id": "osm-way-481077606", "surface": "Vomper Lochs"}
 {"entry_id": "R408", "poi_id": "osm-node-1340376804", "surface": "Zwerchloch"}
-{"entry_id": "R41", "poi_id": "osm-node-8807454965", "surface": "»Bettelwurfeck«"}
-{"entry_id": "R41", "poi_id": "osm-way-148049142", "surface": "Bettelwurthütte"}
-{"entry_id": "R41", "poi_id": "osm-node-2329366395", "surface": "Issjöchl"}
-{"entry_id": "R41", "poi_id": "osm-way-128919620", "surface": "»Fluchtsteig«"}
-{"entry_id": "R41", "poi_id": "osm-node-759624456", "surface": "Hochmahdkopf"}
-{"entry_id": "R41", "poi_id": "osm-node-1620258571", "surface": "Haller Zunterkopf"}
-{"entry_id": "R41", "poi_id": "osm-node-471961336", "surface": "Törl"}
-{"entry_id": "R41", "poi_id": "osm-node-10075742310", "surface": "Thaurer Alm"}
-{"entry_id": "R41", "poi_id": "osm-node-1360308747", "surface": "Stempeljoch"}
-{"entry_id": "R41", "poi_id": "osm-node-474598467", "surface": "Lafatscher Joch"}
-{"entry_id": "R41", "poi_id": "osm-node-10075898258", "surface": "Herrenhäusern, 1481 m"}
 {"entry_id": "R410", "poi_id": "osm-node-7925831322", "surface": "Kristalpl"}
 {"entry_id": "R410", "poi_id": "osm-node-410366179", "surface": "Ganalm"}
 {"entry_id": "R414", "poi_id": "osm-node-526247301", "surface": "Lochhüttl, 1244 m"}
@@ -2263,10 +2252,6 @@
 {"entry_id": "R418A", "poi_id": "osm-node-439085900", "surface": "Schlauchkarsattel, 2635 m"}
 {"entry_id": "R418A", "poi_id": "osm-way-26959900", "surface": "Karwendelhaus, 1735 m"}
 {"entry_id": "R418A", "poi_id": "osm-way-206068755", "surface": "Birkkarbach"}
-{"entry_id": "R42", "poi_id": "osm-node-10075898258", "surface": "Herrenhäusern"}
-{"entry_id": "R42", "poi_id": "osm-node-471961336", "surface": "Törl, 1773 m"}
-{"entry_id": "R42", "poi_id": "osm-node-524663468", "surface": "Wildangerspitze"}
-{"entry_id": "R42", "poi_id": "osm-node-453575060", "surface": "Thaurer Zunterkopf"}
 {"entry_id": "R420", "poi_id": "osm-way-26959900", "surface": "Karwendelhaus, 1765 m"}
 {"entry_id": "R420", "poi_id": "osm-way-26960869", "surface": "Falkenhütte, 1846 m"}
 {"entry_id": "R420", "poi_id": "osm-node-2461227223", "surface": "Hohljoch, 1795 m"}
@@ -2291,8 +2276,6 @@
 {"entry_id": "R427", "poi_id": "osm-node-526791689", "surface": "Schafkarspitze"}
 {"entry_id": "R429", "poi_id": "osm-node-2028473658", "surface": "Eng"}
 {"entry_id": "R429", "poi_id": "osm-node-526791674", "surface": "Schafkarscharte"}
-{"entry_id": "R43", "poi_id": "osm-node-240047769", "surface": "Mils, 605 m"}
-{"entry_id": "R43", "poi_id": "osm-node-240124536", "surface": "Gnadenwald"}
 {"entry_id": "R430", "poi_id": "osm-way-29269844", "surface": "Lamsenjochhütte"}
 {"entry_id": "R430", "poi_id": "osm-node-461280906", "surface": "Lamsscharte"}
 {"entry_id": "R430", "poi_id": "osm-node-526791692", "surface": "Mitterkarlscharte, ca. 2310 m"}
@@ -2306,10 +2289,6 @@
 {"entry_id": "R433", "poi_id": "osm-node-1340376804", "surface": "Zwerchloch, 1030 m"}
 {"entry_id": "R433", "poi_id": "osm-node-7925831320", "surface": "»Brudertunnel«"}
 {"entry_id": "R433", "poi_id": "osm-way-29269844", "surface": "Lamsenjochhütte, 1953 m"}
-{"entry_id": "R44", "poi_id": "osm-node-240054235", "surface": "Baumkirchen, 593 m"}
-{"entry_id": "R44", "poi_id": "osm-relation-406437", "surface": "Inn"}
-{"entry_id": "R44", "poi_id": "osm-node-240047769", "surface": "Mils"}
-{"entry_id": "R44", "poi_id": "osm-node-240074683", "surface": "Fritzens"}
 {"entry_id": "R440", "poi_id": "osm-way-36121143", "surface": "Mittenwalder Höhenweg"}
 {"entry_id": "R440", "poi_id": "osm-node-293247920", "surface": "Nördl. Linderspitze"}
 {"entry_id": "R440", "poi_id": "osm-node-296163774", "surface": "Brunnsteinhütte"}
@@ -2467,11 +2446,6 @@
 {"entry_id": "R498", "poi_id": "osm-node-304627462", "surface": "Grasbergsattel, 1545 m"}
 {"entry_id": "R498", "poi_id": "osm-relation-17061881", "surface": "Eiskönigbachs"}
 {"entry_id": "R498", "poi_id": "osm-way-660104910", "surface": "Rißtal"}
-{"entry_id": "R50", "poi_id": "osm-node-240124536", "surface": "Gnadenwald, 880 m"}
-{"entry_id": "R50", "poi_id": "osm-way-481077606", "surface": "Vomper Lochs"}
-{"entry_id": "R50", "poi_id": "osm-node-4446566047", "surface": "St. Martin"}
-{"entry_id": "R50", "poi_id": "osm-way-47488721", "surface": "Hinterhornalm"}
-{"entry_id": "R50", "poi_id": "osm-node-525248745", "surface": "Hundskopf"}
 {"entry_id": "R500", "poi_id": "osm-node-11592939705", "surface": "Kreuzbrücke, 992 m"}
 {"entry_id": "R500", "poi_id": "osm-node-304627462", "surface": "Grasbergsattel, 1550 m"}
 {"entry_id": "R502", "poi_id": "osm-node-1192615220", "surface": "Whs. Bächental, 919 m"}
@@ -2490,14 +2464,6 @@
 {"entry_id": "R506", "poi_id": "osm-way-139768373", "surface": "Tannauer Bach"}
 {"entry_id": "R508", "poi_id": "osm-node-1192615220", "surface": "Whs. Bächental, 919 m"}
 {"entry_id": "R508", "poi_id": "osm-node-488368067", "surface": "Schleimssattel, 1555 m"}
-{"entry_id": "R51", "poi_id": "osm-node-4446566048", "surface": "St. Michael"}
-{"entry_id": "R51", "poi_id": "osm-way-122669293", "surface": "Wälder Alm"}
-{"entry_id": "R51", "poi_id": "osm-node-410366179", "surface": "Ganalm"}
-{"entry_id": "R51", "poi_id": "osm-way-481077606", "surface": "Vomper Loch"}
-{"entry_id": "R51", "poi_id": "osm-node-240074683", "surface": "Fritzens"}
-{"entry_id": "R51", "poi_id": "osm-node-240023878", "surface": "Terfens"}
-{"entry_id": "R51", "poi_id": "osm-node-2595780859", "surface": "Vomp"}
-{"entry_id": "R51", "poi_id": "osm-node-240037704", "surface": "Vomperbach"}
 {"entry_id": "R510", "poi_id": "osm-node-4354304112", "surface": "Juchtenkopf, 1826 m"}
 {"entry_id": "R510", "poi_id": "osm-node-488368067", "surface": "Schleimssattel, 1555 m"}
 {"entry_id": "R510", "poi_id": "osm-node-1618981812", "surface": "Hohen Gans"}
@@ -2516,9 +2482,6 @@
 {"entry_id": "R514", "poi_id": "osm-node-4203100371", "surface": "Marlkopf"}
 {"entry_id": "R514", "poi_id": "osm-node-795318475", "surface": "Steinölbrennerei, 1375 m"}
 {"entry_id": "R514", "poi_id": "osm-node-8625391845", "surface": "Rether Horn"}
-{"entry_id": "R55", "poi_id": "osm-node-240023878", "surface": "Terfens, 589 m"}
-{"entry_id": "R55", "poi_id": "osm-node-240124536", "surface": "Gnadenwald"}
-{"entry_id": "R55", "poi_id": "osm-node-2015063027", "surface": "Schwaz"}
 {"entry_id": "R56", "poi_id": "osm-node-2595780859", "surface": "Vomp, 566 m"}
 {"entry_id": "R56", "poi_id": "osm-way-481077606", "surface": "Vomper Lochs"}
 {"entry_id": "R56", "poi_id": "osm-relation-12533003", "surface": "Inntals"}
@@ -2865,33 +2828,3 @@
 {"entry_id": "R992", "poi_id": "osm-node-9465862396", "surface": "Kleinen Katzenkopf"}
 {"entry_id": "R995", "poi_id": "osm-way-42163813", "surface": "Barthgrat"}
 {"entry_id": "R995", "poi_id": "osm-node-524778994", "surface": "Mittleren Jägerkarspitze"}
-{"entry_id": "p0053_04", "poi_id": "osm-node-1340376804", "surface": "Zwerchloch"}
-{"entry_id": "p0053_04", "poi_id": "osm-way-119237922", "surface": "Stubbach"}
-{"entry_id": "p0053_04", "poi_id": "osm-way-30288235", "surface": "Zwerchbach"}
-{"entry_id": "p0053_04", "poi_id": "osm-way-42236748", "surface": "»Katzenleiter«"}
-{"entry_id": "p0053_04", "poi_id": "osm-node-526791654", "surface": "Huderbankspitze"}
-{"entry_id": "p0053_04", "poi_id": "osm-node-1361280931", "surface": "»Triefenden Wand«"}
-{"entry_id": "p0053_04", "poi_id": "osm-way-481077606", "surface": "Vomper Loches"}
-{"entry_id": "p0113_04", "poi_id": "osm-node-526165363", "surface": "Rauhkarlspitze, 2619 m"}
-{"entry_id": "p0113_04", "poi_id": "osm-node-1621410410", "surface": "Kaitwasserkarspitze"}
-{"entry_id": "p0113_05", "poi_id": "osm-node-12531477121", "surface": "Rauhkarl"}
-{"entry_id": "p0114_03", "poi_id": "osm-node-526165367", "surface": "Westl. Moserkarscharte"}
-{"entry_id": "p0114_03", "poi_id": "osm-node-526165366", "surface": "Östl. Moserkarscharte"}
-{"entry_id": "p0114_03", "poi_id": "osm-node-12531477121", "surface": "Rauhkarl"}
-{"entry_id": "p0114_03", "poi_id": "osm-node-526165363", "surface": "Rauhkarlspitze"}
-{"entry_id": "p0114_04", "poi_id": "osm-node-1370322683", "surface": "Eiskarlspitze"}
-{"entry_id": "p0114_05", "poi_id": "osm-node-526165367", "surface": "Westlichen Moserkarscharte, 2468 m"}
-{"entry_id": "p0114_05", "poi_id": "osm-node-526165363", "surface": "Rauhkarlspitze"}
-{"entry_id": "p0114_05", "poi_id": "osm-way-26959900", "surface": "Karwendelhaus"}
-{"entry_id": "p0115_04", "poi_id": "osm-node-526165369", "surface": "Moserkarspitze, 2534 m"}
-{"entry_id": "p0115_04", "poi_id": "osm-node-526186520", "surface": "Kühkarlspitze"}
-{"entry_id": "p0115_04", "poi_id": "osm-node-526165363", "surface": "Rauhkarlspitze"}
-{"entry_id": "p0115_04", "poi_id": "osm-node-525268947", "surface": "Nördl. Sonnenspitze"}
-{"entry_id": "p0115_04", "poi_id": "osm-node-1621410410", "surface": "Kaltwasserkarspitze"}
-{"entry_id": "p0115_05", "poi_id": "osm-node-526165366", "surface": "Östlichen Moserkarscharte"}
-{"entry_id": "p0116_01", "poi_id": "osm-node-526186520", "surface": "Kühkarlspitze, 2465 m"}
-{"entry_id": "p0116_01", "poi_id": "osm-node-526165369", "surface": "Moserkarspitze"}
-{"entry_id": "p0116_01", "poi_id": "osm-node-525268947", "surface": "Nördl. Sonnenspitze"}
-{"entry_id": "p0116_02", "poi_id": "osm-way-925622593", "surface": "Hinterautal"}
-{"entry_id": "p0116_02", "poi_id": "osm-node-526186510", "surface": "Moserkar"}
-{"entry_id": "p0116_02", "poi_id": "osm-node-526186520", "surface": "Kühkarlspitze"}
