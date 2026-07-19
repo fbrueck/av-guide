@@ -241,9 +241,11 @@ export function joinGuideData(raw: RawArtifacts): GuideData {
 		}
 	}
 
-	// Resolve one target Place id to a Place, recording the route on that Place's
-	// routes-leading-here list. Returns the Place, or null on a miss (warned).
-	// `role` labels the warning so destination/place drift is told apart.
+	// Resolve one target Place id to a Place. For the Destination role, record the
+	// route on that Place's routes-leading-here list — only routes whose Ziel is
+	// this Place end here; waypoints (place_id role) pass through and are not
+	// recorded. Returns the Place, or null on a miss (warned). `role` also labels
+	// the warning so destination/place drift is told apart.
 	function resolveTargetPlace(
 		route: Route,
 		placeId: string,
@@ -262,8 +264,10 @@ export function joinGuideData(raw: RawArtifacts): GuideData {
 			);
 			return null;
 		}
-		// The Place's routes-leading-here list (de-duplicated).
-		if (!target.routes.includes(route)) {
+		// The Place's routes-leading-here list = only the routes whose Destination
+		// is this Place, i.e. routes that END here — not waypoints (place_ids)
+		// passing through. The includes() guard keeps the list de-duplicated.
+		if (role === "destination_id" && !target.routes.includes(route)) {
 			target.routes.push(route);
 		}
 		return target;
